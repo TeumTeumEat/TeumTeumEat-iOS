@@ -9,9 +9,10 @@ import SwiftUI
 
 struct ButtonTestView: View {
     @State private var selectedCategory: String? = nil
+    @State private var selectedTab = 0
     
     var body: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
                 TTEButton(title: "button", size: .large,style: .primary) {
                     print("mainButton")
@@ -84,6 +85,34 @@ struct ButtonTestView: View {
                    ) {
                        selectedCategory = "study"
                    }
+                
+                VStack(spacing: 30) {
+                    HStack(spacing: 20) {
+                        TTETabButton(
+                            icon: Image("plus"),
+                            size: .small,
+                            isSelected: selectedTab == 0
+                        ) {
+                            selectedTab = 0
+                        }
+                        
+                        TTETabButton(
+                            icon: Image("home"),
+                            size: .large,
+                            isSelected: selectedTab == 1
+                        ) {
+                            selectedTab = 1
+                        }
+                        
+                        TTETabButton(
+                            icon: Image("library"),
+                            size: .small,
+                            isSelected: selectedTab == 2
+                        ) {
+                            selectedTab = 2
+                        }
+                    }
+                }
             }
             .background(.white)
         }
