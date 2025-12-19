@@ -50,6 +50,29 @@ struct ButtonTestView: View {
                 TTEButton(title: "button", size: .small ,style: .secondary) {
                     print("mainButton")
                 }
+                
+                TTEButton(
+                    title: "iOS 개발",
+                    size: .regular,
+                    style: .secondary,
+                    icon: Image("phone"),
+                    foregroundColor: .C_8_C_8_C_8,
+                    borderColor: .C_8_C_8_C_8
+                ) {
+                    print("프로필")
+                }
+
+                TTEButton(
+                    title: "디자인",
+                    size: .regular,
+                    style: .secondary,
+                    icon: Image("palette"),
+                    iconLeadingPadding: 31.5,
+                    foregroundColor: .C_8_C_8_C_8,
+                    borderColor: .C_8_C_8_C_8
+                ) {
+                    print("디자인")
+                }
             }
             .background(.white)
         }
