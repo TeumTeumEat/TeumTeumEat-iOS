@@ -11,43 +11,43 @@ struct ButtonTestView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                CommonButton(title: "button", size: .large,style: .primary) {
+                TTEButton(title: "button", size: .large,style: .primary) {
                     print("mainButton")
                 }
                 
-                CommonButton(title: "button", size: .large, style: .primary,backgroundColor: .EDF_0_FF,foregroundColor: ._2_B_8_FFF) {
+                TTEButton(title: "button", size: .large, style: .primary,backgroundColor: .EDF_0_FF,foregroundColor: ._2_B_8_FFF) {
                     print("mainButton")
                 }
                 
-                CommonButton(title: "button", size: .large, style: .primary,backgroundColor: ._7_A_7_A_7_A,foregroundColor: .white) {
+                TTEButton(title: "button", size: .large, style: .primary,backgroundColor: ._7_A_7_A_7_A,foregroundColor: .white) {
                     print("mainButton")
                 }
                 
-                CommonButton(title: "button", size: .large ,style: .secondary) {
+                TTEButton(title: "button", size: .large ,style: .secondary) {
                     print("mainButton")
                 }
                 
-                CommonButton(title: "button", size: .medium ,style: .primary) {
+                TTEButton(title: "button", size: .medium ,style: .primary) {
                     print("mainButton")
                 }
                 
-                CommonButton(title: "button", size: .medium ,style: .secondary) {
+                TTEButton(title: "button", size: .medium ,style: .secondary) {
                     print("mainButton")
                 }
                 
-                CommonButton(title: "button", size: .regular ,style: .primary) {
+                TTEButton(title: "button", size: .regular ,style: .primary) {
                     print("mainButton")
                 }
                 
-                CommonButton(title: "button", size: .regular ,style: .secondary) {
+                TTEButton(title: "button", size: .regular ,style: .secondary) {
                     print("mainButton")
                 }
                 
-                CommonButton(title: "button", size: .small ,style: .primary) {
+                TTEButton(title: "button", size: .small ,style: .primary) {
                     print("mainButton")
                 }
                 
-                CommonButton(title: "button", size: .small ,style: .secondary) {
+                TTEButton(title: "button", size: .small ,style: .secondary) {
                     print("mainButton")
                 }
             }
