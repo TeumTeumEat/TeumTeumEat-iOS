@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct ButtonTestView: View {
+    @State private var selectedCategory: String? = nil
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
@@ -73,6 +75,15 @@ struct ButtonTestView: View {
                 ) {
                     print("디자인")
                 }
+                
+                TTECategoryButton(
+                       icon: Image("files"),
+                       title: "카테고리 선택",
+                       subtitle: "공부하고 싶은걸\n골라볼게요",
+                       isSelected: selectedCategory == "study"
+                   ) {
+                       selectedCategory = "study"
+                   }
             }
             .background(.white)
         }

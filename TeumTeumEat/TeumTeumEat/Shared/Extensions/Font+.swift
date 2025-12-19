@@ -116,7 +116,7 @@ struct TypographyStyle {
          fontSize: 16,
          weight: .regular,
          letterSpacingPercent: -1,
-         lineHeightPercent: 150
+         lineHeightPercent: 100
      )
      
      static let bodyRegular14 = TypographyStyle(
