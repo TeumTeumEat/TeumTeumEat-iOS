@@ -257,6 +257,12 @@ struct MyView2: View {
     @State private var quizAnswer1: QuizAnswer = .none
     @State private var quizAnswer2: QuizAnswer = .none
     
+    @State private var multipleChoice1: Int? = nil
+    @State private var multipleChoice2: Int? = nil
+    @State private var multipleChoice3: Int? = nil
+    @State private var multipleChoice4: Int? = nil
+    @State private var multipleChoice5: Int? = nil
+    
     var body: some View {
         ScrollView {
             VStack {
@@ -291,6 +297,70 @@ struct MyView2: View {
                     )
                     .padding(.horizontal, 20)
                 }
+                
+                VStack(spacing: 30) {
+                    // 선택 안함
+                    TTEMultipleChoiceCard(
+                        questionNumber: 1,
+                        question: "Swift는 어떤 타입의 언어인가?",
+                        choices: [
+                            "정적 타입 언어",
+                            "동적 타입 언어",
+                            "하이브리드 언어"
+                        ],
+                        selectedChoice: $multipleChoice1
+                    )
+                    .padding(.horizontal, 20)
+                    
+                    TTEMultipleChoiceCard(
+                        questionNumber: 2,
+                        question: "SwiftUI는 어떤 프레임워크인가?",
+                        choices: [
+                            "선언형 프레임워크",
+                            "명령형 프레임워크",
+                            "함수형 프레임워크"
+                        ],
+                        selectedChoice: $multipleChoice2
+                    )
+                    .padding(.horizontal, 20)
+                    
+                    TTEMultipleChoiceCard(
+                        questionNumber: 3,
+                        question: "TCA의 핵심 구성요소가 아닌 것은?",
+                        choices: [
+                            "State",
+                            "Action",
+                            "Protocol"
+                        ],
+                        selectedChoice: $multipleChoice3
+                    )
+                    .padding(.horizontal, 20)
+                    
+                    TTEMultipleChoiceCard(
+                        questionNumber: 4,
+                        question: "iOS 개발에서 사용하는 IDE는?",
+                        choices: [
+                            "Visual Studio",
+                            "IntelliJ IDEA",
+                            "Xcode"
+                        ],
+                        selectedChoice: $multipleChoice4
+                    )
+                    .padding(.horizontal, 20)
+                    
+                    TTEMultipleChoiceCard(
+                        questionNumber: 5,
+                        question: "TCA(The Composable Architecture)는 Point-Free에서 만든 단방향 데이터 흐름 아키텍처 패턴이다. 다음 중 TCA의 특징이 아닌 것은?",
+                        choices: [
+                            "예측 가능한 상태 관리",
+                            "테스트 용이성",
+                            "양방향 데이터 바인딩"
+                        ],
+                        selectedChoice: $multipleChoice5
+                    )
+                    .padding(.horizontal, 20)
+                }
+                .padding(.vertical, 20)
             }
         }
         .tteAlert(
