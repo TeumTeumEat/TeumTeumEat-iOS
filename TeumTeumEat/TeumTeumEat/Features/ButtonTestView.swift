@@ -12,6 +12,7 @@ struct ButtonTestView: View {
     @State private var selectedTab = 0
     @State private var selectedAnswer: QuizAnswer = .none
     @State private var textField1 = ""
+    @State private var progressStep = 1
     
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -160,9 +161,57 @@ struct ButtonTestView: View {
                     Text("입력1: \(textField1)")
                 }
                 .padding()
+                
+                VStack(spacing: 30) {
+                    Text("Progress Bar 테스트")
+                        .font(.headline)
+                    
+                    // 5단계 (기본)
+                    TTEProgressBar(
+                        currentStep: progressStep,
+                        totalSteps: 5
+                    )
+                    .padding(.horizontal, 20)
+                    
+                    // 4단계
+                    TTEProgressBar(
+                        currentStep: progressStep,
+                        totalSteps: 4
+                    )
+                    .padding(.horizontal, 20)
+                    
+                    // 10단계
+                    TTEProgressBar(
+                        currentStep: min(progressStep * 2, 10),
+                        totalSteps: 10
+                    )
+                    .padding(.horizontal, 20)
+
+                    HStack(spacing: 20) {
+                        Button("이전") {
+                            if progressStep > 0 {
+                                progressStep -= 1
+                            }
+                        }
+                        .disabled(progressStep == 0)
+                        
+                        Text("현재: \(progressStep)")
+                            .frame(width: 80)
+                        
+                        Button("다음") {
+                            if progressStep < 5 {
+                                progressStep += 1
+                            }
+                        }
+                        .disabled(progressStep == 5)
+                    }
+                    .padding()
+                }
+                
             }
             .background(.white)
         }
     }
 }
+
 
