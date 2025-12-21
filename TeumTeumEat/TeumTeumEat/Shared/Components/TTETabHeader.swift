@@ -123,7 +123,7 @@ struct MyView: View {
             case 0:
                 ButtonTestView()
             case 1:
-                ContentView()
+                MyView2()
             default:
                 EmptyView()
             }
