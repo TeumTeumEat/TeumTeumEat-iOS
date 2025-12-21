@@ -24,14 +24,14 @@ extension Font {
     }
     
     static let head_bold_26 = custom(FontFamily.main, FontWeight.bold, size: 26)
-    static let head_bold_24 = custom(FontFamily.main, FontWeight.bold, size: 24)
+    static let head_bold_20 = custom(FontFamily.main, FontWeight.bold, size: 20)
        
     static let title_semibold_22 = custom(FontFamily.main, FontWeight.semibold, size: 22)
     static let title_semibold_20 = custom(FontFamily.main, FontWeight.semibold, size: 20)
     static let title_semibold_18 = custom(FontFamily.main, FontWeight.semibold, size: 18)
     static let title_semibold_16 = custom(FontFamily.main, FontWeight.semibold, size: 16)
        
-    static let body1_medium_16 = custom(FontFamily.main, FontWeight.medium, size: 16)
+    static let body1_medium_18 = custom(FontFamily.main, FontWeight.medium, size: 18)
     static let body1_medium_14 = custom(FontFamily.main, FontWeight.medium, size: 14)
        
     static let body2_regular_16 = custom(FontFamily.main, FontWeight.regular, size: 16)
@@ -55,9 +55,9 @@ struct TypographyStyle {
          lineHeightPercent: 130
      )
      
-     static let headBold24 = TypographyStyle(
-         font: .head_bold_24,
-         fontSize: 24,
+     static let headBold20 = TypographyStyle(
+         font: .head_bold_20,
+         fontSize: 20,
          weight: .bold,
          letterSpacingPercent: -3,
          lineHeightPercent: 130
@@ -95,9 +95,9 @@ struct TypographyStyle {
          lineHeightPercent: 150
      )
      
-     static let bodyMedium16 = TypographyStyle(
-         font: .body1_medium_16,
-         fontSize: 16,
+     static let bodyMedium18 = TypographyStyle(
+         font: .body1_medium_18,
+         fontSize: 18,
          weight: .medium,
          letterSpacingPercent: -1,
          lineHeightPercent: 150
@@ -116,7 +116,7 @@ struct TypographyStyle {
          fontSize: 16,
          weight: .regular,
          letterSpacingPercent: -1,
-         lineHeightPercent: 150
+         lineHeightPercent: 100
      )
      
      static let bodyRegular14 = TypographyStyle(
@@ -154,8 +154,8 @@ extension Text {
         applyTypography(.headBold26)
     }
     
-    func headBold24() -> some View {
-        applyTypography(.headBold24)
+    func headBold20() -> some View {
+        applyTypography(.headBold20)
     }
     
     func titleSemibold22() -> some View {
@@ -174,8 +174,8 @@ extension Text {
         applyTypography(.titleSemibold16)
     }
     
-    func bodyMedium16() -> some View {
-        applyTypography(.bodyMedium16)
+    func bodyMedium18() -> some View {
+        applyTypography(.bodyMedium18)
     }
     
     func bodyMedium14() -> some View {
