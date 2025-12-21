@@ -254,38 +254,66 @@ struct MyView2: View {
     @State private var showAlert = false
     @State private var showAlert2 = false
     
+    @State private var quizAnswer1: QuizAnswer = .none
+    @State private var quizAnswer2: QuizAnswer = .none
+    
     var body: some View {
-        
-        VStack {
-            Button("삭제") {
-                showAlert = true
-            }
-            .tteAlert(
-                isPresented: $showAlert,
-                type: .double,
-                title: "삭제 확인",
-                message: "정말로 삭제하시겠습니까?",
-                confirmTitle: "삭제",
-                confirmAction: {
-                    print("삭제 버튼 누름")
-                },
-                cancelAction: {
-                    print("취소 버튼 누름")
+        ScrollView {
+            VStack {
+                HStack {
+                    Button("삭제") {
+                        showAlert = true
+                    }
+                    
+                    Button("확인") {
+                        showAlert2 = true
+                    }
                 }
                 
-            )
-            
-            Button("확인") {
-                showAlert2 = true
+                VStack(spacing: 30) {
+                    Text("Quiz Card 테스트")
+                        .font(.headline)
+                    
+                    TTEQuizCard(
+                        questionNumber: 1,
+                        question: "SwiftUI는 선언형 프레임워크이다SwiftUI는 선언형 프레임워크이다SwiftUI는선언형 프레임워크이다SwiftUI선언형 프레임워크이다SwiftUI선언형 프레임워크이다SwiftUI선언형 프레임워크이다SwiftUI",
+                        selectedAnswer: $quizAnswer1,
+                        onAnswerSelected: { answer in
+                            print("Q1 답변: \(answer)")
+                        }
+                    )
+                    .padding(.horizontal, 20)
+                    
+                    TTEQuizCard(
+                        questionNumber: 2,
+                        question: "TCA는 단방향 데이터 흐름 아키텍처이다",
+                        selectedAnswer: $quizAnswer2
+                    )
+                    .padding(.horizontal, 20)
+                }
             }
-            .tteAlert(
-                isPresented: $showAlert2,
-                type: .single,
-                title: "알림사항",
-                message: "다시한번 확인해줘",
-                confirmAction: {
-                    print("확인버튼 누름")
-                })
         }
+        .tteAlert(
+            isPresented: $showAlert,
+            type: .double,
+            title: "삭제 확인",
+            message: "정말로 삭제하시겠습니까?",
+            confirmTitle: "삭제",
+            confirmAction: {
+                print("삭제 버튼 누름")
+            },
+            cancelAction: {
+                print("취소 버튼 누름")
+            }
+        )
+        .tteAlert(
+            isPresented: $showAlert2,
+            type: .single,
+            title: "알림사항",
+            message: "다시한번 확인해줘",
+            confirmAction: {
+                print("확인버튼 누름")
+            }
+        )
     }
 }
