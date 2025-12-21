@@ -10,6 +10,7 @@ import SwiftUI
 struct ButtonTestView: View {
     @State private var selectedCategory: String? = nil
     @State private var selectedTab = 0
+    @State private var selectedAnswer: QuizAnswer = .none
     
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -112,6 +113,36 @@ struct ButtonTestView: View {
                             selectedTab = 2
                         }
                     }
+                }
+                
+                VStack(spacing: 50) {
+                    Text("SwiftUI는 선언형 프레임워크이다")
+                        .font(.title2)
+                        .padding()
+                    
+                    HStack(spacing: 40) {
+                        // O 버튼 (기본 크기)
+                        TTEQuizButton(
+                            type: .correct,
+                            currentAnswer: selectedAnswer
+                        ) {
+                            selectedAnswer = .correct
+                        }
+                        
+                        // X 버튼 (기본 크기)
+                        TTEQuizButton(
+                            type: .wrong,
+                            currentAnswer: selectedAnswer
+                        ) {
+                            selectedAnswer = .wrong
+                        }
+                    }
+                    
+                    // 리셋 버튼
+                    Button("다시 선택") {
+                        selectedAnswer = .none
+                    }
+                    .padding()
                 }
             }
             .background(.white)
