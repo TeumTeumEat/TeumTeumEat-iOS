@@ -81,13 +81,16 @@ struct TTETabHeader: View {
 struct TTETabView<Content: View>: View {
     @State private var selectedTab: Int = 0
     let tabs: [TTETabItem]
+    let isSwipeEnabled: Bool
     let content: (Int) -> Content
     
     init(
         tabs: [TTETabItem],
+        isSwipeEnabled: Bool = true,
         @ViewBuilder content: @escaping (Int) -> Content
     ) {
         self.tabs = tabs
+        self.isSwipeEnabled = isSwipeEnabled
         self.content = content
     }
     
@@ -99,14 +102,29 @@ struct TTETabView<Content: View>: View {
                 tabs: tabs
             )
             
-            // Content
-            TabView(selection: $selectedTab) {
-                ForEach(Array(tabs.enumerated()), id: \.offset) { index, _ in
-                    content(index)
-                        .tag(index)
+            GeometryReader { geometry in
+                if isSwipeEnabled {
+                    // 스와이프 가능 버전
+                    TabView(selection: $selectedTab) {
+                        ForEach(Array(tabs.enumerated()), id: \.offset) { index, _ in
+                            content(index)
+                                .tag(index)
+                        }
+                    }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                } else {
+                    // 스와이프 불가 버전
+                    ZStack {
+                        ForEach(Array(tabs.enumerated()), id: \.offset) { index, _ in
+                            content(index)
+                                .frame(width: geometry.size.width, height: geometry.size.height)
+                                .opacity(selectedTab == index ? 1 : 0)
+                                .zIndex(selectedTab == index ? 1 : 0)
+                        }
+                    }
+                    .animation(.easeInOut(duration: 0.2), value: selectedTab)
                 }
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
         }
     }
 }
@@ -117,7 +135,8 @@ struct MyView: View {
             tabs: [
                 TTETabItem(title: "전체"),
                 TTETabItem(title: "진행중")
-            ]
+            ],
+            isSwipeEnabled: false
         ) { index in
             switch index {
             case 0:
