@@ -360,6 +360,77 @@ struct MyView2: View {
                     )
                     .padding(.horizontal, 20)
                 }
+                VStack(spacing: 20) {
+                    // 정답
+                    TTEAnswerCard(
+                        questionNumber: 1,
+                        question: "SwiftUI는 선언형 프레임워크이다",
+                        correctAnswer:  "O",
+                        explanation: "SwiftUI는 Apple에서 제공하는 선언형 UI 프레임워크입니다. 상태를 선언하면 UI가 자동으로 업데이트됩니다.",
+                        status: .correct
+                    )
+                    .padding(.horizontal, 20)
+                    
+                    // 오답
+                    TTEAnswerCard(
+                        questionNumber: 2,
+                        question: "Swift는 동적 타입 언어이다",
+                        correctAnswer:  "X",
+                        explanation: "Swift는 정적 타입 언어입니다. 컴파일 시점에 타입이 결정되며, 타입 안정성을 제공합니다.",
+                        status: .wrong
+                    )
+                    .padding(.horizontal, 20)
+                    
+                    // 긴 문제와 해설
+                    TTEAnswerCard(
+                        questionNumber: 3,
+                        question: "TCA(The Composable Architecture)는 Point-Free에서 만든 단방향 데이터 흐름 아키텍처 패턴이다",
+                        correctAnswer: "O",
+                        explanation: "TCA는 State, Action, Reducer를 통해 예측 가능한 상태 관리를 제공하며, 단방향 데이터 흐름을 따릅니다. 이를 통해 복잡한 앱의 상태를 효과적으로 관리할 수 있습니다.",
+                        status: .correct
+                    )
+                    .padding(.horizontal, 20)
+                    
+                    // 정답 - 짧은 해설
+                    TTEAnswerCard(
+                        questionNumber: 4,
+                        question: "iOS 개발의 공식 IDE는 Xcode이다",
+                        correctAnswer: "O",
+                        explanation: "Xcode는 Apple의 공식 통합 개발 환경입니다.",
+                        status: .correct
+                    )
+                    .padding(.horizontal, 20)
+                    
+                    // 오답 - 긴 해설
+                    TTEAnswerCard(
+                        questionNumber: 5,
+                        question: "UIKit은 선언형 프레임워크이다",
+                        correctAnswer:  "X",
+                        explanation: "UIKit은 명령형 프레임워크입니다. 개발자가 직접 UI 요소를 생성하고, 설정하고, 관리해야 합니다. 반면 SwiftUI는 선언형 프레임워크로, 원하는 UI 상태를 선언하면 프레임워크가 알아서 관리합니다.",
+                        status: .wrong
+                    )
+                    .padding(.horizontal, 20)
+                    
+                    TTEAnswerCard(
+                           questionNumber: 3,
+                           question: "Swift는 어떤 타입의 언어인가?",
+                           correctAnswer: "정적 타입 언어",
+                           explanation: "Swift는 컴파일 시점에 타입이 결정되는 정적 타입 언어입니다.",
+                           status: .correct
+                       )
+                       .padding(.horizontal, 20)
+                       
+                       // 객관식 오답
+                       TTEAnswerCard(
+                           questionNumber: 4,
+                           question: "TCA는 양방향 데이터 바인딩을 사용한다",
+                           correctAnswer: "단방향 데이터 흐름",
+                           explanation: "TCA는 단방향 데이터 흐름을 따릅니다. Action → Reducer → State 순서로 데이터가 흐릅니다.",
+                           status: .wrong
+                       )
+                       .padding(.horizontal, 20)
+                }
+                
                 .padding(.vertical, 20)
             }
         }
