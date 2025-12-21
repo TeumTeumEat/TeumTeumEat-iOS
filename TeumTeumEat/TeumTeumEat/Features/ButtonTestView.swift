@@ -11,6 +11,7 @@ struct ButtonTestView: View {
     @State private var selectedCategory: String? = nil
     @State private var selectedTab = 0
     @State private var selectedAnswer: QuizAnswer = .none
+    @State private var textField1 = ""
     
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -144,6 +145,21 @@ struct ButtonTestView: View {
                     }
                     .padding()
                 }
+                
+                VStack(spacing: 20) {
+                    TTETextField(text: $textField1)
+                        .padding(.horizontal, 20)
+                    
+                    TTETextField(text: .constant("테스트"))
+                    
+                    TTETextField(
+                        text: .constant(""),
+                        placeholder: "이름을 입력하세요",
+                        maxLength: 20
+                    )
+                    Text("입력1: \(textField1)")
+                }
+                .padding()
             }
             .background(.white)
         }
