@@ -14,6 +14,8 @@ struct AppView: View {
     var body: some View {
         if store.isShowingSplash {
             SplashView(store: store.scope(state: \.splash, action: \.splash))
+        } else if let onboardingStore = store.scope(state: \.onboarding, action: \.onboarding) {
+            OnboardingView(store: onboardingStore)
         } else {
             Text("메인화면")
         }
