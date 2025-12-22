@@ -13,7 +13,15 @@ struct OnboardingView: View {
     
     var body: some View {
         Group {
-            if let welcomeStore = store.scope(state: \.welcome, action: \.welcome) {
+            if store.showFileUpload {
+                FileUploadView {
+                    store.send(.backFromFileUpload)
+                }
+            } else if store.showCategorySelection {
+                CategorySelectionView {
+                    store.send(.backFromCategorySelection)
+                }
+            } else if let welcomeStore = store.scope(state: \.welcome, action: \.welcome) {
                 WelcomeView(store: welcomeStore)
             } else if let nameStore = store.scope(state: \.nameInput, action: \.nameInput) {
                 NameInputView(store: nameStore)

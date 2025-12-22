@@ -145,3 +145,70 @@ struct ContentSelectionView: View {
         }
     }
 }
+
+
+
+struct FileUploadView: View {
+    let onBack: () -> Void
+    
+    var body: some View {
+        VStack {
+            HStack(spacing: 16) {
+                Button {
+                    onBack()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                        .frame(width: 40, height: 40)
+                        .contentShape(Rectangle())
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+            
+            Spacer()
+            
+            Text("파일 업로드 화면")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+            
+            Spacer()
+        }
+    }
+}
+
+
+struct CategorySelectionView: View {
+    let onBack: () -> Void
+    
+    var body: some View {
+        VStack {
+            HStack(spacing: 16) {
+                Button {
+                    onBack()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                        .frame(width: 40, height: 40)
+                        .contentShape(Rectangle())
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+            
+            Spacer()
+            
+            Text("카테고리 선택 화면")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+            
+            Spacer()
+        }
+    }
+}

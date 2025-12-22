@@ -19,14 +19,16 @@ struct OnboardingFeature {
         var nameInput: NameInputFeature.State?
         var timeSetting: TimeSettingFeature.State?
         var usageDuration: UsageDurationFeature.State?
-        var contentSelection: ContentSelectionFeature.State?  // 추가
+        var contentSelection: ContentSelectionFeature.State?
+        var showFileUpload = false
+        var showCategorySelection = false
         
         enum Step: Int {
             case welcome = 0
             case nameInput = 1
             case timeSetting = 2
             case usageDuration = 3
-            case contentSelection = 4  // 추가
+            case contentSelection = 4
         }
         
         init() {
@@ -39,9 +41,11 @@ struct OnboardingFeature {
         case nameInput(NameInputFeature.Action)
         case timeSetting(TimeSettingFeature.Action)
         case usageDuration(UsageDurationFeature.Action)
-        case contentSelection(ContentSelectionFeature.Action)  // 추가
+        case contentSelection(ContentSelectionFeature.Action)
         case nextStep
         case previousStep
+        case backFromFileUpload
+        case backFromCategorySelection
     }
     
     var body: some ReducerOf<Self> {
@@ -80,14 +84,29 @@ struct OnboardingFeature {
             case .usageDuration(.backTapped):
                 return .send(.previousStep)
                 
-            case .contentSelection(.nextTapped):  // 추가
+            case .contentSelection(.nextTapped):
                 if let type = state.contentSelection?.selectedType {
                     state.onboardingData.contentType = type == .fileUpload ? .fileUpload : .category
+                    
+                    // 분기 처리
+                    if type == .fileUpload {
+                        state.showFileUpload = true
+                    } else {
+                        state.showCategorySelection = true
+                    }
                 }
-                return .send(.nextStep)
+                return .none
                 
-            case .contentSelection(.backTapped):  // 추가
+            case .contentSelection(.backTapped):
                 return .send(.previousStep)
+                
+            case .backFromFileUpload:
+                state.showFileUpload = false
+                return .none
+                
+            case .backFromCategorySelection:
+                state.showCategorySelection = false
+                return .none
                 
             case .nextStep:
                 switch state.currentStep {
@@ -112,7 +131,7 @@ struct OnboardingFeature {
                     state.contentSelection = ContentSelectionFeature.State()
                     
                 case .contentSelection:
-                    print("다음 단계로 (아직 미구현)")
+                    return .none
                 }
                 return .none
                 
@@ -161,7 +180,7 @@ struct OnboardingFeature {
         .ifLet(\.usageDuration, action: \.usageDuration) {
             UsageDurationFeature()
         }
-        .ifLet(\.contentSelection, action: \.contentSelection) {  // 추가
+        .ifLet(\.contentSelection, action: \.contentSelection) {
             ContentSelectionFeature()
         }
     }
