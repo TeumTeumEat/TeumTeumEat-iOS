@@ -21,6 +21,8 @@ struct OnboardingView: View {
                 TimeSettingView(store: timeStore)
             } else if let durationStore = store.scope(state: \.usageDuration, action: \.usageDuration) {
                 UsageDurationView(store: durationStore)
+            } else if let contentStore = store.scope(state: \.contentSelection, action: \.contentSelection) {
+                ContentSelectionView(store: contentStore)
             }
         }
     }

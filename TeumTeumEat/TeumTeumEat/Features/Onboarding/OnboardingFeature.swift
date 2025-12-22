@@ -19,12 +19,14 @@ struct OnboardingFeature {
         var nameInput: NameInputFeature.State?
         var timeSetting: TimeSettingFeature.State?
         var usageDuration: UsageDurationFeature.State?
+        var contentSelection: ContentSelectionFeature.State?  // 추가
         
         enum Step: Int {
             case welcome = 0
             case nameInput = 1
             case timeSetting = 2
             case usageDuration = 3
+            case contentSelection = 4  // 추가
         }
         
         init() {
@@ -37,96 +39,116 @@ struct OnboardingFeature {
         case nameInput(NameInputFeature.Action)
         case timeSetting(TimeSettingFeature.Action)
         case usageDuration(UsageDurationFeature.Action)
+        case contentSelection(ContentSelectionFeature.Action)  // 추가
         case nextStep
         case previousStep
     }
     
     var body: some ReducerOf<Self> {
-         Reduce { state, action in
-             switch action {
-             case .welcome(.startOnboardingTapped):
-                 return .send(.nextStep)
-                 
-             case .nameInput(.nextTapped):
-                 if let name = state.nameInput?.name {
-                     state.onboardingData.userName = name
-                 }
-                 return .send(.nextStep)
-                 
-             case .nameInput(.backTapped):
-                 return .send(.previousStep)
-                 
-             case .timeSetting(.nextTapped):
-                 if let leaveTime = state.timeSetting?.leaveTime {
-                     state.onboardingData.leaveHomeTime = leaveTime
-                 }
-                 if let returnTime = state.timeSetting?.returnTime {
-                     state.onboardingData.returnHomeTime = returnTime
-                 }
-                 return .send(.nextStep)
-                 
-             case .timeSetting(.backTapped):
-                 return .send(.previousStep)
-                 
-             case .usageDuration(.nextTapped):  // 추가
-                 if let duration = state.usageDuration?.selectedDuration {
-                     state.onboardingData.dailyUsageMinutes = duration.rawValue
-                 }
-                 return .send(.nextStep)
-                 
-             case .usageDuration(.backTapped):  // 추가
-                 return .send(.previousStep)
-                 
-             case .nextStep:
-                 switch state.currentStep {
-                 case .welcome:
-                     state.welcome = nil
-                     state.currentStep = .nameInput
-                     state.nameInput = NameInputFeature.State()
-                     
-                 case .nameInput:
-                     state.nameInput = nil
-                     state.currentStep = .timeSetting
-                     state.timeSetting = TimeSettingFeature.State()
-                     
-                 case .timeSetting:
-                     state.timeSetting = nil
-                     state.currentStep = .usageDuration
-                     state.usageDuration = UsageDurationFeature.State()
-                     
-                 case .usageDuration:
-                     print("다음 단계로 (아직 미구현)")
-                 }
-                 return .none
-                 
-             case .previousStep:
-                 switch state.currentStep {
-                 case .welcome:
-                     return .none
-                     
-                 case .nameInput:
-                     state.nameInput = nil
-                     state.currentStep = .welcome
-                     state.welcome = WelcomeFeature.State()
-                     
-                 case .timeSetting:
-                     state.timeSetting = nil
-                     state.currentStep = .nameInput
-                     state.nameInput = NameInputFeature.State(
-                         name: state.onboardingData.userName
-                     )
-                     
-                 case .usageDuration:
-                     state.usageDuration = nil
-                     state.currentStep = .timeSetting
-                     state.timeSetting = TimeSettingFeature.State()
-                 }
-                 return .none
-                 
-             case .welcome, .nameInput, .timeSetting, .usageDuration:
-                 return .none
-             }
-         }
+        Reduce { state, action in
+            switch action {
+            case .welcome(.startOnboardingTapped):
+                return .send(.nextStep)
+                
+            case .nameInput(.nextTapped):
+                if let name = state.nameInput?.name {
+                    state.onboardingData.userName = name
+                }
+                return .send(.nextStep)
+                
+            case .nameInput(.backTapped):
+                return .send(.previousStep)
+                
+            case .timeSetting(.nextTapped):
+                if let leaveTime = state.timeSetting?.leaveTime {
+                    state.onboardingData.leaveHomeTime = leaveTime
+                }
+                if let returnTime = state.timeSetting?.returnTime {
+                    state.onboardingData.returnHomeTime = returnTime
+                }
+                return .send(.nextStep)
+                
+            case .timeSetting(.backTapped):
+                return .send(.previousStep)
+                
+            case .usageDuration(.nextTapped):
+                if let duration = state.usageDuration?.selectedDuration {
+                    state.onboardingData.dailyUsageMinutes = duration.rawValue
+                }
+                return .send(.nextStep)
+                
+            case .usageDuration(.backTapped):
+                return .send(.previousStep)
+                
+            case .contentSelection(.nextTapped):  // 추가
+                if let type = state.contentSelection?.selectedType {
+                    state.onboardingData.contentType = type == .fileUpload ? .fileUpload : .category
+                }
+                return .send(.nextStep)
+                
+            case .contentSelection(.backTapped):  // 추가
+                return .send(.previousStep)
+                
+            case .nextStep:
+                switch state.currentStep {
+                case .welcome:
+                    state.welcome = nil
+                    state.currentStep = .nameInput
+                    state.nameInput = NameInputFeature.State()
+                    
+                case .nameInput:
+                    state.nameInput = nil
+                    state.currentStep = .timeSetting
+                    state.timeSetting = TimeSettingFeature.State()
+                    
+                case .timeSetting:
+                    state.timeSetting = nil
+                    state.currentStep = .usageDuration
+                    state.usageDuration = UsageDurationFeature.State()
+                    
+                case .usageDuration:
+                    state.usageDuration = nil
+                    state.currentStep = .contentSelection
+                    state.contentSelection = ContentSelectionFeature.State()
+                    
+                case .contentSelection:
+                    print("다음 단계로 (아직 미구현)")
+                }
+                return .none
+                
+            case .previousStep:
+                switch state.currentStep {
+                case .welcome:
+                    return .none
+                    
+                case .nameInput:
+                    state.nameInput = nil
+                    state.currentStep = .welcome
+                    state.welcome = WelcomeFeature.State()
+                    
+                case .timeSetting:
+                    state.timeSetting = nil
+                    state.currentStep = .nameInput
+                    state.nameInput = NameInputFeature.State(
+                        name: state.onboardingData.userName
+                    )
+                    
+                case .usageDuration:
+                    state.usageDuration = nil
+                    state.currentStep = .timeSetting
+                    state.timeSetting = TimeSettingFeature.State()
+                    
+                case .contentSelection:
+                    state.contentSelection = nil
+                    state.currentStep = .usageDuration
+                    state.usageDuration = UsageDurationFeature.State()
+                }
+                return .none
+                
+            case .welcome, .nameInput, .timeSetting, .usageDuration, .contentSelection:
+                return .none
+            }
+        }
         .ifLet(\.welcome, action: \.welcome) {
             WelcomeFeature()
         }
@@ -136,8 +158,11 @@ struct OnboardingFeature {
         .ifLet(\.timeSetting, action: \.timeSetting) {
             TimeSettingFeature()
         }
-        .ifLet(\.usageDuration, action: \.usageDuration) { 
+        .ifLet(\.usageDuration, action: \.usageDuration) {
             UsageDurationFeature()
+        }
+        .ifLet(\.contentSelection, action: \.contentSelection) {  // 추가
+            ContentSelectionFeature()
         }
     }
 }
