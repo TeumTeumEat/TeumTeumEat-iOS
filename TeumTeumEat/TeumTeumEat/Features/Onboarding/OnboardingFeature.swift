@@ -16,17 +16,18 @@ struct OnboardingFeature {
         var onboardingData = OnboardingData()
         
         var welcome: WelcomeFeature.State?
+        var nameInput: NameInputFeature.State?
         
         
         enum Step: Int, CaseIterable {
             case welcome = 0
             case nameInput
-            case timeSetting
-            case usageDuration
-            case contentSelection
-            case studyPeriod
-            case summary
-            case complete
+//            case timeSetting
+//            case usageDuration
+//            case contentSelection
+//            case studyPeriod
+//            case summary
+//            case complete
             
             var progress: Double {
                 Double(rawValue) / Double(Step.allCases.count - 1)
@@ -43,18 +44,18 @@ struct OnboardingFeature {
                 return true
             case .nameInput:
                 return true
-            case .timeSetting:
-                return true
-            case .usageDuration:
-                return true
-            case .contentSelection:
-                return true
-            case .studyPeriod:
-                return true
-            case .summary:
-                return true
-            case .complete:
-                return true
+//            case .timeSetting:
+//                return true
+//            case .usageDuration:
+//                return true
+//            case .contentSelection:
+//                return true
+//            case .studyPeriod:
+//                return true
+//            case .summary:
+//                return true
+//            case .complete:
+//                return true
             }
         }
         
@@ -62,28 +63,63 @@ struct OnboardingFeature {
     
     enum Action {
         case welcome(WelcomeFeature.Action)
+        case nameInput(NameInputFeature.Action)
         case nextStep
+        case previousStep
 
     }
     
     var body: some ReducerOf<Self> {
-         Reduce { state, action in
-             switch action {
-             case .welcome(.startOnboardingTapped):
-                 // "시작하기" 버튼 눌렀을 때
-                 return .send(.nextStep)
-                 
-             case .nextStep:
-                 // 일단은 아무것도 안 함 (다음 Step 준비되면 전환)
-                 print("다음 단계로 이동 준비")
-                 return .none
-                 
-             case .welcome:
-                 return .none
-             }
-         }
+        Reduce { state, action in
+            switch action {
+            case .welcome(.startOnboardingTapped):
+                return .send(.nextStep)
+                
+            case .nameInput(.nextTapped):
+                // 이름 저장
+                if let name = state.nameInput?.name {
+                    state.onboardingData.userName = name
+                }
+                return .send(.nextStep)
+                
+            case .nameInput(.backTapped):
+                return .send(.previousStep)
+                
+            case .nextStep:
+                switch state.currentStep {
+                case .welcome:
+                    state.welcome = nil
+                    state.currentStep = .nameInput
+                    state.nameInput = NameInputFeature.State()
+                    
+                case .nameInput:
+                    // 다음 단계 준비
+                    print("다음 단계로")
+                }
+                return .none
+                
+            case .previousStep:
+                switch state.currentStep {
+                case .welcome:
+                    // Welcome은 첫 화면이므로 뒤로 갈 곳 없음
+                    return .none
+                    
+                case .nameInput:
+                    state.nameInput = nil
+                    state.currentStep = .welcome
+                    state.welcome = WelcomeFeature.State()
+                }
+                return .none
+                
+            case .welcome, .nameInput:
+                return .none
+            }
+        }
          .ifLet(\.welcome, action: \.welcome) {
              WelcomeFeature()
+         }
+         .ifLet(\.nameInput, action: \.nameInput) {
+             NameInputFeature()
          }
      }
 }

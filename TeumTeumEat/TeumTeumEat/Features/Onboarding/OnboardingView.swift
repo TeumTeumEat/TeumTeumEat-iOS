@@ -14,6 +14,8 @@ struct OnboardingView: View {
     var body: some View {
         if let welcomeStore = store.scope(state: \.welcome, action: \.welcome) {
             WelcomeView(store: welcomeStore)
+        } else if let nameStore = store.scope(state: \.nameInput, action: \.nameInput) {
+            NameInputView(store: nameStore)
         }
     }
 }
