@@ -17,56 +17,25 @@ struct OnboardingFeature {
         
         var welcome: WelcomeFeature.State?
         var nameInput: NameInputFeature.State?
+        var timeSetting: TimeSettingFeature.State?
         
-        
-        enum Step: Int, CaseIterable {
+        enum Step: Int {
             case welcome = 0
-            case nameInput
-//            case timeSetting
-//            case usageDuration
-//            case contentSelection
-//            case studyPeriod
-//            case summary
-//            case complete
-            
-            var progress: Double {
-                Double(rawValue) / Double(Step.allCases.count - 1)
-            }
+            case nameInput = 1
+            case timeSetting = 2
         }
         
         init() {
             self.welcome = WelcomeFeature.State()
         }
-        
-        var canGoNext: Bool {
-            switch currentStep {
-            case .welcome:
-                return true
-            case .nameInput:
-                return true
-//            case .timeSetting:
-//                return true
-//            case .usageDuration:
-//                return true
-//            case .contentSelection:
-//                return true
-//            case .studyPeriod:
-//                return true
-//            case .summary:
-//                return true
-//            case .complete:
-//                return true
-            }
-        }
-        
     }
     
     enum Action {
         case welcome(WelcomeFeature.Action)
         case nameInput(NameInputFeature.Action)
+        case timeSetting(TimeSettingFeature.Action)
         case nextStep
         case previousStep
-
     }
     
     var body: some ReducerOf<Self> {
@@ -76,13 +45,24 @@ struct OnboardingFeature {
                 return .send(.nextStep)
                 
             case .nameInput(.nextTapped):
-                // 이름 저장
                 if let name = state.nameInput?.name {
                     state.onboardingData.userName = name
                 }
                 return .send(.nextStep)
                 
             case .nameInput(.backTapped):
+                return .send(.previousStep)
+                
+            case .timeSetting(.nextTapped):
+                if let leaveTime = state.timeSetting?.leaveTime {
+                    state.onboardingData.leaveHomeTime = leaveTime
+                }
+                if let returnTime = state.timeSetting?.returnTime {
+                    state.onboardingData.returnHomeTime = returnTime
+                }
+                return .send(.nextStep)
+                
+            case .timeSetting(.backTapped):
                 return .send(.previousStep)
                 
             case .nextStep:
@@ -93,33 +73,46 @@ struct OnboardingFeature {
                     state.nameInput = NameInputFeature.State()
                     
                 case .nameInput:
-                    // 다음 단계 준비
-                    print("다음 단계로")
+                    state.nameInput = nil
+                    state.currentStep = .timeSetting
+                    state.timeSetting = TimeSettingFeature.State()
+                    
+                case .timeSetting:
+                    print("다음 단계로 (아직 미구현)")
                 }
                 return .none
                 
             case .previousStep:
                 switch state.currentStep {
                 case .welcome:
-                    // Welcome은 첫 화면이므로 뒤로 갈 곳 없음
                     return .none
                     
                 case .nameInput:
                     state.nameInput = nil
                     state.currentStep = .welcome
                     state.welcome = WelcomeFeature.State()
+                    
+                case .timeSetting:
+                    state.timeSetting = nil
+                    state.currentStep = .nameInput
+                    state.nameInput = NameInputFeature.State(
+                        name: state.onboardingData.userName
+                    )
                 }
                 return .none
                 
-            case .welcome, .nameInput:
+            case .welcome, .nameInput, .timeSetting:
                 return .none
             }
         }
-         .ifLet(\.welcome, action: \.welcome) {
-             WelcomeFeature()
-         }
-         .ifLet(\.nameInput, action: \.nameInput) {
-             NameInputFeature()
-         }
-     }
+        .ifLet(\.welcome, action: \.welcome) {
+            WelcomeFeature()
+        }
+        .ifLet(\.nameInput, action: \.nameInput) {
+            NameInputFeature()
+        }
+        .ifLet(\.timeSetting, action: \.timeSetting) {
+            TimeSettingFeature()
+        }
+    }
 }
