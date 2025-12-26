@@ -20,7 +20,7 @@ struct OnboardingFeature {
         var timeSetting: TimeSettingFeature.State?
         var usageDuration: UsageDurationFeature.State?
         var contentSelection: ContentSelectionFeature.State?
-        var showFileUpload = false
+        var fileUpload: FileUploadFeature.State?  // ← 추가
         var showCategorySelection = false
         
         enum Step: Int {
@@ -29,6 +29,7 @@ struct OnboardingFeature {
             case timeSetting = 2
             case usageDuration = 3
             case contentSelection = 4
+            case fileUpload = 5
         }
         
         init() {
@@ -42,9 +43,9 @@ struct OnboardingFeature {
         case timeSetting(TimeSettingFeature.Action)
         case usageDuration(UsageDurationFeature.Action)
         case contentSelection(ContentSelectionFeature.Action)
+        case fileUpload(FileUploadFeature.Action)
         case nextStep
         case previousStep
-        case backFromFileUpload
         case backFromCategorySelection
     }
     
@@ -90,7 +91,8 @@ struct OnboardingFeature {
                     
                     // 분기 처리
                     if type == .fileUpload {
-                        state.showFileUpload = true
+                        state.contentSelection = nil
+                        state.fileUpload = FileUploadFeature.State()
                     } else {
                         state.showCategorySelection = true
                     }
@@ -100,8 +102,17 @@ struct OnboardingFeature {
             case .contentSelection(.backTapped):
                 return .send(.previousStep)
                 
-            case .backFromFileUpload:
-                state.showFileUpload = false
+            // FileUpload 액션 처리 추가
+            case .fileUpload(.backTapped):
+                state.fileUpload = nil
+                state.contentSelection = ContentSelectionFeature.State()
+                return .none
+                
+            case .fileUpload(.nextTapped):
+                if let fileURL = state.fileUpload?.selectedFileURL {
+                    state.onboardingData.uploadedFileURL = fileURL
+                }
+                // TODO: 다음 화면으로 이동 (온보딩 완료 등)
                 return .none
                 
             case .backFromCategorySelection:
@@ -132,6 +143,9 @@ struct OnboardingFeature {
                     
                 case .contentSelection:
                     return .none
+                    
+                case .fileUpload:
+                    return .none
                 }
                 return .none
                 
@@ -161,10 +175,13 @@ struct OnboardingFeature {
                     state.contentSelection = nil
                     state.currentStep = .usageDuration
                     state.usageDuration = UsageDurationFeature.State()
+                    
+                case .fileUpload:
+                    return .none
                 }
                 return .none
                 
-            case .welcome, .nameInput, .timeSetting, .usageDuration, .contentSelection:
+            case .welcome, .nameInput, .timeSetting, .usageDuration, .contentSelection, .fileUpload:
                 return .none
             }
         }
@@ -182,6 +199,9 @@ struct OnboardingFeature {
         }
         .ifLet(\.contentSelection, action: \.contentSelection) {
             ContentSelectionFeature()
+        }
+        .ifLet(\.fileUpload, action: \.fileUpload) {
+            FileUploadFeature()
         }
     }
 }

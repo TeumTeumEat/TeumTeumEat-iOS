@@ -13,11 +13,7 @@ struct OnboardingView: View {
     
     var body: some View {
         Group {
-            if store.showFileUpload {
-                FileUploadView {
-                    store.send(.backFromFileUpload)
-                }
-            } else if store.showCategorySelection {
+            if store.showCategorySelection {
                 CategorySelectionView {
                     store.send(.backFromCategorySelection)
                 }
@@ -31,6 +27,8 @@ struct OnboardingView: View {
                 UsageDurationView(store: durationStore)
             } else if let contentStore = store.scope(state: \.contentSelection, action: \.contentSelection) {
                 ContentSelectionView(store: contentStore)
+            } else if let fileUploadStore = store.scope(state: \.fileUpload, action: \.fileUpload) { 
+                FileUploadView(store: fileUploadStore)
             }
         }
     }

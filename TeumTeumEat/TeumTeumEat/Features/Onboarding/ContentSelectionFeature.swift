@@ -146,16 +146,67 @@ struct ContentSelectionView: View {
     }
 }
 
+import ComposableArchitecture
+import SwiftUI
+import UniformTypeIdentifiers
 
+@Reducer
+struct FileUploadFeature {
+    @ObservableState
+    struct State: Equatable {
+        var selectedFileURL: URL?
+        var selectedFileName: String?
+        var isFileImporterPresented = false
+        
+        var canProceed: Bool {
+            selectedFileURL != nil
+        }
+    }
+    
+    enum Action {
+        case backTapped
+        case fileUploadButtonTapped
+        case fileSelected(URL?)
+        case fileImporterDismissed
+        case nextTapped
+    }
+    
+    var body: some ReducerOf<Self> {
+        Reduce { state, action in
+            switch action {
+            case .backTapped:
+                return .none
+                
+            case .fileUploadButtonTapped:
+                state.isFileImporterPresented = true
+                return .none
+                
+            case let .fileSelected(url):
+                state.selectedFileURL = url
+                state.selectedFileName = url?.lastPathComponent
+                state.isFileImporterPresented = false
+                return .none
+                
+            case .fileImporterDismissed:
+                state.isFileImporterPresented = false
+                return .none
+                
+            case .nextTapped:
+                // TODO: 다음 화면으로 이동 로직
+                return .none
+            }
+        }
+    }
+}
 
 struct FileUploadView: View {
-    let onBack: () -> Void
+    let store: StoreOf<FileUploadFeature>
     
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
             HStack(spacing: 16) {
                 Button {
-                    onBack()
+                    store.send(.backTapped)
                 } label: {
                     Image(systemName: "chevron.left")
                         .font(.headline)
@@ -164,18 +215,87 @@ struct FileUploadView: View {
                         .contentShape(Rectangle())
                 }
                 
-                Spacer()
+                TTEProgressBar(
+                    currentStep: 4,
+                    totalSteps: 5,
+                    height: 15
+                )
             }
             .padding(.horizontal, 24)
-            .padding(.top, 16)
+            
+            ScrollView {
+                VStack(spacing: 0) {
+                    Text("원하는 PDF 자료를 넣으세요!")
+                        .titleSemibold18()
+                    
+                    Image("pose=front")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 200)
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 80)
+                        .padding(.top, 20)
+                    
+                    // 파일 업로드 버튼
+                    TTECategoryButton(
+                        icon: Image("files"),
+                        title: store.selectedFileName ?? "파일 업로드",
+                        subtitle: store.selectedFileName != nil
+                            ? "파일이 선택되었어요"
+                            : "PDF 파일을\n업로드해요",
+                        isSelected: store.selectedFileURL != nil,
+                        width: 300,
+                        height: 200
+                    ) {
+                        store.send(.fileUploadButtonTapped)
+                    }
+                    .padding(.top, 56.33)
+                    
+                    // 선택된 파일 정보 표시 (옵션)
+                    if let fileName = store.selectedFileName {
+                        HStack {
+                            Image(systemName: "doc.fill")
+                                .foregroundColor(.blue)
+                            Text(fileName)
+                                .bodyRegular14()
+                                .foregroundColor(._7_A_7_A_7_A)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 30)
+                        .padding(.top, 16)
+                    }
+                }
+                .padding(.top, 60)
+            }
+            .scrollDismissesKeyboard(.interactively)
             
             Spacer()
             
-            Text("파일 업로드 화면")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            
-            Spacer()
+            // 하단 다음 버튼
+            TTEButton(
+                title: "다음",
+                size: .large,
+                isEnabled: store.canProceed
+            ) {
+                store.send(.nextTapped)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 32)
+        }
+        .fileImporter(
+            isPresented: Binding(
+                get: { store.isFileImporterPresented },
+                set: { if !$0 { store.send(.fileImporterDismissed) } }
+            ),
+            allowedContentTypes: [.pdf],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                store.send(.fileSelected(urls.first))
+            case .failure:
+                store.send(.fileSelected(nil))
+            }
         }
     }
 }

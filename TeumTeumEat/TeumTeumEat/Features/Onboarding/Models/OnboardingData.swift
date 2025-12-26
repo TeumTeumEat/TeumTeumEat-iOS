@@ -13,6 +13,7 @@ struct OnboardingData: Equatable, Codable {
     var returnHomeTime: Date?
     var dailyUsageMinutes: Int = 0
     var contentType: ContentType = .category
+    var uploadedFileURL: URL?
     
     enum ContentType: String, Codable {
         case fileUpload
