@@ -65,44 +65,28 @@ struct UsageDurationView: View {
     let store: StoreOf<UsageDurationFeature>
     
     var body: some View {
-        ZStack {
-            Color.clear
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    hideKeyboard()
+        VStack(spacing: 0) {
+            HStack(spacing: 16) {
+                Button {
+                    store.send(.backTapped)
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                        .frame(width: 40, height: 40)
+                        .contentShape(Rectangle())
                 }
-            
-            VStack(spacing: 0) {
-                // 상단 네비게이션 영역
-                HStack(spacing: 16) {
-                    Button {
-                        store.send(.backTapped)
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                            .frame(width: 40, height: 40)
-                            .contentShape(Rectangle())
-                    }
-                    
-                    TTEProgressBar(
-                        currentStep: 3,
-                        totalSteps: 5,
-                        height: 15,
-                        showStepText: false
-                    )
-                    
-                    Text("3/5")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.gray)
-                        .padding(.leading, 10)
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
-                .padding(.bottom, 12)
                 
-                // 컨텐츠 영역
-                VStack(spacing: 24) {
+                TTEProgressBar(
+                    currentStep: 3,
+                    totalSteps: 5,
+                    height: 15
+                )
+            }
+            .padding(.horizontal, 24)
+            
+            ScrollView {
+                VStack(spacing: 0) {
                     Text("하루 몇 분 이용할 건가요?")
                         .titleSemibold18()
                     
@@ -112,9 +96,9 @@ struct UsageDurationView: View {
                         .frame(height: 200)
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 80)
+                        .padding(.top, 20)
                     
-                    // 시간 선택 버튼들 (세로로 4개)
-                    VStack(spacing: 12) {
+                    VStack(spacing: 16) {
                         DurationSelectButton(
                             text: "5분",
                             isSelected: store.selectedDuration == .five
@@ -144,28 +128,25 @@ struct UsageDurationView: View {
                         }
                     }
                     .padding(.horizontal, 20)
+                    .padding(.top, 56.33)
+                    .padding(.bottom, 72)
                 }
-                .padding(.top, 40)
-                
-                Spacer()
-                
-                // 하단 다음 버튼
-                Button {
-                    hideKeyboard()
-                    store.send(.nextTapped)
-                } label: {
-                    Text("다음")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                        .background(store.canProceed ? Color.blue : Color.gray)
-                        .cornerRadius(12)
-                }
-                .disabled(!store.canProceed)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 32)
+                .padding(.top, 60)
             }
+            .scrollDismissesKeyboard(.interactively)
+            
+            Spacer()
+            
+            // 하단 다음 버튼
+            TTEButton(
+                title: "다음",
+                size: .large,
+                isEnabled: store.canProceed
+            ) {
+                store.send(.nextTapped)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 32)
         }
     }
 }
