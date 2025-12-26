@@ -157,17 +157,19 @@ struct FileUploadFeature {
         var selectedFileURL: URL?
         var selectedFileName: String?
         var isFileImporterPresented = false
+        var errorMessage: String?  // ← 추가
         
         var canProceed: Bool {
-            selectedFileURL != nil
+            selectedFileURL != nil && errorMessage == nil
         }
     }
     
     enum Action {
         case backTapped
         case fileUploadButtonTapped
-        case fileSelected(URL?)
+        case fileSelected(Result<[URL], Error>)
         case fileImporterDismissed
+        case dismissError
         case nextTapped
     }
     
@@ -179,25 +181,72 @@ struct FileUploadFeature {
                 
             case .fileUploadButtonTapped:
                 state.isFileImporterPresented = true
+                state.errorMessage = nil  // 에러 초기화
                 return .none
                 
-            case let .fileSelected(url):
-                state.selectedFileURL = url
-                state.selectedFileName = url?.lastPathComponent
+            case let .fileSelected(result):
                 state.isFileImporterPresented = false
+                
+                switch result {
+                case .success(let urls):
+                    guard let url = urls.first else {
+                        state.errorMessage = "파일을 선택해주세요"
+                        return .none
+                    }
+                    
+                    // 파일 크기 체크
+                    do {
+                        let fileSize = try url.fileSize()
+                        let maxSize: Int64 = 50 * 1024 * 1024  // 50MB
+                        
+                        if fileSize > maxSize {
+                            state.errorMessage = "파일 크기는 50MB 이하여야 합니다"
+                            state.selectedFileURL = nil
+                            state.selectedFileName = nil
+                            return .none
+                        }
+                        
+                        // 성공
+                        state.selectedFileURL = url
+                        state.selectedFileName = url.lastPathComponent
+                        state.errorMessage = nil
+                        
+                    } catch {
+                        state.errorMessage = "파일 정보를 읽을 수 없습니다"
+                        state.selectedFileURL = nil
+                        state.selectedFileName = nil
+                    }
+                    
+                case .failure:
+                    state.errorMessage = "파일 선택에 실패했습니다"
+                    state.selectedFileURL = nil
+                    state.selectedFileName = nil
+                }
+                
                 return .none
                 
             case .fileImporterDismissed:
                 state.isFileImporterPresented = false
                 return .none
                 
+            case .dismissError:
+                state.errorMessage = nil
+                return .none
+                
             case .nextTapped:
-                // TODO: 다음 화면으로 이동 로직
                 return .none
             }
         }
     }
 }
+
+extension URL {
+    func fileSize() throws -> Int64 {
+        let attributes = try FileManager.default.attributesOfItem(atPath: self.path)
+        return attributes[.size] as? Int64 ?? 0
+    }
+}
+
 
 struct FileUploadView: View {
     let store: StoreOf<FileUploadFeature>
@@ -242,7 +291,7 @@ struct FileUploadView: View {
                         title: store.selectedFileName ?? "파일 업로드",
                         subtitle: store.selectedFileName != nil
                             ? "파일이 선택되었어요"
-                            : "PDF 파일을\n업로드해요",
+                            : "PDF 파일을\n업로드해요\n(최대 50MB)",
                         isSelected: store.selectedFileURL != nil,
                         width: 300,
                         height: 200
@@ -251,11 +300,26 @@ struct FileUploadView: View {
                     }
                     .padding(.top, 56.33)
                     
-                    // 선택된 파일 정보 표시 (옵션)
-                    if let fileName = store.selectedFileName {
+                    // 에러 메시지 표시
+                    if let errorMessage = store.errorMessage {
                         HStack {
-                            Image(systemName: "doc.fill")
-                                .foregroundColor(.blue)
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .foregroundColor(.red)
+                            Text(errorMessage)
+                                .bodyRegular14()
+                                .foregroundColor(.red)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 30)
+                        .padding(.top, 16)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+                    
+                    // 선택된 파일 정보 표시
+                    if let fileName = store.selectedFileName, store.errorMessage == nil {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
                             Text(fileName)
                                 .bodyRegular14()
                                 .foregroundColor(._7_A_7_A_7_A)
@@ -263,6 +327,7 @@ struct FileUploadView: View {
                         }
                         .padding(.horizontal, 30)
                         .padding(.top, 16)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                 }
                 .padding(.top, 60)
@@ -290,11 +355,21 @@ struct FileUploadView: View {
             allowedContentTypes: [.pdf],
             allowsMultipleSelection: false
         ) { result in
-            switch result {
-            case .success(let urls):
-                store.send(.fileSelected(urls.first))
-            case .failure:
-                store.send(.fileSelected(nil))
+            store.send(.fileSelected(result))
+        }
+        .alert(
+            "파일 크기 초과",
+            isPresented: Binding(
+                get: { store.errorMessage != nil },
+                set: { if !$0 { store.send(.dismissError) } }
+            )
+        ) {
+            Button("확인") {
+                store.send(.dismissError)
+            }
+        } message: {
+            if let errorMessage = store.errorMessage {
+                Text(errorMessage)
             }
         }
     }
