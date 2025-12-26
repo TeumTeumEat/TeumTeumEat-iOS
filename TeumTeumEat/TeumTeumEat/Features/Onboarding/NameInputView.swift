@@ -13,18 +13,9 @@ struct NameInputView: View {
     @FocusState private var isNameFieldFocused: Bool
     
     var body: some View {
-        ZStack {
-            // 배경 탭 영역
-            Color.clear
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    hideKeyboard()
-                }
-            
+        GeometryReader { geometry in
             VStack(spacing: 0) {
-                // 상단 네비게이션 영역
                 HStack(spacing: 16) {
-                    // 뒤로가기 버튼
                     Button {
                         store.send(.backTapped)
                     } label: {
@@ -35,64 +26,90 @@ struct NameInputView: View {
                             .contentShape(Rectangle())
                     }
                     
-                    // Progress Bar
                     TTEProgressBar(
                         currentStep: 1,
                         totalSteps: 5,
-                        height: 15,
-                        showStepText: false
+                        height: 15
                     )
-                    
-                    // Step Text
-                    Text("1/5")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.gray)
-                        .padding(.leading, 10)
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 16)
-                .padding(.bottom, 12)
                 
-                // 컨텐츠 영역
-                VStack(spacing: 24) {
-                    Text("널 뭐라고 불러줄까?")
-                        .titleSemibold18()
-                
-                    Image("pose=front")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 200)
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 80)
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            Text("널 뭐라고 불러줄까?")
+                                .titleSemibold18()
+                        
+                            Image("pose=front")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 200)
+                                .frame(maxWidth: .infinity)
+                                .padding(.horizontal, 80)
+                                .padding(.top, 20)
 
-                    TTETextField(
-                        text: Binding(
-                            get: { store.name },
-                            set: { store.send(.nameChanged($0)) }
-                        ),
-                        placeholder: "이름을 입력하세요"
-                    )
-                    .padding(.horizontal, 30)
+                            VStack(spacing: 8) {
+                                TTETextField(
+                                    text: Binding(
+                                        get: { store.name },
+                                        set: { store.send(.nameChanged($0)) }
+                                    ),
+                                    placeholder: "이름을 입력하세요",
+                                    allowSpaces: false
+                                )
+                                .focused($isNameFieldFocused)
+                                .submitLabel(.done)
+                                .onSubmit {
+                                    isNameFieldFocused = false
+                                }
+                                .padding(.horizontal, 30)
+                                
+                                // 유효성 검사 에러 메시지
+                                if let errorMessage = store.validationError {
+                                    HStack {
+                                        Text(errorMessage)
+                                            .font(.system(size: 12, weight: .regular))
+                                            .foregroundColor(.red)
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 30)
+                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                                }
+                            }
+                            .padding(.top, 56.33)
+                            .id("textField")
+                            
+                            // 키보드 높이만큼만 여유 공간 확보
+                            Color.clear
+                                .frame(height: isNameFieldFocused ? geometry.size.height * 0.4 : 0)
+                        }
+                        .padding(.top, 60)
+                    }
+                    .scrollDismissesKeyboard(.interactively)
+                    .onTapGesture {
+                        isNameFieldFocused = false
+                    }
+                    .onChange(of: isNameFieldFocused) { _, isFocused in
+                        if isFocused {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                proxy.scrollTo("textField", anchor: .center)
+                            }
+                        }
+                    }
                 }
-                .padding(.top, 40)
                 
                 Spacer()
                 
-                Button {
-                    hideKeyboard()
+                TTEButton(
+                    title: "다음으로",
+                    size: .large,
+                    isEnabled: store.canProceed
+                ) {
+                    isNameFieldFocused = false
                     store.send(.nextTapped)
-                } label: {
-                    Text("다음")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                        .background(store.canProceed ? Color.blue : Color.gray)
-                        .cornerRadius(12)
                 }
-                .disabled(!store.canProceed)
-                .padding(.horizontal, 20)
                 .padding(.bottom, 32)
+                .padding(.horizontal, 20)
             }
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)

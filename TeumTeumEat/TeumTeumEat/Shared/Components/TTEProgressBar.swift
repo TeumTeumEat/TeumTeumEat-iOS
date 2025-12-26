@@ -40,16 +40,7 @@ struct TTEProgressBar: View {
     }
     
     var body: some View {
-        VStack(spacing: 10) {
-            if showStepText {
-                HStack {
-                    Text("\(currentStep) / \(totalSteps)")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.gray)
-                    Spacer()
-                }
-            }
-            
+        HStack(spacing: 16) {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     // 배경 바
@@ -68,6 +59,12 @@ struct TTEProgressBar: View {
                 }
             }
             .frame(height: height)
+            
+            if showStepText {
+                Text("\(currentStep)/\(totalSteps)")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.gray)
+            }
         }
     }
 }

@@ -15,6 +15,7 @@ struct TTETextField: View {
     let borderColor: Color
     let borderWidth: CGFloat
     let cornerRadius: CGFloat
+    let allowSpaces: Bool
     
     init(
         text: Binding<String>,
@@ -23,7 +24,8 @@ struct TTETextField: View {
         height: CGFloat = 50,
         borderColor: Color = Color(hex: "C4C4C4"),
         borderWidth: CGFloat = 1,
-        cornerRadius: CGFloat = 16
+        cornerRadius: CGFloat = 16,
+        allowSpaces: Bool = true
     ) {
         self._text = text
         self.placeholder = placeholder
@@ -32,6 +34,7 @@ struct TTETextField: View {
         self.borderColor = borderColor
         self.borderWidth = borderWidth
         self.cornerRadius = cornerRadius
+        self.allowSpaces = allowSpaces
     }
     
     var body: some View {
@@ -40,9 +43,21 @@ struct TTETextField: View {
             TextField(placeholder, text: $text)
                 .multilineTextAlignment(.center)
                 .onChange(of: text) { oldValue, newValue in
+                    var filteredText = newValue
+                    
+                    // 공백 제거 (allowSpaces가 false일 때)
+                    if !allowSpaces {
+                        filteredText = filteredText.replacingOccurrences(of: " ", with: "")
+                    }
+                    
                     // 최대 글자수 제한
-                    if newValue.count > maxLength {
-                        text = String(newValue.prefix(maxLength))
+                    if filteredText.count > maxLength {
+                        filteredText = String(filteredText.prefix(maxLength))
+                    }
+                    
+                    // 변경된 값이 있으면 업데이트
+                    if filteredText != newValue {
+                        text = filteredText
                     }
                 }
             
