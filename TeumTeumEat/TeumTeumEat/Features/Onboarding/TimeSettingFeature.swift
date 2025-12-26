@@ -16,6 +16,7 @@ struct TimeSettingFeature {
         var returnTime: Date?
         var isLeaveTimePickerPresented = false
         var isReturnTimePickerPresented = false
+        var enableAlarm: Bool = false
         
         var canProceed: Bool {
             leaveTime != nil && returnTime != nil
@@ -48,6 +49,7 @@ struct TimeSettingFeature {
         case returnTimePickerDismissed
         case nextTapped
         case backTapped
+        case alarmToggleTapped
     }
     
     var body: some ReducerOf<Self> {
@@ -81,6 +83,9 @@ struct TimeSettingFeature {
                 return .none
                 
             case .backTapped:
+                return .none
+            case .alarmToggleTapped:
+                state.enableAlarm.toggle()
                 return .none
             }
         }
