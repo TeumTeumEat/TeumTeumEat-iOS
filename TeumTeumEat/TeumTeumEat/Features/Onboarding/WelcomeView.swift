@@ -12,31 +12,22 @@ struct WelcomeView: View {
     let store: StoreOf<WelcomeFeature>
     
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
             Spacer()
-                .frame(height: 100)
             
             Text("서비스 소개애애애애")
                 .titleSemibold18()
-            
-            Spacer()
+                .padding(.bottom, 107)
             
             Image("pose=front")
+                .frame(maxWidth: .infinity)
                 .frame(height: 244)
                 .padding(.horizontal, 30)
             
-            Spacer() 
-            
-            Button {
+            Spacer()
+                
+            TTEButton(title: "시작하기", size: .large) {
                 store.send(.startOnboardingTapped)
-            } label: {
-                Text("시작하기")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 60)
-                    .background(Color.blue)
-                    .cornerRadius(12)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
