@@ -15,84 +15,43 @@ struct TimePickerModal: View {
     @State private var tempTime: Date = Date()
     
     var body: some View {
-        VStack(spacing: 0) {
-            // 헤더
-            HStack {
-                Button("취소") {
-                    onDismiss()
+        NavigationStack {
+            VStack {
+                DatePicker(
+                    "",
+                    selection: $tempTime,
+                    displayedComponents: .hourAndMinute
+                )
+                .datePickerStyle(.wheel)
+                .labelsHidden()
+                .environment(\.locale, Locale(identifier: "ko_KR"))
+                .padding()
+                
+                Spacer()
+            }
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        onDismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.gray)
+                    }
                 }
-                .foregroundColor(.gray)
-                
-                Spacer()
-                
-                Text(title)
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                
-                Spacer()
-                
-                Button("확인") {
-                    selectedTime = tempTime
-                    onDismiss()
+            }
+            .onAppear {
+                if let time = selectedTime {
+                    tempTime = time
                 }
-                .foregroundColor(.blue)
             }
-            .padding()
-            .background(Color.white)
-            
-            Divider()
-            
-            DatePicker(
-                "",
-                selection: $tempTime,
-                displayedComponents: .hourAndMinute
-            )
-            .datePickerStyle(.wheel)
-            .labelsHidden()
-            .environment(\.locale, Locale(identifier: "ko_KR"))
-            .padding()
-            
-            Spacer()
-        }
-        .frame(height: 350)
-        .background(Color.white)
-        .cornerRadius(20, corners: [.topLeft, .topRight])
-        .onAppear {
-            if let time = selectedTime {
-                tempTime = time
+            .onDisappear {
+                selectedTime = tempTime
             }
         }
-    }
-}
-
-
-struct TimeSelectionButton: View {
-    let label: String
-    let timeText: String
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack {
-                Text(label)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Text(timeText)
-                    .font(.system(size: 16))
-                    .foregroundColor(isSelected ? .primary : .gray)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .background(Color.white)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
-            )
-            .cornerRadius(12)
-        }
+        .presentationDetents([.height(270)])
+        .presentationDragIndicator(.visible)
     }
 }
