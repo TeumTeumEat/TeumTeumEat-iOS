@@ -33,6 +33,8 @@ struct OnboardingView: View {
                 DurationSelectionView(store: durationSelectionStore)
             } else if let summaryStore = store.scope(state: \.summary, action: \.summary) {
                 OnboardingSummaryView(store: summaryStore)
+            } else if let loadingStore = store.scope(state: \.loading, action: \.loading) { 
+                OnboardingLoadingView(store: loadingStore)
             }
         }
     }
