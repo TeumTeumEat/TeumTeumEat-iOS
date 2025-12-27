@@ -25,8 +25,10 @@ struct OnboardingView: View {
                 ContentSelectionView(store: contentStore)
             } else if let fileUploadStore = store.scope(state: \.fileUpload, action: \.fileUpload) {
                 FileUploadView(store: fileUploadStore)
-            } else if let categoryStore = store.scope(state: \.categorySelection, action: \.categorySelection) { 
+            } else if let categoryStore = store.scope(state: \.categorySelection, action: \.categorySelection) {
                 CategorySelectionView(store: categoryStore)
+            } else if let durationSelectionStore = store.scope(state: \.durationSelection, action: \.durationSelection) { 
+                DurationSelectionView(store: durationSelectionStore)
             }
         }
     }

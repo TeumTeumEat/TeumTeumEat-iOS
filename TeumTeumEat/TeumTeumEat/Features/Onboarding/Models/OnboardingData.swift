@@ -14,7 +14,8 @@ struct OnboardingData: Equatable, Codable {
     var dailyUsageMinutes: Int = 0
     var contentType: ContentType = .category
     var uploadedFileURL: URL?
-    var selectedCategories: [Category] = [] 
+    var selectedCategories: [Category] = []
+    var programWeeks: Int = 1
     
     enum ContentType: String, Codable {
         case fileUpload
