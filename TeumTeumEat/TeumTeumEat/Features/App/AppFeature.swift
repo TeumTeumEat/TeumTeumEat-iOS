@@ -13,6 +13,7 @@ struct AppFeature {
     struct State: Equatable {
         var splash: SplashFeature.State = .init()
         var onboarding: OnboardingFeature.State?
+        var termsAgreement: TermsAgreementFeature.State?
         var mainTab: MainTabFeature.State?
         var isShowingSplash = true
     }
@@ -20,6 +21,8 @@ struct AppFeature {
     enum Action {
         case splash(SplashFeature.Action)
         case splashCompleted
+        case login(LoginFeature.Action)
+        case termsAgreement(TermsAgreementFeature.Action)
         case onboarding(OnboardingFeature.Action)
         case mainTab(MainTabFeature.Action)
     }
@@ -43,6 +46,19 @@ struct AppFeature {
                     // 토큰 없음 → 로그인 화면
                     state.login = LoginFeature.State()
                 }
+                return .none
+            
+            // LoginFeature Delegate 처리 추가
+            case .login(.delegate(.loginSuccess)):
+                // 기존 유저 로그인 성공 → 메인 화면
+                state.login = nil
+                state.mainTab = MainTabFeature.State()
+                return .none
+                
+            case .login(.delegate(.signUpRequired)):
+                // 신규 유저 → 약관 동의 화면으로
+                state.login = nil
+                state.termsAgreement = TermsAgreementFeature.State()
                 return .none
                 
             case .splash, .login, .onboarding, .mainTab:
