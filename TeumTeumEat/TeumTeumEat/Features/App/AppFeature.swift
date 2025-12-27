@@ -13,6 +13,7 @@ struct AppFeature {
     struct State: Equatable {
         var splash: SplashFeature.State = .init()
         var onboarding: OnboardingFeature.State?
+        var mainTab: MainTabFeature.State?
         var isShowingSplash = true
     }
     
@@ -20,6 +21,7 @@ struct AppFeature {
         case splash(SplashFeature.Action)
         case splashCompleted
         case onboarding(OnboardingFeature.Action)
+        case mainTab(MainTabFeature.Action)
     }
     
     var body: some ReducerOf<Self> {
@@ -29,18 +31,32 @@ struct AppFeature {
         
         Reduce { state, action in
             switch action {
-            case .splash(.checkAuthenticationComplete):
+            case .splash(.authenticationChecked(let authState)):
                 state.isShowingSplash = false
-                state.onboarding = OnboardingFeature.State()
-                return .send(.splashCompleted)
-            case .splashCompleted:
+                
+                switch authState {
+                case .authenticated:
+                    // 토큰 있음 → 메인 화면
+                    state.mainTab = MainTabFeature.State()
+                    
+                case .unauthenticated:
+                    // 토큰 없음 → 로그인 화면
+                    state.login = LoginFeature.State()
+                }
                 return .none
-            case .splash, .onboarding:
+                
+            case .splash, .login, .onboarding, .mainTab:
                 return .none
             }
         }
+        .ifLet(\.login, action: \.login) {
+            LoginFeature()
+        }
         .ifLet(\.onboarding, action: \.onboarding) {
             OnboardingFeature()
+        }
+        .ifLet(\.mainTab, action: \.mainTab) {
+            MainTabFeature()
         }
     }
 }
