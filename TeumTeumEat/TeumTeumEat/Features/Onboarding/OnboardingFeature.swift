@@ -24,6 +24,7 @@ struct OnboardingFeature {
         var categorySelection: CategorySelectionFeature.State?
         var difficultySelection: DifficultySelectionFeature.State?
         var durationSelection: DurationSelectionFeature.State?
+        var summary: OnboardingSummaryFeature.State?
         
         enum Step: Int {
             case welcome = 0
@@ -35,6 +36,7 @@ struct OnboardingFeature {
             case categorySelection = 6
             case difficultySelection = 7
             case durationSelection = 8
+            case summary = 9
         }
         
         init() {
@@ -52,6 +54,7 @@ struct OnboardingFeature {
         case categorySelection(CategorySelectionFeature.Action)
         case difficultySelection(DifficultySelectionFeature.Action)
         case durationSelection(DurationSelectionFeature.Action)
+        case summary(OnboardingSummaryFeature.Action)
         case nextStep
         case previousStep
     }
@@ -84,6 +87,9 @@ struct OnboardingFeature {
             }
             .ifLet(\.durationSelection, action: \.durationSelection) {
                 DurationSelectionFeature()
+            }
+            .ifLet(\.summary, action: \.summary) {
+                OnboardingSummaryFeature()
             }
     }
     
@@ -217,19 +223,47 @@ struct OnboardingFeature {
         // DurationSelection
         case .durationSelection(.backTapped):
             state.durationSelection = nil
-            state.difficultySelection = DifficultySelectionFeature.State()
-            // 이전 선택 복원
-            if let difficulty = DifficultySelectionFeature.State.Difficulty(rawValue: state.onboardingData.difficulty ?? "") {
-                state.difficultySelection?.selectedDifficulty = difficulty
-            }
-            return .none
             
+            // 로컬 변수로 복사
+            let difficulty = state.onboardingData.difficulty
+            let customPrompt = state.onboardingData.customPrompt
+            
+            state.difficultySelection = DifficultySelectionFeature.State()
+            
+            // 이전 선택 복원
+            if let difficultyValue = difficulty,
+               let selectedDifficulty = DifficultySelectionFeature.State.Difficulty(rawValue: difficultyValue) {
+                state.difficultySelection?.selectedDifficulty = selectedDifficulty
+            }
+            state.difficultySelection?.customPrompt = customPrompt
+            
+            return .none
         case .durationSelection(.nextTapped):
             if let weeks = state.durationSelection?.selectedWeeks {
                 state.onboardingData.programWeeks = weeks.rawValue
             }
+            state.durationSelection = nil
+            state.summary = OnboardingSummaryFeature.State(
+                leaveHomeTime: state.onboardingData.leaveHomeTime,
+                returnHomeTime: state.onboardingData.returnHomeTime,
+                dailyUsageMinutes: state.onboardingData.dailyUsageMinutes,
+                programWeeks: state.onboardingData.programWeeks
+            )
+            return .none
+            
+        case .summary(.backTapped):
+            state.summary = nil
+            state.durationSelection = DurationSelectionFeature.State()
+            // 이전 선택 복원
+            if let weeks = DurationSelectionFeature.State.Weeks(rawValue: state.onboardingData.programWeeks) {
+                state.durationSelection?.selectedWeeks = weeks
+            }
+            return .none
+            
+        case .summary(.completeTapped):
             print("온보딩 완료!")
             print("수집된 데이터: \(state.onboardingData)")
+            // TODO: 온보딩 완료 처리 (메인 화면으로 이동 등)
             return .none
             
         // NextStep
@@ -255,7 +289,7 @@ struct OnboardingFeature {
                 state.currentStep = .contentSelection
                 state.contentSelection = ContentSelectionFeature.State()
                 
-            case .contentSelection, .fileUpload, .categorySelection, .difficultySelection, .durationSelection:
+            case .contentSelection, .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary:
                 break
             }
             return .none
@@ -288,13 +322,13 @@ struct OnboardingFeature {
                 state.currentStep = .usageDuration
                 state.usageDuration = UsageDurationFeature.State()
                 
-            case .fileUpload, .categorySelection, .difficultySelection, .durationSelection:
+            case .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary:
                 break
             }
             return .none
             
         // Default
-        case .welcome, .nameInput, .timeSetting, .usageDuration, .contentSelection, .fileUpload, .categorySelection, .difficultySelection, .durationSelection:
+        case .welcome, .nameInput, .timeSetting, .usageDuration, .contentSelection, .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary:
             return .none
         }
     }
