@@ -27,10 +27,16 @@ struct OnboardingView: View {
                 FileUploadView(store: fileUploadStore)
             } else if let categoryStore = store.scope(state: \.categorySelection, action: \.categorySelection) {
                 CategorySelectionView(store: categoryStore)
-            } else if let difficultyStore = store.scope(state: \.difficultySelection, action: \.difficultySelection) {  // ← 추가
+            } else if let difficultyStore = store.scope(state: \.difficultySelection, action: \.difficultySelection) {
                 DifficultySelectionView(store: difficultyStore)
             } else if let durationSelectionStore = store.scope(state: \.durationSelection, action: \.durationSelection) {
                 DurationSelectionView(store: durationSelectionStore)
+            } else if let summaryStore = store.scope(state: \.summary, action: \.summary) {
+                OnboardingSummaryView(store: summaryStore)
+            } else if let loadingStore = store.scope(state: \.loading, action: \.loading) {
+                OnboardingLoadingView(store: loadingStore)
+            } else if let completeStore = store.scope(state: \.complete, action: \.complete) {
+                OnboardingCompleteView(store: completeStore)
             }
         }
     }

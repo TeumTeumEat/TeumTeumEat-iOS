@@ -14,7 +14,7 @@ struct DifficultySelectionFeature {
     struct State: Equatable {
         var selectedDifficulty: Difficulty?
         var isDifficultyPickerPresented = false
-        var customPrompt: String = ""  // ← 추가
+        var customPrompt: String = ""
         
         var canProceed: Bool {
             selectedDifficulty != nil

@@ -1,51 +1,12 @@
 //
-//  ContentSelectionFeature.swift
+//  ContentSelectionView.swift
 //  TeumTeumEat
 //
-//  Created by 임재현 on 12/22/25.
+//  Created by 임재현 on 12/27/25.
 //
 
-import ComposableArchitecture
 import SwiftUI
-
-@Reducer
-struct ContentSelectionFeature {
-    @ObservableState
-    struct State: Equatable {
-        var selectedType: ContentType?
-        
-        var canProceed: Bool {
-            selectedType != nil
-        }
-        
-        enum ContentType {
-            case fileUpload
-            case category
-        }
-    }
-    
-    enum Action {
-        case contentTypeSelected(State.ContentType)
-        case nextTapped
-        case backTapped
-    }
-    
-    var body: some ReducerOf<Self> {
-        Reduce { state, action in
-            switch action {
-            case let .contentTypeSelected(type):
-                state.selectedType = type
-                return .none
-                
-            case .nextTapped:
-                return .none
-                
-            case .backTapped:
-                return .none
-            }
-        }
-    }
-}
+import ComposableArchitecture
 
 struct ContentSelectionView: View {
     let store: StoreOf<ContentSelectionFeature>
@@ -59,7 +20,6 @@ struct ContentSelectionView: View {
                 }
             
             VStack(spacing: 0) {
-                // 상단 네비게이션 영역
                 HStack(spacing: 16) {
                     Button {
                         store.send(.backTapped)
@@ -87,7 +47,6 @@ struct ContentSelectionView: View {
                 .padding(.top, 16)
                 .padding(.bottom, 12)
                 
-                // 컨텐츠 영역
                 VStack(spacing: 24) {
                     Text("학습 방법을 선택해주세요")
                         .titleSemibold18()
@@ -99,7 +58,6 @@ struct ContentSelectionView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 80)
                     
-                    // 콘텐츠 선택 버튼들
                     HStack(spacing: 16) {
                         TTECategoryButton(
                             icon: Image("files"),
@@ -125,7 +83,6 @@ struct ContentSelectionView: View {
                 
                 Spacer()
                 
-                // 하단 다음 버튼
                 Button {
                     hideKeyboard()
                     store.send(.nextTapped)
