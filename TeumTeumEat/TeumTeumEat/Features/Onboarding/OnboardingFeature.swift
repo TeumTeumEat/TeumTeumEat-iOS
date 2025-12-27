@@ -26,6 +26,7 @@ struct OnboardingFeature {
         var durationSelection: DurationSelectionFeature.State?
         var summary: OnboardingSummaryFeature.State?
         var loading: OnboardingLoadingFeature.State?
+        var complete: OnboardingCompleteFeature.State?
         
         enum Step: Int {
             case welcome = 0
@@ -39,6 +40,7 @@ struct OnboardingFeature {
             case durationSelection = 8
             case summary = 9
             case loading = 10
+            case complete = 11
         }
         
         init() {
@@ -58,6 +60,7 @@ struct OnboardingFeature {
         case durationSelection(DurationSelectionFeature.Action)
         case summary(OnboardingSummaryFeature.Action)
         case loading(OnboardingLoadingFeature.Action)
+        case complete(OnboardingCompleteFeature.Action)
         case nextStep
         case previousStep
     }
@@ -96,6 +99,9 @@ struct OnboardingFeature {
             }
             .ifLet(\.loading, action: \.loading) {
                 OnboardingLoadingFeature()
+            }
+            .ifLet(\.complete, action: \.complete) {
+                OnboardingCompleteFeature()
             }
     }
     
@@ -273,9 +279,17 @@ struct OnboardingFeature {
             return .none
             
         case .loading(.loadingCompleted):
-            print("온보딩 완료!")
-            print("수집된 데이터: \(state.onboardingData)")
-            // TODO: 메인 화면으로 이동
+            // Complete 화면으로 이동
+            state.loading = nil
+            state.complete = OnboardingCompleteFeature.State(
+                userName: state.onboardingData.userName
+            )
+            return .none
+            
+        case .complete(.startButtonTapped):
+            print("🎉 온보딩 완료!")
+            print("📊 수집된 데이터: \(state.onboardingData)")
+            // TODO: AppFeature로 완료 알림 → 메인 화면으로 이동
             return .none
             
         // NextStep
@@ -301,7 +315,7 @@ struct OnboardingFeature {
                 state.currentStep = .contentSelection
                 state.contentSelection = ContentSelectionFeature.State()
                 
-            case .contentSelection, .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary,.loading:
+            case .contentSelection, .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary,.loading, .complete:
                 break
             }
             return .none
@@ -334,13 +348,13 @@ struct OnboardingFeature {
                 state.currentStep = .usageDuration
                 state.usageDuration = UsageDurationFeature.State()
                 
-            case .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary,.loading:
+            case .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary,.loading,.complete:
                 break
             }
             return .none
             
         // Default
-        case .welcome, .nameInput, .timeSetting, .usageDuration, .contentSelection, .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary,.loading:
+        case .welcome, .nameInput, .timeSetting, .usageDuration, .contentSelection, .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary,.loading, .complete:
             return .none
         }
     }
