@@ -20,8 +20,8 @@ struct OnboardingFeature {
         var timeSetting: TimeSettingFeature.State?
         var usageDuration: UsageDurationFeature.State?
         var contentSelection: ContentSelectionFeature.State?
-        var fileUpload: FileUploadFeature.State?  // ← 추가
-        var showCategorySelection = false
+        var fileUpload: FileUploadFeature.State?
+        var categorySelection: CategorySelectionFeature.State?  
         
         enum Step: Int {
             case welcome = 0
@@ -30,6 +30,7 @@ struct OnboardingFeature {
             case usageDuration = 3
             case contentSelection = 4
             case fileUpload = 5
+            case categorySelection = 6
         }
         
         init() {
@@ -44,9 +45,9 @@ struct OnboardingFeature {
         case usageDuration(UsageDurationFeature.Action)
         case contentSelection(ContentSelectionFeature.Action)
         case fileUpload(FileUploadFeature.Action)
+        case categorySelection(CategorySelectionFeature.Action)
         case nextStep
         case previousStep
-        case backFromCategorySelection
     }
     
     var body: some ReducerOf<Self> {
@@ -94,7 +95,8 @@ struct OnboardingFeature {
                         state.contentSelection = nil
                         state.fileUpload = FileUploadFeature.State()
                     } else {
-                        state.showCategorySelection = true
+                        state.contentSelection = nil
+                        state.categorySelection = CategorySelectionFeature.State()
                     }
                 }
                 return .none
@@ -112,11 +114,20 @@ struct OnboardingFeature {
                 if let fileURL = state.fileUpload?.selectedFileURL {
                     state.onboardingData.uploadedFileURL = fileURL
                 }
-                // TODO: 다음 화면으로 이동 (온보딩 완료 등)
+                // TODO: 온보딩 완료 처리
                 return .none
                 
-            case .backFromCategorySelection:
-                state.showCategorySelection = false
+            // CategorySelection 액션 처리 추가
+            case .categorySelection(.backTapped):
+                state.categorySelection = nil
+                state.contentSelection = ContentSelectionFeature.State()
+                return .none
+                
+            case .categorySelection(.nextTapped):
+                if let categories = state.categorySelection?.selectedCategories {
+                    state.onboardingData.selectedCategories = Array(categories)
+                }
+                // TODO: 온보딩 완료 처리
                 return .none
                 
             case .nextStep:
@@ -145,6 +156,9 @@ struct OnboardingFeature {
                     return .none
                     
                 case .fileUpload:
+                    return .none
+                    
+                case .categorySelection:
                     return .none
                 }
                 return .none
@@ -178,10 +192,13 @@ struct OnboardingFeature {
                     
                 case .fileUpload:
                     return .none
+                    
+                case .categorySelection:
+                    return .none
                 }
                 return .none
                 
-            case .welcome, .nameInput, .timeSetting, .usageDuration, .contentSelection, .fileUpload:
+            case .welcome, .nameInput, .timeSetting, .usageDuration, .contentSelection, .fileUpload, .categorySelection:
                 return .none
             }
         }
@@ -202,6 +219,9 @@ struct OnboardingFeature {
         }
         .ifLet(\.fileUpload, action: \.fileUpload) {
             FileUploadFeature()
+        }
+        .ifLet(\.categorySelection, action: \.categorySelection) {
+            CategorySelectionFeature()
         }
     }
 }

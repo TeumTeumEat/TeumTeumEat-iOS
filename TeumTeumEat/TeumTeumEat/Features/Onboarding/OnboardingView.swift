@@ -13,11 +13,7 @@ struct OnboardingView: View {
     
     var body: some View {
         Group {
-            if store.showCategorySelection {
-                CategorySelectionView {
-                    store.send(.backFromCategorySelection)
-                }
-            } else if let welcomeStore = store.scope(state: \.welcome, action: \.welcome) {
+            if let welcomeStore = store.scope(state: \.welcome, action: \.welcome) {
                 WelcomeView(store: welcomeStore)
             } else if let nameStore = store.scope(state: \.nameInput, action: \.nameInput) {
                 NameInputView(store: nameStore)
@@ -29,6 +25,8 @@ struct OnboardingView: View {
                 ContentSelectionView(store: contentStore)
             } else if let fileUploadStore = store.scope(state: \.fileUpload, action: \.fileUpload) {
                 FileUploadView(store: fileUploadStore)
+            } else if let categoryStore = store.scope(state: \.categorySelection, action: \.categorySelection) { 
+                CategorySelectionView(store: categoryStore)
             }
         }
     }
