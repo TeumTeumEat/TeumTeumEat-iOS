@@ -13,7 +13,9 @@ struct TTECategoryButton: View {
     let subtitle: String
     let isSelected: Bool
     
-    // 커스텀 옵션
+    let width: CGFloat
+    let height: CGFloat
+    
     let customIconTint: Color?
     let customBorderColor: Color?
     let customSelectedBorderColor: Color?
@@ -25,6 +27,8 @@ struct TTECategoryButton: View {
         title: String,
         subtitle: String,
         isSelected: Bool = false,
+        width: CGFloat = 142,
+        height: CGFloat = 200,
         iconTint: Color? = ._7_A_7_A_7_A,
         borderColor: Color? = .C_8_C_8_C_8,
         selectedBorderColor: Color? = nil,
@@ -34,6 +38,8 @@ struct TTECategoryButton: View {
         self.title = title
         self.subtitle = subtitle
         self.isSelected = isSelected
+        self.width = width
+        self.height = height
         self.customIconTint = iconTint
         self.customBorderColor = borderColor
         self.customSelectedBorderColor = selectedBorderColor
@@ -70,7 +76,7 @@ struct TTECategoryButton: View {
                         .multilineTextAlignment(.center)
                 }
             }
-            .frame(width: 142, height: 200)
+            .frame(width: width, height: height)
             .background(Color.clear)
             .cornerRadius(16)
             .overlay(

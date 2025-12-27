@@ -5,13 +5,18 @@
 //  Created by 임재현 on 12/4/25.
 //
 
+import ComposableArchitecture
 import SwiftUI
 
 @main
 struct TeumTeumEatApp: App {
     var body: some Scene {
         WindowGroup {
-            MyView()
+            AppView(
+                store: Store(initialState: AppFeature.State()){
+                    AppFeature()
+                }
+            )
         }
     }
 }
