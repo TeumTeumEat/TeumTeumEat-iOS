@@ -67,6 +67,12 @@ struct OnboardingFeature {
     
     var body: some ReducerOf<Self> {
         Reduce(self.core)
+            .onChange(of: \.onboardingData) { oldValue, newValue in
+                Reduce { state, action in
+                    printOnboardingData(action: action, data: newValue)
+                    return .none
+                }
+            }
             .ifLet(\.welcome, action: \.welcome) {
                 WelcomeFeature()
             }
@@ -152,15 +158,31 @@ struct OnboardingFeature {
             
             if type == .fileUpload {
                 state.onboardingData.contentType = .fileUpload
+                // 카테고리 데이터 초기화
+                state.onboardingData.selectedCategories = []
             } else {
                 state.onboardingData.contentType = .category
+                // 파일 데이터 초기화
+                state.onboardingData.uploadedFileURL = nil
             }
             
             state.contentSelection = nil
             if type == .fileUpload {
-                state.fileUpload = FileUploadFeature.State()
+                // FileUpload State 생성 (복원)
+                var fileUploadState = FileUploadFeature.State()
+                if let url = state.onboardingData.uploadedFileURL {
+                    fileUploadState.selectedFileURL = url
+                    fileUploadState.selectedFileName = url.lastPathComponent
+                    if let fileSize = try? url.fileSize() {
+                        fileUploadState.selectedFileSize = fileSize
+                    }
+                }
+                state.fileUpload = fileUploadState
             } else {
-                state.categorySelection = CategorySelectionFeature.State()
+                // CategorySelection State 생성 (복원)
+                var categoryState = CategorySelectionFeature.State()
+                categoryState.selectedCategories = Set(state.onboardingData.selectedCategories)
+                state.categorySelection = categoryState
             }
             
             return .none
@@ -178,9 +200,18 @@ struct OnboardingFeature {
             if let fileURL = state.fileUpload?.selectedFileURL {
                 state.onboardingData.uploadedFileURL = fileURL
             }
-            // Difficulty 화면으로 이동
+            
             state.fileUpload = nil
-            state.difficultySelection = DifficultySelectionFeature.State()
+            
+            // Difficulty State 생성 (복원)
+            var difficultyState = DifficultySelectionFeature.State()
+            if let difficulty = state.onboardingData.difficulty,
+               let selectedDifficulty = DifficultySelectionFeature.State.Difficulty(rawValue: difficulty) {
+                difficultyState.selectedDifficulty = selectedDifficulty
+            }
+            difficultyState.customPrompt = state.onboardingData.customPrompt
+            state.difficultySelection = difficultyState
+            
             return .none
             
         // CategorySelection
@@ -193,9 +224,18 @@ struct OnboardingFeature {
             if let categories = state.categorySelection?.selectedCategories {
                 state.onboardingData.selectedCategories = Array(categories)
             }
-            // Difficulty 화면으로 이동
+            
             state.categorySelection = nil
-            state.difficultySelection = DifficultySelectionFeature.State()
+            
+            // Difficulty State 생성 (복원)
+            var difficultyState = DifficultySelectionFeature.State()
+            if let difficulty = state.onboardingData.difficulty,
+               let selectedDifficulty = DifficultySelectionFeature.State.Difficulty(rawValue: difficulty) {
+                difficultyState.selectedDifficulty = selectedDifficulty
+            }
+            difficultyState.customPrompt = state.onboardingData.customPrompt
+            state.difficultySelection = difficultyState
+            
             return .none
             
         // DifficultySelection
@@ -203,20 +243,21 @@ struct OnboardingFeature {
             state.difficultySelection = nil
             
             if state.onboardingData.contentType == .fileUpload {
-                // 파일 업로드로 돌아가기
-                state.fileUpload = FileUploadFeature.State()
+                // FileUpload State 생성 (복원)
+                var fileUploadState = FileUploadFeature.State()
                 if let url = state.onboardingData.uploadedFileURL {
-                    state.fileUpload?.selectedFileURL = url
-                    state.fileUpload?.selectedFileName = url.lastPathComponent
+                    fileUploadState.selectedFileURL = url
+                    fileUploadState.selectedFileName = url.lastPathComponent
                     if let fileSize = try? url.fileSize() {
-                        state.fileUpload?.selectedFileSize = fileSize
+                        fileUploadState.selectedFileSize = fileSize
                     }
                 }
+                state.fileUpload = fileUploadState
             } else {
-                // 카테고리 선택으로 돌아가기
-                let categories = state.onboardingData.selectedCategories
-                state.categorySelection = CategorySelectionFeature.State()
-                state.categorySelection?.selectedCategories = Set(categories)
+                // CategorySelection State 생성 (복원)
+                var categoryState = CategorySelectionFeature.State()
+                categoryState.selectedCategories = Set(state.onboardingData.selectedCategories)
+                state.categorySelection = categoryState
             }
             return .none
             
@@ -224,36 +265,39 @@ struct OnboardingFeature {
             if let difficulty = state.difficultySelection?.selectedDifficulty {
                 state.onboardingData.difficulty = difficulty.rawValue
             }
-            // 커스텀 프롬프트 저장
             state.onboardingData.customPrompt = state.difficultySelection?.customPrompt ?? ""
             
-            // Duration 화면으로 이동
             state.difficultySelection = nil
-            state.durationSelection = DurationSelectionFeature.State()
+            
+            // Duration State 생성 (복원)
+            var durationState = DurationSelectionFeature.State()
+            if let weeks = DurationSelectionFeature.State.Weeks(rawValue: state.onboardingData.programWeeks) {
+                durationState.selectedWeeks = weeks
+            }
+            state.durationSelection = durationState
+            
             return .none
             
         // DurationSelection
         case .durationSelection(.backTapped):
             state.durationSelection = nil
             
-            // 로컬 변수로 복사
-            let difficulty = state.onboardingData.difficulty
-            let customPrompt = state.onboardingData.customPrompt
-            
-            state.difficultySelection = DifficultySelectionFeature.State()
-            
-            // 이전 선택 복원
-            if let difficultyValue = difficulty,
-               let selectedDifficulty = DifficultySelectionFeature.State.Difficulty(rawValue: difficultyValue) {
-                state.difficultySelection?.selectedDifficulty = selectedDifficulty
+            // Difficulty State 생성 (복원)
+            var difficultyState = DifficultySelectionFeature.State()
+            if let difficulty = state.onboardingData.difficulty,
+               let selectedDifficulty = DifficultySelectionFeature.State.Difficulty(rawValue: difficulty) {
+                difficultyState.selectedDifficulty = selectedDifficulty
             }
-            state.difficultySelection?.customPrompt = customPrompt
+            difficultyState.customPrompt = state.onboardingData.customPrompt
+            state.difficultySelection = difficultyState
             
             return .none
+            
         case .durationSelection(.nextTapped):
             if let weeks = state.durationSelection?.selectedWeeks {
                 state.onboardingData.programWeeks = weeks.rawValue
             }
+            
             state.durationSelection = nil
             state.summary = OnboardingSummaryFeature.State(
                 leaveHomeTime: state.onboardingData.leaveHomeTime,
@@ -263,29 +307,33 @@ struct OnboardingFeature {
             )
             return .none
             
+        // Summary
         case .summary(.backTapped):
             state.summary = nil
-            state.durationSelection = DurationSelectionFeature.State()
-            // 이전 선택 복원
+            
+            // Duration State 생성 (복원)
+            var durationState = DurationSelectionFeature.State()
             if let weeks = DurationSelectionFeature.State.Weeks(rawValue: state.onboardingData.programWeeks) {
-                state.durationSelection?.selectedWeeks = weeks
+                durationState.selectedWeeks = weeks
             }
+            state.durationSelection = durationState
+            
             return .none
             
         case .summary(.completeTapped):
-            // Loading 화면으로 이동
             state.summary = nil
             state.loading = OnboardingLoadingFeature.State()
             return .none
             
+        // Loading
         case .loading(.loadingCompleted):
-            // Complete 화면으로 이동
             state.loading = nil
             state.complete = OnboardingCompleteFeature.State(
                 userName: state.onboardingData.userName
             )
             return .none
             
+        // Complete
         case .complete(.startButtonTapped):
             print("🎉 온보딩 완료!")
             print("📊 수집된 데이터: \(state.onboardingData)")
@@ -303,19 +351,28 @@ struct OnboardingFeature {
             case .nameInput:
                 state.nameInput = nil
                 state.currentStep = .timeSetting
-                state.timeSetting = TimeSettingFeature.State()
+                state.timeSetting = TimeSettingFeature.State(
+                           leaveTime: state.onboardingData.leaveHomeTime,
+                           returnTime: state.onboardingData.returnHomeTime
+                       )
                 
             case .timeSetting:
                 state.timeSetting = nil
                 state.currentStep = .usageDuration
-                state.usageDuration = UsageDurationFeature.State()
+                
+                // UsageDuration State 생성 (복원)
+                var usageDurationState = UsageDurationFeature.State()
+                if let duration = UsageDurationFeature.State.Duration(rawValue: state.onboardingData.dailyUsageMinutes) {
+                    usageDurationState.selectedDuration = duration
+                }
+                state.usageDuration = usageDurationState
                 
             case .usageDuration:
                 state.usageDuration = nil
                 state.currentStep = .contentSelection
                 state.contentSelection = ContentSelectionFeature.State()
                 
-            case .contentSelection, .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary,.loading, .complete:
+            case .contentSelection, .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary, .loading, .complete:
                 break
             }
             return .none
@@ -341,252 +398,67 @@ struct OnboardingFeature {
             case .usageDuration:
                 state.usageDuration = nil
                 state.currentStep = .timeSetting
-                state.timeSetting = TimeSettingFeature.State()
+                
+                // TimeSetting State 생성 (복원)
+                state.timeSetting = TimeSettingFeature.State(
+                    leaveTime: state.onboardingData.leaveHomeTime,
+                    returnTime: state.onboardingData.returnHomeTime
+                )
                 
             case .contentSelection:
                 state.contentSelection = nil
                 state.currentStep = .usageDuration
-                state.usageDuration = UsageDurationFeature.State()
                 
-            case .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary,.loading,.complete:
+                // UsageDuration State 생성 (복원)
+                var usageDurationState = UsageDurationFeature.State()
+                if let duration = UsageDurationFeature.State.Duration(rawValue: state.onboardingData.dailyUsageMinutes) {
+                    usageDurationState.selectedDuration = duration
+                }
+                state.usageDuration = usageDurationState
+                
+            case .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary, .loading, .complete:
                 break
             }
             return .none
             
         // Default
-        case .welcome, .nameInput, .timeSetting, .usageDuration, .contentSelection, .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary,.loading, .complete:
+        case .welcome, .nameInput, .timeSetting, .usageDuration, .contentSelection, .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary, .loading, .complete:
             return .none
         }
     }
 }
 
-struct DifficultySelectionView: View {
-    let store: StoreOf<DifficultySelectionFeature>
-    @FocusState private var isTextEditorFocused: Bool
+private func printOnboardingData(action: OnboardingFeature.Action, data: OnboardingData) {
+    print("==========================================")
+    print("Action:", action)
+    print("==========================================")
+    print("이름:", data.userName)
     
-    var body: some View {
-        VStack(spacing: 0) {
-            // Navigation
-            HStack(spacing: 16) {
-                Button {
-                    store.send(.backTapped)
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                        .frame(width: 40, height: 40)
-                        .contentShape(Rectangle())
-                }
-                
-                TTEProgressBar(
-                    currentStep: 4,
-                    totalSteps: 5,
-                    height: 15
-                )
-            }
-            .padding(.horizontal, 24)
-            
-            ScrollView {
-                VStack(spacing: 0) {
-                    Text("난이도를 선택하세요!")
-                        .titleSemibold18()
-                    
-                    Image("pose=front")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 200)
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 80)
-                        .padding(.top, 20)
-                    
-                    // 난이도 선택 버튼
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("난이도")
-                            .bodyMedium18()
-                            .foregroundColor(.black)
-                        
-                        Button(action: {
-                            store.send(.difficultyButtonTapped)
-                        }) {
-                            HStack {
-                                Spacer()
-                                Text(store.difficultyText)
-                                    .font(.system(size: 16))
-                                    .foregroundColor(store.selectedDifficulty != nil ? .primary : .gray)
-                                Spacer()
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 16)
-                            .background(Color.white)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(store.selectedDifficulty != nil ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
-                            )
-                            .cornerRadius(12)
-                        }
-                    }
-                    .padding(.horizontal, 30)
-                    .padding(.top, 56.33)
-                    
-                    // 커스텀 프롬프트 입력
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("퀴즈 커스텀 설정 (선택)")
-                            .bodyMedium18()
-                            .foregroundColor(.black)
-                        
-                        VStack(spacing: 0) {
-                            ZStack(alignment: .topLeading) {
-                                // Placeholder
-                                if store.customPrompt.isEmpty {
-                                    Text("퀴즈에 필요한 프롬포트 있으면 설정해주세요")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.gray)
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 12)
-                                }
-                                
-                                // TextEditor
-                                TextEditor(text: Binding(
-                                    get: { store.customPrompt },
-                                    set: { store.send(.customPromptChanged($0)) }
-                                ))
-                                .font(.system(size: 14))
-                                .focused($isTextEditorFocused)
-                                .frame(height: 80)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .scrollContentBackground(.hidden)
-                            }
-                            .background(Color.white)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(isTextEditorFocused ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
-                            )
-                            .cornerRadius(12)
-                            
-                            // 글자수 카운터
-                            HStack {
-                                Spacer()
-                                Text("\(store.characterCount) / 30")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.gray)
-                            }
-                            .padding(.top, 8)
-                        }
-                    }
-                    .padding(.horizontal, 30)
-                    .padding(.top, 24)
-                }
-                .padding(.top, 60)
-            }
-            .scrollDismissesKeyboard(.interactively)
-            .onTapGesture {
-                isTextEditorFocused = false
-            }
-            
-            Spacer()
-            
-            TTEButton(
-                title: "다음",
-                size: .large,
-                isEnabled: store.canProceed
-            ) {
-                isTextEditorFocused = false
-                store.send(.nextTapped)
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 32)
-        }
-        .sheet(isPresented: Binding(
-            get: { store.isDifficultyPickerPresented },
-            set: { if !$0 { store.send(.difficultyPickerDismissed) } }
-        )) {
-            DifficultyPickerModal(
-                selectedDifficulty: Binding(
-                    get: { store.selectedDifficulty },
-                    set: { if let difficulty = $0 { store.send(.difficultySelected(difficulty)) } }
-                ),
-                onDismiss: {
-                    store.send(.difficultyPickerDismissed)
-                }
-            )
-        }
+    if let leaveTime = data.leaveHomeTime {
+        print("집 나오는 시간:", leaveTime.formatted(date: .omitted, time: .shortened))
+    } else {
+        print("집 나오는 시간: 미설정")
     }
-}
-
-struct DifficultyPickerModal: View {
-    @Binding var selectedDifficulty: DifficultySelectionFeature.State.Difficulty?
-    let onDismiss: () -> Void
     
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // 난이도 선택 버튼들
-                VStack(spacing: 16) {
-                    ForEach(DifficultySelectionFeature.State.Difficulty.allCases, id: \.self) { difficulty in
-                        Button(action: {
-                            selectedDifficulty = difficulty
-                            onDismiss()
-                        }) {
-                            HStack(spacing: 16) {
-                                // 아이콘
-                                Image(systemName: difficulty.icon)
-                                    .font(.system(size: 24))
-                                    .foregroundColor(selectedDifficulty == difficulty ? .blue : .primary)
-                                    .frame(width: 40)
-                                
-                                VStack(alignment: .leading, spacing: 4) {
-                                    // 난이도 이름
-                                    Text(difficulty.rawValue)
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(.primary)
-                                    
-                                    // 설명
-                                    Text(difficulty.description)
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.gray)
-                                }
-                                
-                                Spacer()
-                                
-                                // 체크마크
-                                if selectedDifficulty == difficulty {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(.blue)
-                                }
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 16)
-                            .background(Color.white)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(selectedDifficulty == difficulty ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
-                            )
-                            .cornerRadius(12)
-                        }
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                
-                Spacer()
-            }
-            .navigationTitle("난이도 선택")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        onDismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.gray)
-                    }
-                }
-            }
-        }
-        .presentationDetents([.height(400)])
-        .presentationDragIndicator(.visible)
+    if let returnTime = data.returnHomeTime {
+        print("집 돌아오는 시간:", returnTime.formatted(date: .omitted, time: .shortened))
+    } else {
+        print("집 돌아오는 시간: 미설정")
     }
+    
+    print("목표 시간:", data.dailyUsageMinutes, "분")
+    print("컨텐츠 타입:", data.contentType)
+    
+    if let url = data.uploadedFileURL {
+        print("파일:", url.lastPathComponent)
+    } else {
+        print("파일: 없음")
+    }
+    
+    let categories = data.selectedCategories.map { $0.rawValue }.joined(separator: ", ")
+    print("카테고리:", categories.isEmpty ? "없음" : categories)
+    print("난이도:", data.difficulty ?? "미설정")
+    print("프롬프트:", data.customPrompt.isEmpty ? "없음" : data.customPrompt)
+    print("기간:", data.programWeeks, "주")
+    print("==========================================")
 }

@@ -17,7 +17,7 @@ struct OnboardingData: Equatable, Codable {
     var selectedCategories: [Category] = []
     var difficulty: String?
     var customPrompt: String = ""
-    var programWeeks: Int = 1
+    var programWeeks: Int = 0   
     
     enum ContentType: String, Codable {
         case fileUpload
