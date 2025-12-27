@@ -15,6 +15,8 @@ struct OnboardingData: Equatable, Codable {
     var contentType: ContentType = .category
     var uploadedFileURL: URL?
     var selectedCategories: [Category] = []
+    var difficulty: String?
+    var customPrompt: String = ""
     var programWeeks: Int = 1
     
     enum ContentType: String, Codable {
