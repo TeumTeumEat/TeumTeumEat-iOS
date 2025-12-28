@@ -14,18 +14,21 @@ struct LoginFeature {
     struct State: Equatable {
         var isLoading = false
         var errorMessage: String?
+        var pendingIdToken: String?
     }
     
     enum Action {
         case kakaoLoginTapped
         case appleLoginTapped
-        
+
+        case loginAttempt(idToken: String, termsAgreed: Bool)
         case loginResponse(Result<SocialLoginResponse, Error>)
+        
         case delegate(Delegate)
         
         enum Delegate {
-            case loginSuccess(accessToken: String, refreshToken: String)
-            case signUpRequired(isNewUser: Bool)
+            case loginSuccess(accessToken: String, refreshToken: String, isOnboardingCompleted: Bool)
+            case needsTermsAgreement(idToken: String)
         }
     }
     
@@ -38,16 +41,8 @@ struct LoginFeature {
                 
                 return .run { send in
                     do {
-                        // 1. 카카오 SDK로 로그인 → idToken 받기
                         let idToken = try await loginWithKakaoSDK()
-                        
-                        // 2. 서버에 idToken 전달
-                        let response = try await loginToServer(
-                            provider: "kakao",
-                            idToken: idToken
-                        )
-                        
-                        await send(.loginResponse(.success(response)))
+                        await send(.loginAttempt(idToken: idToken, termsAgreed: false))
                     } catch {
                         await send(.loginResponse(.failure(error)))
                     }
@@ -60,9 +55,21 @@ struct LoginFeature {
                 return .run { send in
                     do {
                         let idToken = try await loginWithAppleSDK()
+                        await send(.loginAttempt(idToken: idToken, termsAgreed: false))
+                    } catch {
+                        await send(.loginResponse(.failure(error)))
+                    }
+                }
+                
+            case .loginAttempt(let idToken, let termsAgreed):
+                state.isLoading = true
+                state.errorMessage = nil
+                
+                return .run { send in
+                    do {
                         let response = try await loginToServer(
-                            provider: "apple",
-                            idToken: idToken
+                            idToken: idToken,
+                            termsAgreed: termsAgreed
                         )
                         await send(.loginResponse(.success(response)))
                     } catch {
@@ -70,31 +77,35 @@ struct LoginFeature {
                     }
                 }
                 
-
             case .loginResponse(.success(let response)):
                 state.isLoading = false
                 
-                guard let data = response.data else {
-                    state.errorMessage = "로그인 응답 데이터가 없습니다."
-                    return .none
-                }
-                
-                // 신규 유저 체크
-                if data.isNewUser == true {
-                    // 토큰은 우선 저장 (약관 동의 후 회원가입에 사용)
-                    KeyChainManager.shared.saveAccessToken(data.accessToken)
-                    KeyChainManager.shared.saveRefreshToken(data.refreshToken)
+                if response.code == "OK" {
+                    // 로그인 성공 (기존 유저 또는 약관 동의 완료한 신규 유저)
+                    guard let data = response.data else {
+                        state.errorMessage = "응답 데이터가 없습니다."
+                        return .none
+                    }
                     
-                    return .send(.delegate(.signUpRequired(isNewUser: true)))
-                } else {
-                    // 기존 유저 → 토큰 저장
+                    // 토큰 저장
                     KeyChainManager.shared.saveAccessToken(data.accessToken)
                     KeyChainManager.shared.saveRefreshToken(data.refreshToken)
                     
                     return .send(.delegate(.loginSuccess(
                         accessToken: data.accessToken,
-                        refreshToken: data.refreshToken
+                        refreshToken: data.refreshToken,
+                        isOnboardingCompleted: data.isOnboardingCompleted
                     )))
+                    
+                } else if response.code == "NEED_TERMS_AGREEMENT" {
+                    // 신규 유저 → 약관 동의 필요
+                    // pendingIdToken은 이미 state에 저장되어 있음
+                    return .send(.delegate(.needsTermsAgreement(idToken: state.pendingIdToken ?? "")))
+                    
+                } else {
+                    // 기타 에러
+                    state.errorMessage = response.message
+                    return .none
                 }
                 
             case .loginResponse(.failure(let error)):
@@ -118,5 +129,21 @@ extension LoginFeature {
     private func loginWithAppleSDK() async throws -> String {
         // TODO: Apple SDK 연동
         fatalError("Apple SDK 연동 필요")
+    }
+    
+    private func loginToServer(idToken: String, termsAgreed: Bool) async throws -> SocialLoginResponse {
+        let url = URL(string: "")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let body = SocialLoginRequest(termsAgreed: termsAgreed)
+        request.httpBody = try JSONEncoder().encode(body)
+        
+        let (data, _) = try await URLSession.shared.data(for: request)
+        let response = try JSONDecoder().decode(SocialLoginResponse.self, from: data)
+        
+        return response
     }
 }
