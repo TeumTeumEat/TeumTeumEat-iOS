@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		46AE2AA12F0125BD0061B2EE /* KakaoSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 46AE2AA02F0125BD0061B2EE /* KakaoSDK */; };
+		46AE2AA32F0125BD0061B2EE /* KakaoSDKAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 46AE2AA22F0125BD0061B2EE /* KakaoSDKAuth */; };
 		46FE6B842EEACE0B009E626A /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 46FE6B832EEACE0B009E626A /* ComposableArchitecture */; };
 /* End PBXBuildFile section */
 
@@ -70,6 +72,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				46FE6B842EEACE0B009E626A /* ComposableArchitecture in Frameworks */,
+				46AE2AA12F0125BD0061B2EE /* KakaoSDK in Frameworks */,
+				46AE2AA32F0125BD0061B2EE /* KakaoSDKAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -131,6 +135,8 @@
 			name = TeumTeumEat;
 			packageProductDependencies = (
 				46FE6B832EEACE0B009E626A /* ComposableArchitecture */,
+				46AE2AA02F0125BD0061B2EE /* KakaoSDK */,
+				46AE2AA22F0125BD0061B2EE /* KakaoSDKAuth */,
 			);
 			productName = TeumTeumEat;
 			productReference = 46FE666E2EE1770E009E626A /* TeumTeumEat.app */;
@@ -216,6 +222,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				46FE6B822EEACE0B009E626A /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
+				46AE2A9F2F0125BD0061B2EE /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 46FE666F2EE1770E009E626A /* Products */;
@@ -414,6 +421,8 @@
 		};
 		46FE66902EE17711009E626A /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 46FE66702EE1770E009E626A /* TeumTeumEat */;
+			baseConfigurationReferenceRelativePath = Resources/Config.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -447,6 +456,8 @@
 		};
 		46FE66912EE17711009E626A /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 46FE66702EE1770E009E626A /* TeumTeumEat */;
+			baseConfigurationReferenceRelativePath = Resources/Config.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -592,6 +603,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		46AE2A9F2F0125BD0061B2EE /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kakao/kakao-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.26.0;
+			};
+		};
 		46FE6B822EEACE0B009E626A /* XCRemoteSwiftPackageReference "swift-composable-architecture" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pointfreeco/swift-composable-architecture.git";
@@ -603,6 +622,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		46AE2AA02F0125BD0061B2EE /* KakaoSDK */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 46AE2A9F2F0125BD0061B2EE /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
+			productName = KakaoSDK;
+		};
+		46AE2AA22F0125BD0061B2EE /* KakaoSDKAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 46AE2A9F2F0125BD0061B2EE /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
+			productName = KakaoSDKAuth;
+		};
 		46FE6B832EEACE0B009E626A /* ComposableArchitecture */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 46FE6B822EEACE0B009E626A /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
