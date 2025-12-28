@@ -7,6 +7,7 @@
 
 import Foundation
 import ComposableArchitecture
+import KakaoSDKUser
 
 @Reducer
 struct LoginFeature {
@@ -121,14 +122,34 @@ struct LoginFeature {
 }
 
 extension LoginFeature {
-    private func loginWithKakaoSDK() async throws -> String {
-        // TODO: 카카오 SDK 연동
-        fatalError("카카오 SDK 연동 필요")
-    }
-    
+
     private func loginWithAppleSDK() async throws -> String {
         // TODO: Apple SDK 연동
         fatalError("Apple SDK 연동 필요")
+    }
+    
+    private func loginWithKakaoSDK() async throws -> String {
+        return try await withCheckedThrowingContinuation { continuation in
+            if UserApi.isKakaoTalkLoginAvailable() {
+                UserApi.shared.loginWithKakaoTalk { oauthToken, error in
+                    if let error = error {
+                        continuation.resume(throwing: error)
+                    } else if let token = oauthToken {
+                        print("카카오톡 로그인 성공")
+                        continuation.resume(returning: token.accessToken)
+                    }
+                }
+            } else {
+                UserApi.shared.loginWithKakaoAccount { oauthToken, error in
+                    if let error = error {
+                        continuation.resume(throwing: error)
+                    } else if let token = oauthToken {
+                        print("카카오 계정 로그인 성공")
+                        continuation.resume(returning: token.accessToken)
+                    }
+                }
+            }
+        }
     }
     
     private func loginToServer(idToken: String, termsAgreed: Bool) async throws -> SocialLoginResponse {
