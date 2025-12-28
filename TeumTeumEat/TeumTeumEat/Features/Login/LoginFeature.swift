@@ -16,14 +16,20 @@ struct LoginFeature {
         var isLoading = false
         var errorMessage: String?
         var pendingIdToken: String?
+        var pendingProvider: SocialProvider?
         var showTermsSheet = false
+    }
+    
+    enum SocialProvider: String {
+        case kakao = "KAKAO"
+        case appleProvider = "APPLE"
     }
     
     enum Action {
         case kakaoLoginTapped
         case appleLoginTapped
 
-        case loginAttempt(idToken: String, termsAgreed: Bool)
+        case loginAttempt(idToken: String, provider: SocialProvider, termsAgreed: Bool)
         case loginResponse(Result<SocialLoginResponse, Error>)
         
         case dismissTermsSheet
@@ -52,7 +58,7 @@ struct LoginFeature {
                         print("ID Token: \(kakaoIdToken)")
                         print("Token Length: \(kakaoIdToken.count)")
                         print("서버 로그인 시도 (termsAgreed: false)")
-                        await send(.loginAttempt(idToken: kakaoIdToken, termsAgreed: false))
+                        await send(.loginAttempt(idToken: kakaoIdToken, provider: .kakao, termsAgreed: false))
                     } catch {
                         print("카카오 로그인 전체 실패:", error)
                         await send(.loginResponse(.failure(error)))
@@ -66,16 +72,17 @@ struct LoginFeature {
                 return .run { send in
                     do {
                         let idToken = try await loginWithAppleSDK()
-                        await send(.loginAttempt(idToken: idToken, termsAgreed: false))
+                        await send(.loginAttempt(idToken: idToken, provider: .appleProvider, termsAgreed: false))
                     } catch {
                         await send(.loginResponse(.failure(error)))
                     }
                 }
                 
-            case .loginAttempt(let idToken, let termsAgreed):
+            case .loginAttempt(let idToken,let provider, let termsAgreed):
                 state.isLoading = true
                 state.errorMessage = nil
                 state.pendingIdToken = idToken
+                state.pendingProvider = provider
                 
                 print("서버 로그인 요청")
                 print("idToken: \(String(idToken.prefix(20)))...")
@@ -85,6 +92,7 @@ struct LoginFeature {
                     do {
                         let response = try await loginToServer(
                             idToken: idToken,
+                            provider: provider,
                             termsAgreed: termsAgreed
                         )
                         
@@ -161,13 +169,18 @@ struct LoginFeature {
                  print("약관 동의 확인 - 재로그인 시도")
                  state.showTermsSheet = false
                  
-                 guard let idToken = state.pendingIdToken else {
-                     state.errorMessage = "토큰 정보가 없습니다."
+                 guard let idToken = state.pendingIdToken,
+                       let provider = state.pendingProvider else {
+                     state.errorMessage = "토큰 또는 Provider 정보가 없습니다."
                      return .none
                  }
                  
                  // termsAgreed: true로 재시도
-                 return .send(.loginAttempt(idToken: idToken, termsAgreed: true))
+                 return .send(.loginAttempt(
+                     idToken: idToken,
+                     provider: provider,
+                     termsAgreed: true
+                 ))
                 
             case .delegate:
                 return .none
@@ -209,10 +222,10 @@ extension LoginFeature {
         }
     }
     
-    private func loginToServer(idToken: String, termsAgreed: Bool) async throws -> SocialLoginResponse {
+    private func loginToServer(idToken: String, provider: SocialProvider, termsAgreed: Bool) async throws -> SocialLoginResponse {
         print("서버 API 호출 시작")
         let baseURL = Config.baseURL
-        let endPoint = "/api/v1/auth/oauth/register?provider=KAKAO"
+        let endPoint = "/api/v1/auth/oauth/register?provider=\(provider.rawValue)"
         let fullPath = baseURL + endPoint
         print("fullpath: \(fullPath)")
         
