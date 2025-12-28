@@ -7,9 +7,17 @@
 
 import ComposableArchitecture
 import SwiftUI
+import KakaoSDKAuth
+import KakaoSDKCommon
 
 @main
 struct TeumTeumEatApp: App {
+
+    init() {
+        let APPKEY = Config.kakaoNativeAppKey
+        KakaoSDK.initSDK(appKey: APPKEY)
+    }
+    
     var body: some Scene {
         WindowGroup {
             AppView(
@@ -17,6 +25,11 @@ struct TeumTeumEatApp: App {
                     AppFeature()
                 }
             )
+            .onOpenURL(perform:{ url in
+                if(AuthApi.isKakaoTalkLoginUrl(url)){
+                    _ = AuthController.handleOpenUrl(url:url)
+                }
+            })
         }
     }
 }

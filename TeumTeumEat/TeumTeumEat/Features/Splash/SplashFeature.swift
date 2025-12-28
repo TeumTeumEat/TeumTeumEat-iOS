@@ -16,7 +16,13 @@ struct SplashFeature {
     
     enum Action {
         case onAppear
-        case checkAuthenticationComplete
+        case checkAuthentication
+        case authenticationChecked(AuthState)
+        
+        enum AuthState {
+            case authenticated(isOnboardingCompleted: Bool)  // 토큰 있음 + 유효
+            case unauthenticated // 토근 없음 or 만료
+        }
     }
     
     var body: some ReducerOf<Self> {
@@ -25,9 +31,23 @@ struct SplashFeature {
             case .onAppear:
                 return .run { send in
                     try await Task.sleep(for: .seconds(2))
-                    await send(.checkAuthenticationComplete)
+                    await send(.checkAuthentication)
                 }
-            case .checkAuthenticationComplete:
+                
+            case .checkAuthentication:
+                return .run { send in
+                    // KeyChain에서 토큰 조회
+                    if let accessToken = KeyChainManager.shared.getAccessToken() {
+                        // TODO: 토큰 유효성 검증 API 호출
+                        // 일단은 토큰 있으면 유효하다고 가정
+                        let isOnboardingCompleted = UserDefaultsManager.isOnboardingCompleted
+                        await send(.authenticationChecked(.authenticated(isOnboardingCompleted: isOnboardingCompleted)))
+                    } else {
+                        await send(.authenticationChecked(.unauthenticated))
+                    }
+                }
+                
+            case .authenticationChecked:
                 state.isActive = true
                 return .none
             }

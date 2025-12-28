@@ -12,14 +12,18 @@ struct AppFeature {
     @ObservableState
     struct State: Equatable {
         var splash: SplashFeature.State = .init()
+        var login: LoginFeature.State?
+        var termsAgreement: TermsAgreementFeature.State?
         var onboarding: OnboardingFeature.State?
         var isShowingSplash = true
     }
     
     enum Action {
         case splash(SplashFeature.Action)
-        case splashCompleted
+        case login(LoginFeature.Action)
+        case termsAgreement(TermsAgreementFeature.Action)
         case onboarding(OnboardingFeature.Action)
+        case logout
     }
     
     var body: some ReducerOf<Self> {
@@ -29,15 +33,82 @@ struct AppFeature {
         
         Reduce { state, action in
             switch action {
-            case .splash(.checkAuthenticationComplete):
-                state.isShowingSplash = false
-                state.onboarding = OnboardingFeature.State()
-                return .send(.splashCompleted)
-            case .splashCompleted:
+                
+            case .logout:
+                // 토큰 삭제
+                KeyChainManager.shared.deleteAll()
+                
+                state.login = nil
+                state.termsAgreement = nil
+                state.onboarding = nil
+                
+                // 로그인 화면으로
+                state.login = LoginFeature.State()
+                
+                print("로그아웃 완료 - 로그인 화면으로 이동")
+                
                 return .none
-            case .splash, .onboarding:
+            // Splash
+            case .splash(.authenticationChecked(let authState)):
+                state.isShowingSplash = false
+                
+                switch authState {
+                case .authenticated(let isOnboardingCompleted):
+                    if isOnboardingCompleted {
+                        // 온보딩 완료 → 메인 화면
+                        print("토큰 있음 & 온보딩 완료 → 메인")
+                        // TODO: state.mainTab = MainTabFeature.State()
+                    } else {
+                        // 온보딩 미완료 → 온보딩 화면
+                        print("토큰 있음 & 온보딩 미완료 → 온보딩")
+                        state.onboarding = OnboardingFeature.State()
+                    }
+                    
+                case .unauthenticated:
+                    // 토큰 없음 → 로그인 화면
+                    print("토큰 없음 → 로그인")
+                    state.login = LoginFeature.State()
+                }
+                return .none
+                
+            // Login Delegate
+            case .login(.delegate(.loginSuccess(let accessToken, let refreshToken, let isOnboardingCompleted))):
+                state.login = nil
+                UserDefaultsManager.isOnboardingCompleted = isOnboardingCompleted
+                
+                if isOnboardingCompleted {
+                    // 온보딩 완료 → TODO: 메인 화면
+                    print("로그인 성공 & 온보딩 완료 - 메인 화면으로 이동 예정")
+                } else {
+                    // 온보딩 미완료 → 온보딩 화면
+                    state.onboarding = OnboardingFeature.State()
+                }
+                return .none
+                
+            // TermsAgreement Delegate
+            case .termsAgreement(.delegate(.signUpSuccess)):
+                // 약관 동의 & 회원가입 성공 → 온보딩 화면
+                state.termsAgreement = nil
+                state.onboarding = OnboardingFeature.State()
+                return .none
+                
+            // Onboarding Delegate
+            case .onboarding(.complete(.startButtonTapped)):
+                // 온보딩 완료 → TODO: 메인 화면 (나중에 구현)
+                state.onboarding = nil
+                print("온보딩 완료 - 메인 화면으로 이동 예정")
+                UserDefaultsManager.isOnboardingCompleted = true
+                return .none
+                
+            case .splash, .login, .termsAgreement, .onboarding:
                 return .none
             }
+        }
+        .ifLet(\.login, action: \.login) {
+            LoginFeature()
+        }
+        .ifLet(\.termsAgreement, action: \.termsAgreement) {
+            TermsAgreementFeature()
         }
         .ifLet(\.onboarding, action: \.onboarding) {
             OnboardingFeature()
