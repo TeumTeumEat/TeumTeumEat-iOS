@@ -53,12 +53,20 @@ struct AppFeature {
                 state.isShowingSplash = false
                 
                 switch authState {
-                case .authenticated:
-                    // 토큰 있음 → TODO: 메인 화면
-                    print("인증됨 - 메인 화면으로 이동 예정")
+                case .authenticated(let isOnboardingCompleted):
+                    if isOnboardingCompleted {
+                        // 온보딩 완료 → 메인 화면
+                        print("토큰 있음 & 온보딩 완료 → 메인")
+                        // TODO: state.mainTab = MainTabFeature.State()
+                    } else {
+                        // 온보딩 미완료 → 온보딩 화면
+                        print("토큰 있음 & 온보딩 미완료 → 온보딩")
+                        state.onboarding = OnboardingFeature.State()
+                    }
                     
                 case .unauthenticated:
                     // 토큰 없음 → 로그인 화면
+                    print("토큰 없음 → 로그인")
                     state.login = LoginFeature.State()
                 }
                 return .none
@@ -66,6 +74,7 @@ struct AppFeature {
             // Login Delegate
             case .login(.delegate(.loginSuccess(let accessToken, let refreshToken, let isOnboardingCompleted))):
                 state.login = nil
+                UserDefaultsManager.isOnboardingCompleted = isOnboardingCompleted
                 
                 if isOnboardingCompleted {
                     // 온보딩 완료 → TODO: 메인 화면
@@ -88,6 +97,7 @@ struct AppFeature {
                 // 온보딩 완료 → TODO: 메인 화면 (나중에 구현)
                 state.onboarding = nil
                 print("온보딩 완료 - 메인 화면으로 이동 예정")
+                UserDefaultsManager.isOnboardingCompleted = true
                 return .none
                 
             case .splash, .login, .termsAgreement, .onboarding:

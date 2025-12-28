@@ -20,7 +20,7 @@ struct SplashFeature {
         case authenticationChecked(AuthState)
         
         enum AuthState {
-            case authenticated // 토큰 있음 + 유효
+            case authenticated(isOnboardingCompleted: Bool)  // 토큰 있음 + 유효
             case unauthenticated // 토근 없음 or 만료
         }
     }
@@ -40,7 +40,8 @@ struct SplashFeature {
                     if let accessToken = KeyChainManager.shared.getAccessToken() {
                         // TODO: 토큰 유효성 검증 API 호출
                         // 일단은 토큰 있으면 유효하다고 가정
-                        await send(.authenticationChecked(.authenticated))
+                        let isOnboardingCompleted = UserDefaultsManager.isOnboardingCompleted
+                        await send(.authenticationChecked(.authenticated(isOnboardingCompleted: isOnboardingCompleted)))
                     } else {
                         await send(.authenticationChecked(.unauthenticated))
                     }
