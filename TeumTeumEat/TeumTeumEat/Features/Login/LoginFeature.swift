@@ -16,6 +16,7 @@ struct LoginFeature {
         var isLoading = false
         var errorMessage: String?
         var pendingIdToken: String?
+        var showTermsSheet = false
     }
     
     enum Action {
@@ -25,11 +26,13 @@ struct LoginFeature {
         case loginAttempt(idToken: String, termsAgreed: Bool)
         case loginResponse(Result<SocialLoginResponse, Error>)
         
+        case dismissTermsSheet
+        case agreeTermsTapped
+        
         case delegate(Delegate)
         
         enum Delegate {
             case loginSuccess(accessToken: String, refreshToken: String, isOnboardingCompleted: Bool)
-            case needsTermsAgreement(idToken: String)
         }
     }
     
@@ -131,12 +134,13 @@ struct LoginFeature {
                         isOnboardingCompleted: data.isOnboardingCompleted
                     )))
                     
-                } else if response.code == "NEED_TERMS_AGREEMENT" {
+                } else if response.code == "AUTH-006" {
                     // 신규 유저 → 약관 동의 필요
                     // pendingIdToken은 이미 state에 저장되어 있음
                     print("약관 동의 필요 (신규 유저)")
-                    return .send(.delegate(.needsTermsAgreement(idToken: state.pendingIdToken ?? "")))
-                    
+                    state.showTermsSheet = true
+                    return .none
+
                 } else {
                     // 기타 에러
                     state.errorMessage = response.message
@@ -146,7 +150,24 @@ struct LoginFeature {
             case .loginResponse(.failure(let error)):
                 state.isLoading = false
                 state.errorMessage = error.localizedDescription
+                print("서버 로그인 실패: \(error)")
                 return .none
+                
+            case .dismissTermsSheet:
+                state.showTermsSheet = false
+                return .none
+                
+            case .agreeTermsTapped:
+                 print("약관 동의 확인 - 재로그인 시도")
+                 state.showTermsSheet = false
+                 
+                 guard let idToken = state.pendingIdToken else {
+                     state.errorMessage = "토큰 정보가 없습니다."
+                     return .none
+                 }
+                 
+                 // termsAgreed: true로 재시도
+                 return .send(.loginAttempt(idToken: idToken, termsAgreed: true))
                 
             case .delegate:
                 return .none

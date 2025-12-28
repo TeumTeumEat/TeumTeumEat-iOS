@@ -76,12 +76,6 @@ struct AppFeature {
                 }
                 return .none
                 
-            case .login(.delegate(.needsTermsAgreement(let idToken))):
-                // 신규 유저 → 약관 동의 화면
-                state.login = nil
-                state.termsAgreement = TermsAgreementFeature.State(idToken: idToken)
-                return .none
-                
             // TermsAgreement Delegate
             case .termsAgreement(.delegate(.signUpSuccess)):
                 // 약관 동의 & 회원가입 성공 → 온보딩 화면
