@@ -23,6 +23,7 @@ struct AppFeature {
         case login(LoginFeature.Action)
         case termsAgreement(TermsAgreementFeature.Action)
         case onboarding(OnboardingFeature.Action)
+        case logout
     }
     
     var body: some ReducerOf<Self> {
@@ -32,6 +33,21 @@ struct AppFeature {
         
         Reduce { state, action in
             switch action {
+                
+            case .logout:
+                // 토큰 삭제
+                KeyChainManager.shared.deleteAll()
+                
+                state.login = nil
+                state.termsAgreement = nil
+                state.onboarding = nil
+                
+                // 로그인 화면으로
+                state.login = LoginFeature.State()
+                
+                print("로그아웃 완료 - 로그인 화면으로 이동")
+                
+                return .none
             // Splash
             case .splash(.authenticationChecked(let authState)):
                 state.isShowingSplash = false

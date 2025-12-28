@@ -30,6 +30,21 @@ struct AppView: View {
                 Text("MainTab 구현 예정")
                     .foregroundColor(.gray)
                     .padding(.top, 8)
+                
+                Button {
+                     store.send(.logout)
+                 } label: {
+                     HStack {
+                         Image(systemName: "rectangle.portrait.and.arrow.right")
+                         Text("로그아웃")
+                     }
+                     .foregroundColor(.white)
+                     .padding(.horizontal, 30)
+                     .padding(.vertical, 12)
+                     .background(Color.red)
+                     .cornerRadius(10)
+                 }
+                 .padding(.top, 40)
             }
         }
     }
