@@ -9,8 +9,12 @@ import Foundation
 
 typealias SocialLoginResponse = APIResponse<SocialLoginData>
 
+struct SocialLoginRequest: Encodable {
+    let termsAgreed: Bool
+}
+
 struct SocialLoginData: Decodable {
     let accessToken: String
     let refreshToken: String
-    let isNewUser: Bool?
+    let isOnboardingCompleted: Bool
 }
