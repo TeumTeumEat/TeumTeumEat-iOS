@@ -12,19 +12,17 @@ struct AppFeature {
     @ObservableState
     struct State: Equatable {
         var splash: SplashFeature.State = .init()
-        var onboarding: OnboardingFeature.State?
+        var login: LoginFeature.State?
         var termsAgreement: TermsAgreementFeature.State?
-        var mainTab: MainTabFeature.State?
+        var onboarding: OnboardingFeature.State?
         var isShowingSplash = true
     }
     
     enum Action {
         case splash(SplashFeature.Action)
-        case splashCompleted
         case login(LoginFeature.Action)
         case termsAgreement(TermsAgreementFeature.Action)
         case onboarding(OnboardingFeature.Action)
-        case mainTab(MainTabFeature.Action)
     }
     
     var body: some ReducerOf<Self> {
@@ -34,45 +32,66 @@ struct AppFeature {
         
         Reduce { state, action in
             switch action {
+            // Splash
             case .splash(.authenticationChecked(let authState)):
                 state.isShowingSplash = false
                 
                 switch authState {
                 case .authenticated:
-                    // 토큰 있음 → 메인 화면
-                    state.mainTab = MainTabFeature.State()
+                    // 토큰 있음 → TODO: 메인 화면
+                    print("인증됨 - 메인 화면으로 이동 예정")
                     
                 case .unauthenticated:
                     // 토큰 없음 → 로그인 화면
                     state.login = LoginFeature.State()
                 }
                 return .none
-            
-            // LoginFeature Delegate 처리 추가
-            case .login(.delegate(.loginSuccess)):
-                // 기존 유저 로그인 성공 → 메인 화면
+                
+            // Login Delegate
+            case .login(.delegate(.loginSuccess(let accessToken, let refreshToken, let isOnboardingCompleted))):
                 state.login = nil
-                state.mainTab = MainTabFeature.State()
+                
+                if isOnboardingCompleted {
+                    // 온보딩 완료 → TODO: 메인 화면
+                    print("로그인 성공 & 온보딩 완료 - 메인 화면으로 이동 예정")
+                } else {
+                    // 온보딩 미완료 → 온보딩 화면
+                    state.onboarding = OnboardingFeature.State()
+                }
                 return .none
                 
-            case .login(.delegate(.signUpRequired)):
-                // 신규 유저 → 약관 동의 화면으로
+            case .login(.delegate(.needsTermsAgreement(let idToken))):
+                // 신규 유저 → 약관 동의 화면
                 state.login = nil
-                state.termsAgreement = TermsAgreementFeature.State()
+                state.termsAgreement = TermsAgreementFeature.State(idToken: idToken)
                 return .none
                 
-            case .splash, .login, .onboarding, .mainTab:
+            // TermsAgreement Delegate
+            case .termsAgreement(.delegate(.signUpSuccess)):
+                // 약관 동의 & 회원가입 성공 → 온보딩 화면
+                state.termsAgreement = nil
+                state.onboarding = OnboardingFeature.State()
+                return .none
+                
+            // Onboarding Delegate
+            case .onboarding(.complete(.startButtonTapped)):
+                // 온보딩 완료 → TODO: 메인 화면 (나중에 구현)
+                state.onboarding = nil
+                print("온보딩 완료 - 메인 화면으로 이동 예정")
+                return .none
+                
+            case .splash, .login, .termsAgreement, .onboarding:
                 return .none
             }
         }
         .ifLet(\.login, action: \.login) {
             LoginFeature()
         }
+        .ifLet(\.termsAgreement, action: \.termsAgreement) {
+            TermsAgreementFeature()
+        }
         .ifLet(\.onboarding, action: \.onboarding) {
             OnboardingFeature()
-        }
-        .ifLet(\.mainTab, action: \.mainTab) {
-            MainTabFeature()
         }
     }
 }
