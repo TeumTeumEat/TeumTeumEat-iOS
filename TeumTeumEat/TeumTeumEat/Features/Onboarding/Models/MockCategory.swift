@@ -20,24 +20,35 @@ struct SubCategoryHierarchy {
 
 // MARK: - Main Category (1단계)
 enum MainCategory: String, CaseIterable, Codable, Equatable {
-    case developer = "개발자"
+    case appDeveloper = "앱개발자"
+    case webDeveloper = "웹개발자"
+    case backDeveloper = "서버개발자"
     case designer = "디자이너"
-    case planner = "기획자"
-    case business = "비즈니스"
-    case marketing = "마케팅"
+    case planner = "PM"
+
     
     var subCategories: [SubCategory] {
         switch self {
-        case .developer:
+        case .appDeveloper:
             return [.webDev, .appDev, .aiMl, .backend]
         case .designer:
             return [.uiux, .graphic, .productDesign]
         case .planner:
             return [.servicePlanning, .productPlanning, .businessPlanning]
-        case .business:
+        case .webDeveloper:
             return [.strategy, .operations, .finance]
-        case .marketing:
+        case .backDeveloper:
             return [.digital, .brand, .growth]
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .appDeveloper: return "phone"
+        case .designer: return "palette"
+        case .planner: return "note"
+        case .webDeveloper: return "web"
+        case .backDeveloper: return "pm"
         }
     }
 }

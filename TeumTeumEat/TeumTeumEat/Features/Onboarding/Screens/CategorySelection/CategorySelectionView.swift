@@ -52,30 +52,36 @@ struct MainCategoryStepView: View {
                 GeometryReader { scrollGeometry in
                     ScrollView {
                         VStack(spacing: 0) {
-                            Image("pose=front")
+                            Image("character_glass")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(height: 200)
-                                .padding(.horizontal, 80)
-                                .padding(.top, 20)
+                                .frame(height: 264)
+                                .padding(.horizontal, 32)
+                                .padding(.top, 14)
                             
-                            Text("관심있는 직군을 선택하세요")
-                                .titleSemibold18()
-                                .padding(.top, 24)
-                            
-                            VStack(spacing: 0) {
-                                FlowLayout(spacing: 12) {
-                                    ForEach(MainCategory.allCases, id: \.self) { category in
-                                        CategoryChip(
-                                            text: category.rawValue,
-                                            isSelected: store.selectedMainCategory == category
-                                        ) {
-                                            store.send(.mainCategorySelected(category))
-                                        }
+                            LazyVGrid(
+                                columns: [
+                                    GridItem(.flexible()),
+                                    GridItem(.flexible())
+                                ],
+                                spacing: 12
+                            ) {
+                                ForEach(MainCategory.allCases, id: \.self) { category in
+                                    TTEButton(
+                                        title: category.rawValue,
+                                        size: .grid,
+                                        style: .secondary,
+                                        isEnabled: true,
+                                        icon: Image(category.icon),
+                                        iconSize: 24,
+                                        foregroundColor: .gray,
+                                        borderColor: .gray
+                                    ) {
+                                        store.send(.mainCategorySelected(category))
                                     }
                                 }
                             }
-                            .padding(.horizontal, 30)
+                            .padding(.horizontal, 20)
                             .padding(.top, 20)
                             
                             Spacer()
@@ -129,16 +135,12 @@ struct SubCategoryStepView: View {
                 GeometryReader { scrollGeometry in
                     ScrollView {
                         VStack(spacing: 0) {
-                            Image("pose=front")
+                            Image("character_glass")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(height: 200)
-                                .padding(.horizontal, 80)
-                                .padding(.top, 20)
-                            
-                            Text("관심있는 분야를 선택하세요")
-                                .titleSemibold18()
-                                .padding(.top, 24)
+                                .frame(height: 264)
+                                .padding(.horizontal, 32)
+                                .padding(.top, 14)
                             
                             VStack(spacing: 0) {
                                 FlowLayout(spacing: 12) {
@@ -208,33 +210,16 @@ struct DetailCategoryStepView: View {
                 GeometryReader { scrollGeometry in
                     ScrollView {
                         VStack(spacing: 0) {
-                            Image("pose=front")
+                            Image("character_glass")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(height: 200)
-                                .padding(.horizontal, 80)
+                                .frame(height: 264)
+                                .padding(.horizontal, 32)
+                                .padding(.top, 14)
+                            
+                            detailCategoryButtons  // ✅ 분리
+                                .padding(.horizontal, 30)
                                 .padding(.top, 20)
-                            
-                            Text("세부 주제를 선택하세요")
-                                .titleSemibold18()
-                                .padding(.top, 24)
-                            
-                            VStack(spacing: 0) {
-                                FlowLayout(spacing: 12) {
-                                    if let subCategory = store.selectedSubCategory {
-                                        ForEach(subCategory.detailCategories, id: \.self) { detailCategory in
-                                            CategoryChip(
-                                                text: detailCategory.rawValue,
-                                                isSelected: store.selectedDetailCategory == detailCategory
-                                            ) {
-                                                store.send(.detailCategorySelected(detailCategory))
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 30)
-                            .padding(.top, 20)
                             
                             Spacer()
                                 .frame(minHeight: 30)
@@ -252,6 +237,26 @@ struct DetailCategoryStepView: View {
                         .frame(minHeight: scrollGeometry.size.height)
                     }
                     .scrollDismissesKeyboard(.interactively)
+                }
+            }
+        }
+    }
+    
+    // ✅ computed property로 분리
+    @ViewBuilder
+    private var detailCategoryButtons: some View {
+        VStack(spacing: 16) {
+            if let subCategory = store.selectedSubCategory {
+                ForEach(subCategory.detailCategories, id: \.self) { detailCategory in
+                    let isSelected = store.selectedDetailCategory == detailCategory
+                    
+                    TTEButton(
+                        title: detailCategory.rawValue,
+                        size: .large,
+                        style: isSelected ? .primary : .secondary, isEnabled: true
+                    ) {
+                        store.send(.detailCategorySelected(detailCategory))
+                    }
                 }
             }
         }
