@@ -10,6 +10,7 @@ import ComposableArchitecture
 
 struct TimeSettingView: View {
     let store: StoreOf<TimeSettingFeature>
+    @Environment(\.scenePhase) private var scenePhase
     
     var body: some View {
         GeometryReader { geometry in
@@ -149,6 +150,29 @@ struct TimeSettingView: View {
                     }
                     .scrollDismissesKeyboard(.interactively)
                 }
+            }
+        }
+        .alert("알림 권한 필요", isPresented: Binding(
+            get: { store.showSettingsAlert },
+            set: { if !$0 { store.send(.dismissSettingsAlert) } }
+        )) {
+            Button("취소", role: .cancel) {
+                store.send(.dismissSettingsAlert)
+            }
+            Button("설정으로 이동") {
+                store.send(.openSettings)
+            }
+        } message: {
+            Text("알림을 받으려면 설정에서 알림 권한을 허용해주세요.")
+        }
+        .onAppear {
+            // 화면 진입 시 권한 상태 체크
+            store.send(.checkNotificationStatus)
+        }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            if newPhase == .active {
+                // 앱이 포그라운드로 돌아올 때
+                store.send(.checkNotificationStatus)
             }
         }
         .sheet(isPresented: Binding(
