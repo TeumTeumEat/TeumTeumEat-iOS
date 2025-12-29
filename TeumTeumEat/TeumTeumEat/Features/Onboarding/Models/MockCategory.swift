@@ -31,9 +31,9 @@ enum MainCategory: String, CaseIterable, Codable, Equatable {
         case .developer:
             return [.webDev, .appDev, .aiMl, .backend]
         case .designer:
-            return [.uiux, .graphic, .product]
+            return [.uiux, .graphic, .productDesign]
         case .planner:
-            return [.service, .product, .business]
+            return [.servicePlanning, .productPlanning, .businessPlanning]
         case .business:
             return [.strategy, .operations, .finance]
         case .marketing:
@@ -53,12 +53,12 @@ enum SubCategory: String, Codable, Equatable {
     // Designer
     case uiux = "UI/UX 디자인"
     case graphic = "그래픽 디자인"
-    case product = "프로덕트 디자인"
+    case productDesign = "프로덕트 디자인"
     
     // Planner
-    case service = "서비스 기획"
-    case product = "프로덕트 기획"
-    case business = "비즈니스 기획"
+    case servicePlanning = "서비스 기획"
+    case productPlanning = "프로덕트 기획"
+    case businessPlanning = "비즈니스 기획"
     
     // Business
     case strategy = "전략"
@@ -84,14 +84,14 @@ enum SubCategory: String, Codable, Equatable {
             return [.figma, .sketch, .userResearch, .prototyping]
         case .graphic:
             return [.illustrator, .photoshop, .branding]
-        case .product:
+        case .productDesign:
             return [.designSystem, .interaction, .motion]
-        case .service:
+        case .servicePlanning:  //
             return [.userFlow, .wireframe, .roadmap]
-        case .product:
-            return [.mvp, .ab testing, .analytics]
-        case .business:
-            return [.bm canvas, .financial, .partnership]
+        case .productPlanning:  //
+            return [.mvp, .abTesting, .analytics]
+        case .businessPlanning:  //
+            return [.bmCanvas, .financial, .partnership]
         case .strategy:
             return [.swot, .okr, .kpi]
         case .operations:

@@ -14,7 +14,6 @@ struct DurationSelectionView: View {
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
-                // Navigation
                 HStack(spacing: 16) {
                     Button {
                         store.send(.backTapped)
