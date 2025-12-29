@@ -327,10 +327,18 @@ struct OnboardingFeature {
             
             state.durationSelection = nil
             state.summary = OnboardingSummaryFeature.State(
+                userName: state.onboardingData.userName,
                 leaveHomeTime: state.onboardingData.leaveHomeTime,
                 returnHomeTime: state.onboardingData.returnHomeTime,
                 dailyUsageMinutes: state.onboardingData.dailyUsageMinutes,
-                programWeeks: state.onboardingData.programWeeks
+                programWeeks: state.onboardingData.programWeeks,
+                contentType: state.onboardingData.contentType,
+                fileName: state.onboardingData.uploadedFileURL?.lastPathComponent,
+                mainCategory: state.onboardingData.selectedMainCategory?.rawValue,
+                subCategory: state.onboardingData.selectedSubCategory?.rawValue,
+                detailCategory: state.onboardingData.selectedDetailCategory?.rawValue,
+                difficulty: state.onboardingData.difficulty,
+                customPrompt: state.onboardingData.customPrompt
             )
             return .none
             

@@ -12,18 +12,26 @@ import Foundation
 struct OnboardingSummaryFeature {
     @ObservableState
     struct State: Equatable {
+        let userName: String
         let leaveHomeTime: Date?
         let returnHomeTime: Date?
         let dailyUsageMinutes: Int
         let programWeeks: Int
+        let contentType: OnboardingData.ContentType
+        let fileName: String?
+        let mainCategory: String?
+        let subCategory: String?
+        let detailCategory: String?
+        let difficulty: String?
+        let customPrompt: String
         
         var leaveTimeText: String {
-            guard let time = leaveHomeTime else { return "-" }
+            guard let time = leaveHomeTime else { return "미설정" }
             return formatTime(time)
         }
         
         var returnTimeText: String {
-            guard let time = returnHomeTime else { return "-" }
+            guard let time = returnHomeTime else { return "미설정" }
             return formatTime(time)
         }
         
@@ -35,10 +43,27 @@ struct OnboardingSummaryFeature {
             "\(programWeeks)주"
         }
         
+        var categoryText: String {
+            guard let main = mainCategory,
+                  let sub = subCategory,
+                  let detail = detailCategory else {
+                return "미설정"
+            }
+            return "\(main) > \(sub) > \(detail)"
+        }
+        
+        var fileNameText: String {
+            fileName ?? "없음"
+        }
+        
+        var difficultyText: String {
+            difficulty ?? "미설정"
+        }
+        
         private func formatTime(_ date: Date) -> String {
             let formatter = DateFormatter()
-            formatter.dateFormat = "a h:mm"
             formatter.locale = Locale(identifier: "ko_KR")
+            formatter.dateFormat = "a hh:mm"
             return formatter.string(from: date)
         }
     }
