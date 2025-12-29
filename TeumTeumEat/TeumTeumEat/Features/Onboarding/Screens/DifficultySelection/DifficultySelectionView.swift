@@ -11,225 +11,200 @@ import ComposableArchitecture
 struct DifficultySelectionView: View {
     let store: StoreOf<DifficultySelectionFeature>
     @FocusState private var isTextEditorFocused: Bool
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var keyboardHeight: CGFloat = 0
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Navigation
-            HStack(spacing: 16) {
-                Button {
-                    store.send(.backTapped)
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                        .frame(width: 40, height: 40)
-                        .contentShape(Rectangle())
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                HStack(spacing: 16) {
+                    Button {
+                        store.send(.backTapped)
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                            .frame(width: 40, height: 40)
+                            .contentShape(Rectangle())
+                    }
+                    
+                    TTEProgressBar(
+                        currentStep: 4,
+                        totalSteps: 5,
+                        height: 15
+                    )
                 }
+                .padding(.horizontal, 24)
                 
-                TTEProgressBar(
-                    currentStep: 4,
-                    totalSteps: 5,
-                    height: 15
-                )
-            }
-            .padding(.horizontal, 24)
-            
-            ScrollView {
-                VStack(spacing: 0) {
-                    Text("난이도를 선택하세요!")
-                        .titleSemibold18()
-                    
-                    Image("pose=front")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 200)
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 80)
-                        .padding(.top, 20)
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("난이도")
-                            .bodyMedium18()
-                            .foregroundColor(.black)
-                        
-                        Button(action: {
-                            store.send(.difficultyButtonTapped)
-                        }) {
-                            HStack {
-                                Spacer()
-                                Text(store.difficultyText)
-                                    .font(.system(size: 16))
-                                    .foregroundColor(store.selectedDifficulty != nil ? .primary : .gray)
-                                Spacer()
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 16)
-                            .background(Color.white)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(store.selectedDifficulty != nil ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
-                            )
-                            .cornerRadius(12)
-                        }
-                    }
-                    .padding(.horizontal, 30)
-                    .padding(.top, 56.33)
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("퀴즈 커스텀 설정 (선택)")
-                            .bodyMedium18()
-                            .foregroundColor(.black)
-                        
-                        VStack(spacing: 0) {
-                            ZStack(alignment: .topLeading) {
-                                if store.customPrompt.isEmpty {
-                                    Text("퀴즈에 필요한 프롬포트 있으면 설정해주세요")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.gray)
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 12)
-                                }
+                GeometryReader { scrollGeometry in
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                Image("character_difficulty")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: 283)
+                                    .padding(.horizontal, 32)
+                                    .padding(.top, 0)
                                 
-                                TextEditor(text: Binding(
-                                    get: { store.customPrompt },
-                                    set: { store.send(.customPromptChanged($0)) }
-                                ))
-                                .font(.system(size: 14))
-                                .focused($isTextEditorFocused)
-                                .frame(height: 80)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .scrollContentBackground(.hidden)
-                            }
-                            .background(Color.white)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(isTextEditorFocused ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
-                            )
-                            .cornerRadius(12)
-                            
-                            HStack {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("퀴즈 난이도 설정")
+                                        .titleSemibold16()
+                                        .foregroundColor(.black)
+                                    
+                                    HStack(spacing: 16) {
+                                        
+                                        DifficultyButton(
+                                            title: "상",
+                                            isSelected: store.selectedDifficulty == .hard
+                                        ) {
+                                            store.send(.difficultySelected(.hard))
+                                        }
+                                        
+
+                                        DifficultyButton(
+                                            title: "중",
+                                            isSelected: store.selectedDifficulty == .normal
+                                        ) {
+                                            store.send(.difficultySelected(.normal))
+                                        }
+                                        
+                                        DifficultyButton(
+                                            title: "하",
+                                            isSelected: store.selectedDifficulty == .easy
+                                        ) {
+                                            store.send(.difficultySelected(.easy))
+                                        }
+                                    }
+                                    .frame(height: 50)
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.top, 12)
+                                
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("요청 프롬프트")
+                                        .titleSemibold16()
+                                        .foregroundColor(.black)
+                                    
+                                    VStack(spacing: 0) {
+                                        ZStack(alignment: .topLeading) {
+                                            if store.customPrompt.isEmpty {
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    Text("상황설정 예시가 필요합니다.")
+                                                        .font(.system(size: 14))
+                                                        .foregroundColor(.gray)
+                                                    Text("어떤 식으로 할지 어떤 상황인지 입력해주세요.")
+                                                        .font(.system(size: 14))
+                                                        .foregroundColor(.gray)
+                                                    Text("ex) IT 트렌드나 프로그래밍 관련 퀴즈를")
+                                                        .font(.system(size: 14))
+                                                        .foregroundColor(.gray)
+                                                    Text("풀고 싶어요")
+                                                        .font(.system(size: 14))
+                                                        .foregroundColor(.gray)
+                                                }
+                                                .padding(.horizontal, 16)
+                                                .padding(.top, 12)
+                                                .allowsHitTesting(false)
+                                            }
+                                            
+                                            TextEditor(text: Binding(
+                                                get: { store.customPrompt },
+                                                set: { store.send(.customPromptChanged($0)) }
+                                            ))
+                                            .font(.system(size: 14))
+                                            .focused($isTextEditorFocused)
+                                            .frame(height: 96)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 8)
+                                            .scrollContentBackground(.hidden)
+                                        }
+                                        
+                                        HStack {
+                                            Spacer()
+                                            Text("\(store.characterCount) / 30")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.gray)
+                                                .padding(.trailing, 16)
+                                                .padding(.bottom, 12)
+                                        }
+                                    }
+                                    .background(Color.white)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(isTextEditorFocused ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
+                                    .cornerRadius(12)
+                                }
+                                .padding(.horizontal, 30)
+                                .padding(.top, 24)
+                                .padding(.bottom, isTextEditorFocused ? keyboardHeight - 100 : 0)
+                                .id("textEditor")
+
                                 Spacer()
-                                Text("\(store.characterCount) / 30")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.gray)
+                                    .frame(minHeight: isTextEditorFocused ? 0 : 30)
+                                
+                                TTEButton(
+                                    title: "다음",
+                                    size: .large,
+                                    isEnabled: store.canProceed
+                                ) {
+                                    isTextEditorFocused = false
+                                    store.send(.nextTapped)
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 32)
                             }
-                            .padding(.top, 8)
+                            .frame(minHeight: scrollGeometry.size.height)
+                        }
+                        .scrollDismissesKeyboard(.interactively)
+                        .onTapGesture {
+                            isTextEditorFocused = false
+                        }
+                        .onChange(of: isTextEditorFocused) { _, isFocused in
+                            if isFocused {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        proxy.scrollTo("textEditor", anchor: .center)
+                                    }
+                                }
+                            }
                         }
                     }
-                    .padding(.horizontal, 30)
-                    .padding(.top, 24)
                 }
-                .padding(.top, 60)
             }
-            .scrollDismissesKeyboard(.interactively)
-            .onTapGesture {
-                isTextEditorFocused = false
-            }
-            
-            Spacer()
-            
-            TTEButton(
-                title: "다음",
-                size: .large,
-                isEnabled: store.canProceed
-            ) {
-                isTextEditorFocused = false
-                store.send(.nextTapped)
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 32)
-        }
-        .sheet(isPresented: Binding(
-            get: { store.isDifficultyPickerPresented },
-            set: { if !$0 { store.send(.difficultyPickerDismissed) } }
-        )) {
-            DifficultyPickerModal(
-                selectedDifficulty: Binding(
-                    get: { store.selectedDifficulty },
-                    set: { if let difficulty = $0 { store.send(.difficultySelected(difficulty)) } }
-                ),
-                onDismiss: {
-                    store.send(.difficultyPickerDismissed)
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
+                if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+                    keyboardHeight = keyboardFrame.height
                 }
-            )
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                keyboardHeight = 0
+            }
         }
     }
 }
 
-struct DifficultyPickerModal: View {
-    @Binding var selectedDifficulty: DifficultySelectionFeature.State.Difficulty?
-    let onDismiss: () -> Void
+struct DifficultyButton: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
     
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // 난이도 선택 버튼들
-                VStack(spacing: 16) {
-                    ForEach(DifficultySelectionFeature.State.Difficulty.allCases, id: \.self) { difficulty in
-                        Button(action: {
-                            selectedDifficulty = difficulty
-                            onDismiss()
-                        }) {
-                            HStack(spacing: 16) {
-                                // 아이콘
-                                Image(systemName: difficulty.icon)
-                                    .font(.system(size: 24))
-                                    .foregroundColor(selectedDifficulty == difficulty ? .blue : .primary)
-                                    .frame(width: 40)
-                                
-                                VStack(alignment: .leading, spacing: 4) {
-                                    // 난이도 이름
-                                    Text(difficulty.rawValue)
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(.primary)
-                                    
-                                    // 설명
-                                    Text(difficulty.description)
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.gray)
-                                }
-                                
-                                Spacer()
-                                
-                                // 체크마크
-                                if selectedDifficulty == difficulty {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(.blue)
-                                }
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 16)
-                            .background(Color.white)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(selectedDifficulty == difficulty ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
-                            )
-                            .cornerRadius(12)
-                        }
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                
-                Spacer()
-            }
-            .navigationTitle("난이도 선택")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        onDismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.gray)
-                    }
-                }
-            }
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(isSelected ? .white : ._7_A_7_A_7_A)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(isSelected ? Color.blue : Color.white)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isSelected ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
+                )
+                .cornerRadius(12)
         }
-        .presentationDetents([.height(400)])
-        .presentationDragIndicator(.visible)
     }
 }
+
+
