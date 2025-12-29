@@ -12,88 +12,87 @@ struct UsageDurationView: View {
     let store: StoreOf<UsageDurationFeature>
     
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 16) {
-                Button {
-                    store.send(.backTapped)
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                        .frame(width: 40, height: 40)
-                        .contentShape(Rectangle())
-                }
-                
-                TTEProgressBar(
-                    currentStep: 3,
-                    totalSteps: 5,
-                    height: 15
-                )
-            }
-            .padding(.horizontal, 24)
-            
-            ScrollView {
-                VStack(spacing: 0) {
-                    Text("하루 몇 분 이용할 건가요?")
-                        .titleSemibold18()
-                    
-                    Image("pose=front")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 200)
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 80)
-                        .padding(.top, 20)
-                    
-                    VStack(spacing: 16) {
-                        DurationSelectButton(
-                            text: "5분",
-                            isSelected: store.selectedDuration == .five
-                        ) {
-                            store.send(.durationSelected(.five))
-                        }
-                        
-                        DurationSelectButton(
-                            text: "7분",
-                            isSelected: store.selectedDuration == .seven
-                        ) {
-                            store.send(.durationSelected(.seven))
-                        }
-                        
-                        DurationSelectButton(
-                            text: "10분",
-                            isSelected: store.selectedDuration == .ten
-                        ) {
-                            store.send(.durationSelected(.ten))
-                        }
-                        
-                        DurationSelectButton(
-                            text: "15분+",
-                            isSelected: store.selectedDuration == .fifteenPlus
-                        ) {
-                            store.send(.durationSelected(.fifteenPlus))
-                        }
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                HStack(spacing: 16) {
+                    Button {
+                        store.send(.backTapped)
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                            .frame(width: 40, height: 40)
+                            .contentShape(Rectangle())
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 56.33)
-                    .padding(.bottom, 72)
+                    
+                    TTEProgressBar(
+                        currentStep: 3,
+                        totalSteps: 5,
+                        height: 15
+                    )
                 }
-                .padding(.top, 60)
+                .padding(.horizontal, 24)
+                
+                GeometryReader { scrollGeometry in
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            Image("character_clock")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 264)
+                                .padding(.horizontal, 32)
+                                .padding(.top, 20)
+                            
+                            VStack(spacing: 16) {
+                                DurationSelectButton(
+                                    text: "5분",
+                                    isSelected: store.selectedDuration == .five
+                                ) {
+                                    store.send(.durationSelected(.five))
+                                }
+                                
+                                DurationSelectButton(
+                                    text: "7분",
+                                    isSelected: store.selectedDuration == .seven
+                                ) {
+                                    store.send(.durationSelected(.seven))
+                                }
+                                
+                                DurationSelectButton(
+                                    text: "10분",
+                                    isSelected: store.selectedDuration == .ten
+                                ) {
+                                    store.send(.durationSelected(.ten))
+                                }
+                                
+                                DurationSelectButton(
+                                    text: "15분+",
+                                    isSelected: store.selectedDuration == .fifteenPlus
+                                ) {
+                                    store.send(.durationSelected(.fifteenPlus))
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 20)
+                            
+                            Spacer()
+                                .frame(minHeight: 30)
+                            
+                            TTEButton(
+                                title: "다음",
+                                size: .large,
+                                isEnabled: store.canProceed
+                            ) {
+                                store.send(.nextTapped)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 32)
+                        }
+                        .frame(minHeight: scrollGeometry.size.height)
+                    }
+                    .scrollDismissesKeyboard(.interactively)
+                }
             }
-            .scrollDismissesKeyboard(.interactively)
-            
-            Spacer()
-            
-            // 하단 다음 버튼
-            TTEButton(
-                title: "다음",
-                size: .large,
-                isEnabled: store.canProceed
-            ) {
-                store.send(.nextTapped)
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 32)
         }
     }
 }
