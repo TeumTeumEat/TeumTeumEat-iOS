@@ -13,7 +13,7 @@ struct ContentSelectionView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            VStack(spacing: 0) {  
+            VStack(spacing: 0) {
                 HStack(spacing: 16) {
                     Button {
                         store.send(.backTapped)
@@ -28,14 +28,8 @@ struct ContentSelectionView: View {
                     TTEProgressBar(
                         currentStep: 4,
                         totalSteps: 5,
-                        height: 15,
-                        showStepText: false
+                        height: 15
                     )
-                    
-                    Text("4/5")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.gray)
-                        .padding(.leading, 10)
                 }
                 .padding(.horizontal, 24)
                 

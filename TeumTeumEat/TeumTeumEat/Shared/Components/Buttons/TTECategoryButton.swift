@@ -13,7 +13,7 @@ struct TTECategoryButton: View {
     let subtitle: String
     let isSelected: Bool
     
-    let width: CGFloat
+    let width: CGFloat?
     let height: CGFloat
     
     let customIconTint: Color?
@@ -27,7 +27,7 @@ struct TTECategoryButton: View {
         title: String,
         subtitle: String,
         isSelected: Bool = false,
-        width: CGFloat = 142,
+        width: CGFloat? = nil,
         height: CGFloat = 200,
         iconTint: Color? = ._7_A_7_A_7_A,
         borderColor: Color? = .C_8_C_8_C_8,
@@ -90,7 +90,8 @@ struct TTECategoryButton: View {
                         .multilineTextAlignment(.center)
                 }
             }
-            .frame(width: width, height: height)
+            .frame(maxWidth: width ?? .infinity)
+            .frame(height: height)
             .background(Color.clear)
             .cornerRadius(16)
             .overlay(
