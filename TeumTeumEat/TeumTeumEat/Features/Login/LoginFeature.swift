@@ -27,7 +27,9 @@ struct LoginFeature {
     
     enum Action {
         case kakaoLoginTapped
-        case appleLoginTapped
+        
+        case appleLoginSuccess(idToken: String)
+        case appleLoginFailure(Error)
 
         case loginAttempt(idToken: String, provider: SocialProvider, termsAgreed: Bool)
         case loginResponse(Result<SocialLoginResponse, Error>)
@@ -65,18 +67,19 @@ struct LoginFeature {
                     }
                 }
                 
-            case .appleLoginTapped:
-                state.isLoading = true
-                state.errorMessage = nil
+            case .appleLoginSuccess(let idToken):
+                print("애플 로그인 성공 - 서버 로그인 시도")
+                return .send(.loginAttempt(
+                    idToken: idToken,
+                    provider: .appleProvider,
+                    termsAgreed: false
+                ))
                 
-                return .run { send in
-                    do {
-                        let idToken = try await loginWithAppleSDK()
-                        await send(.loginAttempt(idToken: idToken, provider: .appleProvider, termsAgreed: false))
-                    } catch {
-                        await send(.loginResponse(.failure(error)))
-                    }
-                }
+            case .appleLoginFailure(let error):
+                state.isLoading = false
+                state.errorMessage = error.localizedDescription
+                print("애플 로그인 실패: \(error)")
+                return .none
                 
             case .loginAttempt(let idToken,let provider, let termsAgreed):
                 state.isLoading = true
@@ -191,11 +194,6 @@ struct LoginFeature {
 
 extension LoginFeature {
 
-    private func loginWithAppleSDK() async throws -> String {
-        // TODO: Apple SDK 연동
-        fatalError("Apple SDK 연동 필요")
-    }
-    
     private func loginWithKakaoSDK() async throws -> String {
         return try await withCheckedThrowingContinuation { continuation in
             if UserApi.isKakaoTalkLoginAvailable() {
