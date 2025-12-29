@@ -128,7 +128,7 @@ struct OnboardingSummaryView: View {
                         .padding(.horizontal, 20)
                     }
                     .padding(.bottom, 32)
-                    .background(Color(UIColor.systemBackground)) 
+                    .background(Color(UIColor.systemBackground))
                 }
             }
         }

@@ -12,15 +12,14 @@ struct OnboardingLoadingView: View {
     let store: StoreOf<OnboardingLoadingFeature>
     
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer()
-            
-            Image("pose=front")
+        VStack(spacing: 0) {            
+            Image("Group 213")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 200, height: 200)
+                .frame(width: 280, height: 280)
+                .padding(.top, 117)
             
-            VStack(spacing: 8) {
+            VStack(spacing: 0) {
                 Text("틈틈잇을 생성하는 중")
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(.primary)
@@ -29,12 +28,12 @@ struct OnboardingLoadingView: View {
                     .font(.system(size: 16))
                     .foregroundColor(.gray)
             }
-            .padding(.top, 40)
+            .padding(.top, 29)
             
             Spacer()
             
             // 로딩 단계 표시
-            VStack(spacing: 16) {
+            VStack(spacing: 20) {
                 ForEach(store.loadingSteps) { step in
                     LoadingStepRow(
                         title: step.title,
