@@ -12,14 +12,8 @@ struct ContentSelectionView: View {
     let store: StoreOf<ContentSelectionFeature>
     
     var body: some View {
-        ZStack {
-            Color.clear
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    hideKeyboard()
-                }
-            
-            VStack(spacing: 0) {
+        GeometryReader { geometry in
+            VStack(spacing: 0) {  
                 HStack(spacing: 16) {
                     Button {
                         store.send(.backTapped)
@@ -44,60 +38,61 @@ struct ContentSelectionView: View {
                         .padding(.leading, 10)
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 16)
-                .padding(.bottom, 12)
                 
-                VStack(spacing: 24) {
-                    Text("학습 방법을 선택해주세요")
-                        .titleSemibold18()
-                    
-                    Image("pose=front")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 200)
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 80)
-                    
-                    HStack(spacing: 16) {
-                        TTECategoryButton(
-                            icon: Image("files"),
-                            title: "파일 업로드",
-                            subtitle: "PDF 파일을\n업로드해요",
-                            isSelected: store.selectedType == .fileUpload
-                        ) {
-                            store.send(.contentTypeSelected(.fileUpload))
+                GeometryReader { scrollGeometry in
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            Image("character_study")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 283)
+                                .padding(.horizontal, 32)
+                                .padding(.top, 10)
+                            
+                            HStack(spacing: 16) {
+                                TTECategoryButton(
+                                    icon: Image("files"),
+                                    title: "파일 업로드",
+                                    subtitle: "PDF 파일을\n업로드해요",
+                                    isSelected: store.selectedType == .fileUpload
+                                ) {
+                                    store.send(.contentTypeSelected(.fileUpload))
+                                }
+                                
+                                TTECategoryButton(
+                                    icon: Image("files"),
+                                    title: "카테고리 선택",
+                                    subtitle: "공부하고 싶은걸\n골라볼게요",
+                                    isSelected: store.selectedType == .category
+                                ) {
+                                    store.send(.contentTypeSelected(.category))
+                                }
+                            }
+                            .padding(.horizontal, 30)
+                            .padding(.top, 11)
+                            
+                            Spacer()
+                                .frame(minHeight: 30)
+                            
+                            Button {
+                                store.send(.nextTapped)
+                            } label: {
+                                Text("다음")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 60)
+                                    .background(store.canProceed ? Color.blue : Color.gray)
+                                    .cornerRadius(12)
+                            }
+                            .disabled(!store.canProceed)
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 32)
                         }
-                        
-                        TTECategoryButton(
-                            icon: Image("files"),
-                            title: "카테고리 선택",
-                            subtitle: "공부하고 싶은걸\n골라볼게요",
-                            isSelected: store.selectedType == .category
-                        ) {
-                            store.send(.contentTypeSelected(.category))
-                        }
+                        .frame(minHeight: scrollGeometry.size.height)
                     }
-                    .padding(.horizontal, 30)
+                    .scrollDismissesKeyboard(.interactively)
                 }
-                .padding(.top, 40)
-                
-                Spacer()
-                
-                Button {
-                    hideKeyboard()
-                    store.send(.nextTapped)
-                } label: {
-                    Text("다음")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                        .background(store.canProceed ? Color.blue : Color.gray)
-                        .cornerRadius(12)
-                }
-                .disabled(!store.canProceed)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 32)
             }
         }
     }
