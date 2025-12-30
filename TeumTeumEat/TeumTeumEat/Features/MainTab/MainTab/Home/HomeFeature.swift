@@ -15,24 +15,36 @@ struct HomeFeature {
         var fireCount: Int = 0
         var stampCount: Int = 0
         var isTodayQuizCompleted: Bool = false
+        var myPage: MyPageFeature.State?
     }
     
     enum Action {
         case settingTapped
         case toggleQuizStatus
+        case myPage(MyPageFeature.Action)
     }
     
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .settingTapped:
-                print("설정 버튼 클릭")
-                // TODO: 설정 화면으로 이동
+                state.myPage = MyPageFeature.State()
                 return .none
+                
             case .toggleQuizStatus:
                 state.isTodayQuizCompleted.toggle()
                 return .none
+                
+            case .myPage(.delegate(.dismissed)):
+                state.myPage = nil
+                return .none
+                
+            case .myPage:
+                return .none
             }
+        }
+        .ifLet(\.myPage, action: \.myPage) {
+            MyPageFeature()
         }
     }
 }
@@ -47,8 +59,7 @@ struct HomeView: View {
                     fireCount: store.fireCount,
                     stampCount: store.stampCount,
                     onSettingTapped: {
-                       // store.send(.settingTapped)
-                        store.send(.toggleQuizStatus)
+                        store.send(.settingTapped)
                     }
                 )
                 
@@ -59,13 +70,21 @@ struct HomeView: View {
                 
                 ScrollView {
                     VStack {
-
-                        
                         // TODO: 홈 콘텐츠
                     }
                 }
             }
             .navigationBarHidden(true)
+            .navigationDestination(
+                isPresented: Binding(
+                    get: { store.myPage != nil },
+                    set: { if !$0 { store.send(.myPage(.delegate(.dismissed))) } }
+                )
+            ) {
+                if let myPageStore = store.scope(state: \.myPage, action: \.myPage) {
+                    MyPageView(store: myPageStore)
+                }
+            }
         }
     }
 }
