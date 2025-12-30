@@ -12,16 +12,77 @@ struct CategorySelectionView: View {
     let store: StoreOf<CategorySelectionFeature>
     
     var body: some View {
-        switch store.currentStep {
-        case .mainCategory:
-            MainCategoryStepView(store: store)
-        case .subCategory:
-            SubCategoryStepView(store: store)
-        case .detailCategory:
-            DetailCategoryStepView(store: store)
+        Group {
+            if store.isLoading {
+                LoadingView()
+            } else if let error = store.loadError {
+                CategoryErrorView(
+                    error: error,
+                    onRetry: { store.send(.retryLoad) }
+                )
+            } else {
+                switch store.currentStep {
+                case .mainCategory:
+                    MainCategoryStepView(store: store)
+                case .subCategory:
+                    SubCategoryStepView(store: store)
+                case .detailCategory:
+                    DetailCategoryStepView(store: store)
+                }
+            }
+        }
+        .onAppear {
+            store.send(.onAppear)
         }
     }
 }
+
+struct CategoryErrorView: View {
+    let error: String
+    let onRetry: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 60))
+                .foregroundColor(.red)
+            
+            Text("카테고리를 불러올 수 없습니다")
+                .font(.headline)
+            
+            Text(error)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            
+            TTEButton(
+                title: "다시 시도",
+                size: .large,
+                isEnabled: true
+            ) {
+                onRetry()
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+}
+
+struct LoadingView: View {
+    var body: some View {
+        VStack(spacing: 20) {
+            ProgressView()
+                .scaleEffect(1.5)
+            
+            Text("카테고리를 불러오는 중...")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
+    }
+}
+
+
+
 
 struct MainCategoryStepView: View {
     let store: StoreOf<CategorySelectionFeature>
