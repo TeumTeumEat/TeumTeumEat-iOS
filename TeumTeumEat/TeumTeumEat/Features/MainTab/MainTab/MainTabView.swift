@@ -61,18 +61,20 @@ struct MainTabView: View {
             }
             
             // 커스텀 TabBar
-            CustomTabBar(
-                selectedTab: store.selectedTab,
-                isRegisterMenuExpanded: store.isRegisterMenuExpanded,
-                onTabSelected: { tab in
-                    store.send(.tabSelected(tab))
-                },
-                onRegisterTapped: {
-                    store.send(.toggleRegisterMenu)
-                }
-            )
-            .padding(.horizontal, 60)
-            .padding(.bottom, 34)
+            if store.home.myPage == nil {
+                CustomTabBar(
+                    selectedTab: store.selectedTab,
+                    isRegisterMenuExpanded: store.isRegisterMenuExpanded,
+                    onTabSelected: { tab in
+                        store.send(.tabSelected(tab))
+                    },
+                    onRegisterTapped: {
+                        store.send(.toggleRegisterMenu)
+                    }
+                )
+                .padding(.horizontal, 60)
+                .padding(.bottom, 34)
+            }
         }
         .ignoresSafeArea(.keyboard)
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: store.isRegisterMenuExpanded)
@@ -182,3 +184,4 @@ struct FloatingMenuButton: View {
         }
     }
 }
+
