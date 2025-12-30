@@ -302,8 +302,10 @@ struct DetailCategoryStepView: View {
                 TTEButton(
                     title: detailCategory.name,
                     size: .large,
-                    style: isSelected ? .primary : .secondary,
-                    isEnabled: true
+                    style: .secondary,
+                    isEnabled: true,
+                    foregroundColor: isSelected ? .blue : .primary,
+                    borderColor: isSelected ? .blue : .gray.opacity(0.3)
                 ) {
                     store.send(.detailCategorySelected(detailCategory))
                 }
