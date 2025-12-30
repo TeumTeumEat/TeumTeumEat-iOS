@@ -254,6 +254,27 @@ extension APIClient {
           print("Goal created successfully - Type: \(type.rawValue), Period: \(studyPeriod)")
       }
     
+    /// 전체 목표 목록 조회
+    func fetchGoals() async throws -> [GoalResponse] {
+        let response: APIResponse<GoalListData> = try await request(
+            endpoint: "/api/v1/goals",
+            method: .get,
+            requiresAuth: true
+        )
+        
+        guard response.code == "OK",
+              let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("Goals fetched successfully - Count: \(data.goalResponses.count)")
+        return data.goalResponses
+    }
+    
     /// PDF 문서 등록
      func registerDocument(
          goalId: Int,
