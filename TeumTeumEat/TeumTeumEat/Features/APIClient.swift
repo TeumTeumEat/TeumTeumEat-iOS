@@ -13,6 +13,7 @@ enum HTTPMethod: String {
     case post = "POST"
     case put = "PUT"
     case delete = "DELETE"
+    case patch = "PATCH"
 }
 
 struct APIClient {
@@ -190,4 +191,32 @@ extension APIClient {
         }
         print("User name updated successfully: \(name)")
     }
+    
+    /// 출퇴근 정보 수정
+       func updateCommuteInfo(
+           startTime: String,
+           endTime: String,
+           usageTime: Int
+       ) async throws {
+           let response: APIResponse<EmptyData> = try await request(
+               endpoint: "/api/v1/users/commute-info",
+               method: .patch,
+               body: UpdateCommuteInfoRequest(
+                   startTime: startTime,
+                   endTime: endTime,
+                   usageTime: usageTime
+               ),
+               requiresAuth: true
+           )
+           
+           guard response.code == "OK" else {
+               throw APIError.serverError(
+                   code: response.code,
+                   message: response.message,
+                   details: response.details
+               )
+           }
+           
+           print("Commute info updated successfully - Start: \(startTime), End: \(endTime), Usage: \(usageTime)분")
+       }
 }
