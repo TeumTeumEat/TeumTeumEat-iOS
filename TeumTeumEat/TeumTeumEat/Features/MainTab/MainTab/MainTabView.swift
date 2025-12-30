@@ -64,7 +64,7 @@ struct MainTabView: View {
                 }
             )
             .padding(.horizontal, 60)
-            .padding(.bottom, 34)
+            .padding(.bottom, 28)
         }
         .ignoresSafeArea(.keyboard)
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: store.isRegisterMenuExpanded)

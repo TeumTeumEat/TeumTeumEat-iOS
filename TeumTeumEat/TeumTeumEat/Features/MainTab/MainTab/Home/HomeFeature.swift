@@ -12,12 +12,14 @@ import ComposableArchitecture
 struct HomeFeature {
     @ObservableState
     struct State: Equatable {
-        var fireCount: Int = 0 
+        var fireCount: Int = 0
         var stampCount: Int = 0
+        var isTodayQuizCompleted: Bool = false
     }
     
     enum Action {
         case settingTapped
+        case toggleQuizStatus
     }
     
     var body: some ReducerOf<Self> {
@@ -26,6 +28,9 @@ struct HomeFeature {
             case .settingTapped:
                 print("설정 버튼 클릭")
                 // TODO: 설정 화면으로 이동
+                return .none
+            case .toggleQuizStatus:
+                state.isTodayQuizCompleted.toggle()
                 return .none
             }
         }
@@ -42,17 +47,48 @@ struct HomeView: View {
                     fireCount: store.fireCount,
                     stampCount: store.stampCount,
                     onSettingTapped: {
-                        store.send(.settingTapped)
+                       // store.send(.settingTapped)
+                        store.send(.toggleQuizStatus)
                     }
                 )
                 
+                Spacer()
+                    .frame(height: store.isTodayQuizCompleted ? 5 : 11)
+                
+                CharacterImageView(isTodayQuizCompleted: store.isTodayQuizCompleted)
+                
                 ScrollView {
                     VStack {
+
+                        
                         // TODO: 홈 콘텐츠
                     }
                 }
             }
             .navigationBarHidden(true)
+        }
+    }
+}
+
+// MARK: - Character Image View
+struct CharacterImageView: View {
+    let isTodayQuizCompleted: Bool
+    
+    var body: some View {
+        if isTodayQuizCompleted {
+            Image("character_eat")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 554)
+                .padding(.leading, 30)
+                .padding(.trailing, 8.47)
+        } else {
+            Image("character_hamburger")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 548)
+                .padding(.leading, 30)
+                .padding(.trailing, 3)
         }
     }
 }
