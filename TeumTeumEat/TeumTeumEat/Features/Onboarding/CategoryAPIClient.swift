@@ -15,31 +15,98 @@ struct CategoryAPIClient {
 extension CategoryAPIClient: DependencyKey {
     static let liveValue = CategoryAPIClient(
         fetchCategories: {
-            
-            let baseURL = Config.baseURL
-            let endPoint = "/api/v1/categories"
-            let fullPath = baseURL + endPoint
-            print("fullpath: \(fullPath)")
-            
-            let url = URL(string: fullPath)!
-            let (data, _) = try await URLSession.shared.data(from: url)
-            
-            // Base Response로 디코딩
-            let response = try JSONDecoder().decode(
-                APIResponse<CategoryData>.self,
-                from: data
-            )
-            
-            // 에러 처리
-            guard response.code == "OK",
-                  let categoryData = response.data else {
-                throw CategoryAPIError.invalidResponse(
-                    message: response.message,
-                    details: response.details
+            do {
+                let baseURL = Config.baseURL
+                let endPoint = "/api/v1/categories"
+                let fullPath = baseURL + endPoint
+                print("Fetching categories from: \(fullPath)")
+                
+                guard let url = URL(string: fullPath) else {
+                    print("Invalid URL: \(fullPath)")
+                    throw CategoryAPIError.invalidResponse(
+                        message: "잘못된 URL입니다.",
+                        details: nil
+                    )
+                }
+                
+                // URLRequest 생성
+                var request = URLRequest(url: url)
+                request.httpMethod = "GET"
+                
+                //  KeyChain에서 토큰 가져오기
+                if let token = KeyChainManager.shared.getAccessToken() {
+                    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                    print("Access Token added to request")
+                } else {
+                    print("No access token found in KeyChain")
+                    throw CategoryAPIError.invalidResponse(
+                        message: "인증 토큰이 없습니다.",
+                        details: "다시 로그인해주세요."
+                    )
+                }
+                
+                let (data, response) = try await URLSession.shared.data(for: request)
+                
+                // HTTP 응답 확인
+                if let httpResponse = response as? HTTPURLResponse {
+                    print("HTTP Status: \(httpResponse.statusCode)")
+                    
+                    guard (200...299).contains(httpResponse.statusCode) else {
+                        // 401 에러 처리
+                        if httpResponse.statusCode == 401 {
+                            throw CategoryAPIError.invalidResponse(
+                                message: "인증이 만료되었습니다.",
+                                details: "다시 로그인해주세요."
+                            )
+                        }
+                        throw CategoryAPIError.invalidResponse(
+                            message: "서버 오류 (상태 코드: \(httpResponse.statusCode))",
+                            details: nil
+                        )
+                    }
+                }
+                
+                // 응답 데이터 확인
+                if let jsonString = String(data: data, encoding: .utf8) {
+                    print("Response JSON:")
+                    print(jsonString)
+                }
+                
+                // Base Response로 디코딩
+                let apiResponse = try JSONDecoder().decode(
+                    APIResponse<CategoryData>.self,
+                    from: data
                 )
+                
+                print("API Response Code: \(apiResponse.code)")
+                print("API Response Message: \(apiResponse.message)")
+                
+                // 에러 처리
+                guard apiResponse.code == "OK",
+                      let categoryData = apiResponse.data else {
+                    print("Invalid API Response")
+                    throw CategoryAPIError.invalidResponse(
+                        message: apiResponse.message,
+                        details: apiResponse.details
+                    )
+                }
+                
+                print("Categories loaded: \(categoryData.categoryResponses.count) items")
+                return categoryData.categoryResponses
+                
+            } catch let decodingError as DecodingError {
+                print("Decoding Error: \(decodingError)")
+                throw CategoryAPIError.invalidResponse(
+                    message: "데이터 파싱 오류",
+                    details: decodingError.localizedDescription
+                )
+            } catch let error as CategoryAPIError {
+                print("Category API Error: \(error)")
+                throw error
+            } catch {
+                print("Network Error: \(error)")
+                throw CategoryAPIError.networkError(error)
             }
-            
-            return categoryData.categoryResponses
         }
     )
 }

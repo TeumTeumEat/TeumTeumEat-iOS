@@ -22,9 +22,11 @@ struct TeumTeumEatApp: App {
     
     var body: some Scene {
         WindowGroup {
-            AppView(
-                store: Store(initialState: AppFeature.State()){
-                    AppFeature()
+            OnboardingView(
+                store: Store(initialState: OnboardingFeature.State()) {
+                    OnboardingFeature()
+                } withDependencies: {
+                    $0.categoryAPIClient = .liveValue
                 }
             )
             .onOpenURL(perform:{ url in

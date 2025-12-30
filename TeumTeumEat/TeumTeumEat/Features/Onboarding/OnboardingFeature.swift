@@ -158,19 +158,16 @@ struct OnboardingFeature {
             
             if type == .fileUpload {
                 state.onboardingData.contentType = .fileUpload
-                // 카테고리 데이터 초기화
                 state.onboardingData.selectedMainCategory = nil
                 state.onboardingData.selectedSubCategory = nil
                 state.onboardingData.selectedDetailCategory = nil
             } else {
                 state.onboardingData.contentType = .category
-                // 파일 데이터 초기화
                 state.onboardingData.uploadedFileURL = nil
             }
             
             state.contentSelection = nil
             if type == .fileUpload {
-                // FileUpload State 생성 (복원)
                 var fileUploadState = FileUploadFeature.State()
                 if let url = state.onboardingData.uploadedFileURL {
                     fileUploadState.selectedFileURL = url
@@ -181,7 +178,7 @@ struct OnboardingFeature {
                 }
                 state.fileUpload = fileUploadState
             } else {
-                // CategorySelection State 생성 (복원)
+                // CategorySelection State 복원 (String으로)
                 var categoryState = CategorySelectionFeature.State()
                 categoryState.selectedMainCategory = state.onboardingData.selectedMainCategory
                 categoryState.selectedSubCategory = state.onboardingData.selectedSubCategory
@@ -191,17 +188,10 @@ struct OnboardingFeature {
             
             return .none
 
-        case .contentSelection(.backTapped):
-            return .send(.previousStep)
-            
-            
-            
-            
         case .difficultySelection(.backTapped):
             state.difficultySelection = nil
             
             if state.onboardingData.contentType == .fileUpload {
-                // FileUpload State 생성 (복원)
                 var fileUploadState = FileUploadFeature.State()
                 if let url = state.onboardingData.uploadedFileURL {
                     fileUploadState.selectedFileURL = url
@@ -212,7 +202,7 @@ struct OnboardingFeature {
                 }
                 state.fileUpload = fileUploadState
             } else {
-                // CategorySelection State 생성 (복원) - 3단계 마지막으로
+                // CategorySelection State 복원 - 3단계로
                 var categoryState = CategorySelectionFeature.State()
                 categoryState.currentStep = .detailCategory
                 categoryState.selectedMainCategory = state.onboardingData.selectedMainCategory
@@ -224,11 +214,11 @@ struct OnboardingFeature {
             
         case .categorySelection(.delegate(.saveProgress(let main, let sub, let detail))):
             print("OnboardingFeature - saveProgress")
-            print("Main: \(main?.rawValue ?? "nil")")
-            print("Sub: \(sub?.rawValue ?? "nil")")
-            print("Detail: \(detail?.rawValue ?? "nil")")
+            print("Main: \(main ?? "nil")")
+            print("Sub: \(sub ?? "nil")")
+            print("Detail: \(detail?.name ?? "nil")")
             
-            // 임시 저장 (완료되지 않았지만 진행 상황 유지)
+            // String과 CategoryResponse로 저장
             state.onboardingData.selectedMainCategory = main
             state.onboardingData.selectedSubCategory = sub
             state.onboardingData.selectedDetailCategory = detail
@@ -243,6 +233,8 @@ struct OnboardingFeature {
             
         case .categorySelection(.delegate(.completed(let main, let sub, let detail))):
             print("OnboardingFeature - category completed")
+            
+            // String과 CategoryResponse로 저장
             state.onboardingData.selectedMainCategory = main
             state.onboardingData.selectedSubCategory = sub
             state.onboardingData.selectedDetailCategory = detail
@@ -334,9 +326,9 @@ struct OnboardingFeature {
                 programWeeks: state.onboardingData.programWeeks,
                 contentType: state.onboardingData.contentType,
                 fileName: state.onboardingData.uploadedFileURL?.lastPathComponent,
-                mainCategory: state.onboardingData.selectedMainCategory?.rawValue,
-                subCategory: state.onboardingData.selectedSubCategory?.rawValue,
-                detailCategory: state.onboardingData.selectedDetailCategory?.rawValue,
+                mainCategory: state.onboardingData.selectedMainCategory,
+                subCategory: state.onboardingData.selectedSubCategory,
+                detailCategory: state.onboardingData.selectedDetailCategory?.name,
                 difficulty: state.onboardingData.difficulty,
                 customPrompt: state.onboardingData.customPrompt
             )
@@ -491,27 +483,40 @@ private func printOnboardingData(action: OnboardingFeature.Action, data: Onboard
     }
     
     if let main = data.selectedMainCategory {
-         print("선택 카테고리 - 직군:", main.rawValue)
-     } else {
-         print("선택 카테고리 - 직군: 미설정")
-     }
-     
-     if let sub = data.selectedSubCategory {
-         print("선택 카테고리 - 분야:", sub.rawValue)
-     } else {
-         print("선택 카테고리 - 분야: 미설정")
-     }
-     
-     if let detail = data.selectedDetailCategory {
-         print("선택 카테고리 - 세부:", detail.rawValue)
-     } else {
-         print("선택 카테고리 - 세부: 미설정")
-     }
-
-//    let categories = data.selectedCategories.map { $0.rawValue }.joined(separator: ", ")
+        print("선택 카테고리 - 직군:", main)
+    } else {
+        print("선택 카테고리 - 직군: 미설정")
+    }
+    
+    if let sub = data.selectedSubCategory {
+        print("선택 카테고리 - 분야:", sub)
+    } else {
+        print("선택 카테고리 - 분야: 미설정")
+    }
+    
+    if let detail = data.selectedDetailCategory {
+        print("선택 카테고리 - 세부:", detail.name)
+        print("카테고리 ID:", detail.categoryId)
+        print("카테고리 Path:", detail.path)
+    } else {
+        print("선택 카테고리 - 세부: 미설정")
+    }
 
     print("난이도:", data.difficulty ?? "미설정")
     print("프롬프트:", data.customPrompt.isEmpty ? "없음" : data.customPrompt)
     print("기간:", data.programWeeks, "주")
     print("==========================================")
+}
+
+extension String {
+    var categoryIcon: String {
+        switch self {
+        case "앱개발자": return "phone"
+        case "웹개발자": return "web"
+        case "서버개발자": return "pm"
+        case "디자이너": return "palette"
+        case "PM": return "note"
+        default: return "questionmark.circle"
+        }
+    }
 }

@@ -109,6 +109,12 @@ struct CategorySelectionFeature {
             case .categoriesLoaded(.failure(let error)):
                 state.isLoading = false
                 
+                print("❌ Category Load Error:")
+                print("Error Type: \(type(of: error))")
+                print("Error: \(error)")
+                print("LocalizedDescription: \(error.localizedDescription)")
+                
+                
                 // 에러 메시지 처리
                 if let apiError = error as? CategoryAPIError {
                     state.loadError = apiError.errorDescription
