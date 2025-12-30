@@ -127,13 +127,13 @@ struct MainCategoryStepView: View {
                                 ],
                                 spacing: 12
                             ) {
-                                ForEach(MainCategory.allCases, id: \.self) { category in
+                                ForEach(store.mainCategories, id: \.self) { category in
                                     TTEButton(
-                                        title: category.rawValue,
+                                        title: category,
                                         size: .grid,
                                         style: .secondary,
                                         isEnabled: true,
-                                        icon: Image(category.icon),
+                                        icon: Image(category.categoryIcon),
                                         iconSize: 24,
                                         foregroundColor: .gray,
                                         borderColor: .gray
@@ -205,14 +205,12 @@ struct SubCategoryStepView: View {
                             
                             VStack(spacing: 0) {
                                 FlowLayout(spacing: 12) {
-                                    if let mainCategory = store.selectedMainCategory {
-                                        ForEach(mainCategory.subCategories, id: \.self) { subCategory in
-                                            CategoryChip(
-                                                text: subCategory.rawValue,
-                                                isSelected: store.selectedSubCategory == subCategory
-                                            ) {
-                                                store.send(.subCategorySelected(subCategory))
-                                            }
+                                    ForEach(store.currentSubCategories, id: \.self) { subCategory in
+                                        CategoryChip(
+                                            text: subCategory,
+                                            isSelected: store.selectedSubCategory == subCategory
+                                        ) {
+                                            store.send(.subCategorySelected(subCategory))
                                         }
                                     }
                                 }
@@ -306,17 +304,16 @@ struct DetailCategoryStepView: View {
     @ViewBuilder
     private var detailCategoryButtons: some View {
         VStack(spacing: 16) {
-            if let subCategory = store.selectedSubCategory {
-                ForEach(subCategory.detailCategories, id: \.self) { detailCategory in
-                    let isSelected = store.selectedDetailCategory == detailCategory
-                    
-                    TTEButton(
-                        title: detailCategory.rawValue,
-                        size: .large,
-                        style: isSelected ? .primary : .secondary, isEnabled: true
-                    ) {
-                        store.send(.detailCategorySelected(detailCategory))
-                    }
+            ForEach(store.currentDetailCategories) { detailCategory in
+                let isSelected = store.selectedDetailCategory?.id == detailCategory.id
+                
+                TTEButton(
+                    title: detailCategory.name,
+                    size: .large,
+                    style: isSelected ? .primary : .secondary,
+                    isEnabled: true
+                ) {
+                    store.send(.detailCategorySelected(detailCategory))
                 }
             }
         }
