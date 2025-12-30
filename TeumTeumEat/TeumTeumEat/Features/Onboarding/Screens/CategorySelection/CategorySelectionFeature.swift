@@ -12,15 +12,39 @@ import ComposableArchitecture
 struct CategorySelectionFeature {
     @ObservableState
     struct State: Equatable {
-        // 현재 단계
         var currentStep: Step = .mainCategory
         
-        // 선택된 카테고리들
-        var selectedMainCategory: MainCategory?
-        var selectedSubCategory: SubCategory?
-        var selectedDetailCategory: DetailCategory?
+        // API 데이터
+        var categories: [CategoryResponse] = []
+        var isLoading: Bool = false
+        var loadError: String?
         
-        // 다음 버튼 활성화
+        // 선택된 값
+        var selectedMainCategory: String?
+        var selectedSubCategory: String?
+        var selectedDetailCategory: CategoryResponse?
+        
+        // Computed properties
+        var mainCategories: [String] {
+            Array(Set(categories.compactMap { $0.mainCategory })).sorted()
+        }
+        
+        var currentSubCategories: [String] {
+            guard let main = selectedMainCategory else { return [] }
+            let subs = categories
+                .filter { $0.mainCategory == main }
+                .compactMap { $0.subCategory }
+            return Array(Set(subs)).sorted()
+        }
+        
+        var currentDetailCategories: [CategoryResponse] {
+            guard let main = selectedMainCategory,
+                  let sub = selectedSubCategory else { return [] }
+            return categories.filter {
+                $0.mainCategory == main && $0.subCategory == sub
+            }
+        }
+        
         var canProceed: Bool {
             switch currentStep {
             case .mainCategory:
@@ -40,44 +64,71 @@ struct CategorySelectionFeature {
     }
     
     enum Action {
+        case onAppear
+        case retryLoad
+        case categoriesLoaded(TaskResult<[CategoryResponse]>)
+        
         case backTapped
-        case mainCategorySelected(MainCategory)
-        case subCategorySelected(SubCategory)
-        case detailCategorySelected(DetailCategory)
+        case mainCategorySelected(String)
+        case subCategorySelected(String)
+        case detailCategorySelected(CategoryResponse)
         case nextTapped
+        
         case delegate(Delegate)
         
         enum Delegate {
-            case completed(MainCategory, SubCategory, DetailCategory)
+            case completed(String, String, CategoryResponse)
             case backToContentSelection
-            case saveProgress(main: MainCategory?, sub: SubCategory?, detail: DetailCategory?)
+            case saveProgress(main: String?, sub: String?, detail: CategoryResponse?)
         }
     }
     
+    @Dependency(\.categoryAPIClient) var categoryAPIClient
+    
     var body: some ReducerOf<Self> {
         Reduce { state, action in
-            print("CategorySelectionFeature - Action: \(action)")
-            print("현재 Step: \(state.currentStep)")
-            
             switch action {
-            case .backTapped:
-                print("뒤로가기 - 현재 Step: \(state.currentStep)")
+            case .onAppear, .retryLoad:
+                state.isLoading = true
+                state.loadError = nil
                 
+                return .run { send in
+                    await send(.categoriesLoaded(
+                        TaskResult {
+                            try await categoryAPIClient.fetchCategories()
+                        }
+                    ))
+                }
+                
+            case .categoriesLoaded(.success(let categories)):
+                state.isLoading = false
+                state.categories = categories
+                state.loadError = nil
+                return .none
+                
+            case .categoriesLoaded(.failure(let error)):
+                state.isLoading = false
+                
+                // 에러 메시지 처리
+                if let apiError = error as? CategoryAPIError {
+                    state.loadError = apiError.errorDescription
+                } else {
+                    state.loadError = "카테고리를 불러오는데 실패했습니다.\n잠시 후 다시 시도해주세요."
+                }
+                return .none
+                
+            case .backTapped:
                 switch state.currentStep {
                 case .mainCategory:
-                    print("1단계 → ContentSelection으로 (delegate)")
-                    // 저장 후 ContentSelection으로
-                    return .run { [main = state.selectedMainCategory, sub = state.selectedSubCategory, detail = state.selectedDetailCategory] send in
+                    return .run { [main = state.selectedMainCategory,
+                                   sub = state.selectedSubCategory,
+                                   detail = state.selectedDetailCategory] send in
                         await send(.delegate(.saveProgress(main: main, sub: sub, detail: detail)))
                         await send(.delegate(.backToContentSelection))
                     }
                     
                 case .subCategory:
-                    print("2단계 → 1단계로")
                     state.currentStep = .mainCategory
-                    // 선택값 유지 (초기화 제거)
-                    
-                    // 저장
                     return .send(.delegate(.saveProgress(
                         main: state.selectedMainCategory,
                         sub: state.selectedSubCategory,
@@ -85,11 +136,7 @@ struct CategorySelectionFeature {
                     )))
                     
                 case .detailCategory:
-                    print("🔙 3단계 → 2단계로")
                     state.currentStep = .subCategory
-                    // 선택값 유지 (초기화 제거)
-                    
-                    // 저장
                     return .send(.delegate(.saveProgress(
                         main: state.selectedMainCategory,
                         sub: state.selectedSubCategory,
@@ -98,20 +145,16 @@ struct CategorySelectionFeature {
                 }
                 
             case .nextTapped:
-                print("다음 - 현재 Step: \(state.currentStep)")
                 switch state.currentStep {
                 case .mainCategory:
-                    print("1단계 → 2단계로")
                     state.currentStep = .subCategory
                     return .none
                     
                 case .subCategory:
-                    print("2단계 → 3단계로")
                     state.currentStep = .detailCategory
                     return .none
                     
                 case .detailCategory:
-                    print("3단계 완료 (delegate)")
                     guard let main = state.selectedMainCategory,
                           let sub = state.selectedSubCategory,
                           let detail = state.selectedDetailCategory else {
@@ -121,17 +164,14 @@ struct CategorySelectionFeature {
                 }
                 
             case .mainCategorySelected(let category):
-                print("Main 선택: \(category.rawValue)")
                 state.selectedMainCategory = category
                 return .none
                 
             case .subCategorySelected(let category):
-                print("Sub 선택: \(category.rawValue)")
                 state.selectedSubCategory = category
                 return .none
                 
             case .detailCategorySelected(let category):
-                print("Detail 선택: \(category.rawValue)")
                 state.selectedDetailCategory = category
                 return .none
                 
