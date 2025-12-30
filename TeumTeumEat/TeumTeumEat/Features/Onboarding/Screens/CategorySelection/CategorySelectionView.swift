@@ -217,7 +217,7 @@ struct DetailCategoryStepView: View {
                                 .padding(.horizontal, 32)
                                 .padding(.top, 14)
                             
-                            detailCategoryButtons  // ✅ 분리
+                            detailCategoryButtons
                                 .padding(.horizontal, 30)
                                 .padding(.top, 20)
                             
@@ -242,7 +242,6 @@ struct DetailCategoryStepView: View {
         }
     }
     
-    // ✅ computed property로 분리
     @ViewBuilder
     private var detailCategoryButtons: some View {
         VStack(spacing: 16) {
