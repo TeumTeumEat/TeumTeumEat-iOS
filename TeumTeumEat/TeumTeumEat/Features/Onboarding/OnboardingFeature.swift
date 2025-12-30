@@ -513,9 +513,11 @@ extension String {
         switch self {
         case "앱개발자": return "phone"
         case "웹개발자": return "web"
-        case "서버개발자": return "pm"
-        case "디자이너": return "palette"
+        case "데이터베이스": return "pm"
+        case "디자인": return "palette"
         case "PM": return "note"
+        case "DevOps": return "phone"
+        case "네트워크": return "phone"
         default: return "questionmark.circle"
         }
     }

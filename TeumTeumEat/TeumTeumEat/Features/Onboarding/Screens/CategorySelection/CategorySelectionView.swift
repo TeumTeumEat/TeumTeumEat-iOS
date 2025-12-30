@@ -81,9 +81,6 @@ struct LoadingView: View {
     }
 }
 
-
-
-
 struct MainCategoryStepView: View {
     let store: StoreOf<CategorySelectionFeature>
     
@@ -128,15 +125,10 @@ struct MainCategoryStepView: View {
                                 spacing: 12
                             ) {
                                 ForEach(store.mainCategories, id: \.self) { category in
-                                    TTEButton(
+                                    CategoryGridButton(
                                         title: category,
-                                        size: .grid,
-                                        style: .secondary,
-                                        isEnabled: true,
-                                        icon: Image(category.categoryIcon),
-                                        iconSize: 24,
-                                        foregroundColor: .gray,
-                                        borderColor: .gray
+                                        icon: category.categoryIcon,
+                                        isSelected: store.selectedMainCategory == category
                                     ) {
                                         store.send(.mainCategorySelected(category))
                                     }
@@ -395,6 +387,37 @@ struct FlowLayout: Layout {
             }
             
             self.size = CGSize(width: maxWidth, height: y + lineHeight)
+        }
+    }
+}
+
+struct CategoryGridButton: View {
+    let title: String
+    let icon: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(icon)
+                    .resizable()
+                    .frame(width: 24, height: 24)
+                
+                Text(title)
+                    .titleSemibold20()
+                    .foregroundColor(isSelected ? .blue : .primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 60)
+            .background(Color.white)
+            .cornerRadius(16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(isSelected ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1.5)
+            )
         }
     }
 }
