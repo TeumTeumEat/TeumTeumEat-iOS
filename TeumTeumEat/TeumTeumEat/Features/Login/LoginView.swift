@@ -108,11 +108,19 @@ struct LoginView: View {
                        let identityTokenData = appleIDCredential.identityToken,
                        let identityToken = String(data: identityTokenData, encoding: .utf8) {
                         
+
+                        var authCode: String? = nil
+                        if let authCodeData = appleIDCredential.authorizationCode,
+                           let code = String(data: authCodeData, encoding: .utf8) {
+                            authCode = code
+                        }
+                        
                         print("애플 로그인 성공")
                         print("Identity Token: \(identityToken)")
+                        print("Authorization Code: \(authCode ?? "없음")")
                         
                         // TCA 액션 전송
-                        store.send(.appleLoginSuccess(idToken: identityToken))
+                        store.send(.appleLoginSuccess(idToken: identityToken, authCode: authCode))
                     }
                     
                 case .failure(let error):

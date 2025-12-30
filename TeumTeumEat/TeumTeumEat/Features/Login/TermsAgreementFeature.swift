@@ -124,7 +124,7 @@ struct TermsAgreementFeature {
                             idToken: idToken,
                             termsAgreed: true
                         )
-                        await send(.signUpResponse(.success(response)))
+                       // await send(.signUpResponse(.success(response)))
                     } catch {
                         await send(.signUpResponse(.failure(error)))
                     }
@@ -165,22 +165,22 @@ struct TermsAgreementFeature {
 }
 
 extension TermsAgreementFeature {
-    private func loginToServer(idToken: String, termsAgreed: Bool) async throws -> SocialLoginResponse {
-        let baseURL = Config.baseURL
-        let endPoint = "/api/v1/auth/oauth/register?provider=KAKAO"
-        let fullURL = baseURL + endPoint
-        
-        let url = URL(string: fullURL)!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let body = SocialLoginRequest(idToken: idToken, termsAgreed: termsAgreed, name: "testUser")
-        request.httpBody = try JSONEncoder().encode(body)
-        
-        let (data, _) = try await URLSession.shared.data(for: request)
-        let response = try JSONDecoder().decode(SocialLoginResponse.self, from: data)
-        
-        return response
+    private func loginToServer(idToken: String, termsAgreed: Bool) async throws  {
+//        let baseURL = Config.baseURL
+//        let endPoint = "/api/v1/auth/oauth/register?provider=KAKAO"
+//        let fullURL = baseURL + endPoint
+//        
+//        let url = URL(string: fullURL)!
+//        var request = URLRequest(url: url)
+//        request.httpMethod = "POST"
+//        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+//        
+//     //   let body = SocialLoginRequest(idToken: idToken, termsAgreed: termsAgreed, name: "testUser")
+//        request.httpBody = try JSONEncoder().encode(body)
+//        
+//        let (data, _) = try await URLSession.shared.data(for: request)
+//        let response = try JSONDecoder().decode(SocialLoginResponse.self, from: data)
+//        
+//        return response
     }
 }
