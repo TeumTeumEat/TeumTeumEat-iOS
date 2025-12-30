@@ -8,6 +8,9 @@
 import SwiftUI
 import ComposableArchitecture
 
+
+import Foundation
+
 @Reducer
 struct MyPageFeature {
     @ObservableState
@@ -24,6 +27,7 @@ struct MyPageFeature {
         var isNotificationEnabled: Bool = false
         var appSettings: AppSettingsFeature.State?
         
+        // 계정 정보
         var socialLoginType: SocialLoginType = .apple
         var email: String = "user@example.com"
     }
@@ -92,6 +96,8 @@ struct MyPageFeature {
         }
     }
 }
+
+
 struct SelectedSubjectCard: View {
     let subject: Subject
     
