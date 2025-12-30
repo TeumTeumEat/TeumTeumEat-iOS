@@ -101,7 +101,7 @@ struct AppFeature {
                 // 온보딩 완료 → TODO: 메인 화면 (나중에 구현)
                 state.onboarding = nil
                 print("온보딩 완료 - 메인 화면으로 이동 예정")
-              //  UserDefaultsManager.isOnboardingCompleted = true
+                UserDefaultsManager.isOnboardingCompleted = true
                 state.mainTab = MainTabFeature.State()
                 return .none
                 
