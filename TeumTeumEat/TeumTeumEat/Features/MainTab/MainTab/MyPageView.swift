@@ -436,11 +436,42 @@ struct SubjectListView: View {
 struct AppSettingsFeature {
     @ObservableState
     struct State: Equatable {
+        var nickname: String = "재현"
+        var leaveTime: Date = Calendar.current.date(from: DateComponents(hour: 9, minute: 0)) ?? Date()
+        var returnTime: Date = Calendar.current.date(from: DateComponents(hour: 18, minute: 0)) ?? Date()
+        var usageMinutes: Int = 5 // 기본값 5분
         
+        var isLeaveTimePickerPresented: Bool = false
+        var isReturnTimePickerPresented: Bool = false
+        var isUsageTimePickerPresented: Bool = false
+        
+        var leaveTimeText: String {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "a hh:mm"
+            formatter.locale = Locale(identifier: "ko_KR")
+            return formatter.string(from: leaveTime)
+        }
+        
+        var returnTimeText: String {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "a hh:mm"
+            formatter.locale = Locale(identifier: "ko_KR")
+            return formatter.string(from: returnTime)
+        }
     }
     
     enum Action {
         case backTapped
+        case nicknameChanged(String)
+        case leaveTimeButtonTapped
+        case returnTimeButtonTapped
+        case usageTimeButtonTapped
+        case leaveTimeChanged(Date)
+        case returnTimeChanged(Date)
+        case usageTimeChanged(Int)
+        case leaveTimePickerDismissed
+        case returnTimePickerDismissed
+        case usageTimePickerDismissed
         case delegate(Delegate)
         
         enum Delegate {
@@ -454,6 +485,50 @@ struct AppSettingsFeature {
             case .backTapped:
                 return .send(.delegate(.dismissed))
                 
+            case .nicknameChanged(let nickname):
+                state.nickname = nickname
+                print("닉네임 변경: \(nickname)")
+                return .none
+                
+            case .leaveTimeButtonTapped:
+                state.isLeaveTimePickerPresented = true
+                return .none
+                
+            case .returnTimeButtonTapped:
+                state.isReturnTimePickerPresented = true
+                return .none
+                
+            case .usageTimeButtonTapped:
+                state.isUsageTimePickerPresented = true
+                return .none
+                
+            case .leaveTimeChanged(let time):
+                state.leaveTime = time
+                print("출근 시간 변경: \(state.leaveTimeText)")
+                return .none
+                
+            case .returnTimeChanged(let time):
+                state.returnTime = time
+                print("퇴근 시간 변경: \(state.returnTimeText)")
+                return .none
+                
+            case .usageTimeChanged(let minutes):
+                state.usageMinutes = minutes
+                print("사용 시간 변경: \(minutes)분")
+                return .none
+                
+            case .leaveTimePickerDismissed:
+                state.isLeaveTimePickerPresented = false
+                return .none
+                
+            case .returnTimePickerDismissed:
+                state.isReturnTimePickerPresented = false
+                return .none
+                
+            case .usageTimePickerDismissed:
+                state.isUsageTimePickerPresented = false
+                return .none
+                
             case .delegate:
                 return .none
             }
@@ -463,10 +538,79 @@ struct AppSettingsFeature {
 
 struct AppSettingsView: View {
     let store: StoreOf<AppSettingsFeature>
+    @FocusState private var isNicknameFocused: Bool
     
     var body: some View {
         VStack(spacing: 0) {
-            // Custom Navigation Bar
+            navigationBar
+            
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    nicknameSection
+                    leaveTimeSection
+                    returnTimeSection
+                    usageTimeSection
+                    
+                    Spacer()
+                        .frame(height: 40)
+                }
+            }
+            .background(Color.white)
+            .onTapGesture {
+                isNicknameFocused = false
+            }
+        }
+        .navigationBarHidden(true)
+        .toolbar(.hidden, for: .tabBar)
+        .sheet(isPresented: Binding(
+            get: { store.isLeaveTimePickerPresented },
+            set: { if !$0 { store.send(.leaveTimePickerDismissed) } }
+        )) {
+            TimePickerModal(
+                title: "집을 나오는 시간",
+                selectedTime: Binding(
+                    get: { store.leaveTime },
+                    set: { store.send(.leaveTimeChanged($0 ?? store.leaveTime)) }
+                ),
+                onDismiss: {
+                    store.send(.leaveTimePickerDismissed)
+                }
+            )
+        }
+        .sheet(isPresented: Binding(
+            get: { store.isReturnTimePickerPresented },
+            set: { if !$0 { store.send(.returnTimePickerDismissed) } }
+        )) {
+            TimePickerModal(
+                title: "집에 돌아오는 시간",
+                selectedTime: Binding(
+                    get: { store.returnTime },
+                    set: { store.send(.returnTimeChanged($0 ?? store.returnTime)) }
+                ),
+                onDismiss: {
+                    store.send(.returnTimePickerDismissed)
+                }
+            )
+        }
+        .sheet(isPresented: Binding(
+            get: { store.isUsageTimePickerPresented },
+            set: { if !$0 { store.send(.usageTimePickerDismissed) } }
+        )) {
+            UsageTimePickerModal(
+                title: "틈틈잇 사용 시간",
+                selectedMinutes: Binding(
+                    get: { store.usageMinutes },
+                    set: { store.send(.usageTimeChanged($0)) }
+                ),
+                onDismiss: {
+                    store.send(.usageTimePickerDismissed)
+                }
+            )
+        }
+    }
+    
+    private var navigationBar: some View {
+        VStack(spacing: 0) {
             HStack {
                 Button {
                     store.send(.backTapped)
@@ -491,16 +635,175 @@ struct AppSettingsView: View {
             .padding(.vertical, 16)
             
             Divider()
+        }
+        .background(Color.white)
+    }
+    
+    private var nicknameSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("닉네임 설정")
+                .titleSemibold16()
+                .foregroundColor(.black)
             
-            ScrollView {
-                VStack {
-                    Text("틈틈잇 사용 설정 내용")
-                        .font(.title)
-                }
-                .padding()
+            TTETextField(
+                text: Binding(
+                    get: { store.nickname },
+                    set: { store.send(.nicknameChanged($0)) }
+                ),
+                placeholder: "닉네임을 입력하세요",
+                allowSpaces: false
+            )
+            .focused($isNicknameFocused)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
+    }
+    
+    private var leaveTimeSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("집에서 나오는 시간")
+                .titleSemibold16()
+                .foregroundColor(.black)
+            
+            Button(action: {
+                store.send(.leaveTimeButtonTapped)
+            }) {
+                timeButtonContent(text: store.leaveTimeText)
             }
         }
-        .navigationBarHidden(true)
-        .toolbar(.hidden, for: .tabBar)
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
+    }
+    
+    private var returnTimeSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("집에 돌아오는 시간")
+                .titleSemibold16()
+                .foregroundColor(.black)
+            
+            Button(action: {
+                store.send(.returnTimeButtonTapped)
+            }) {
+                timeButtonContent(text: store.returnTimeText)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
+    }
+    
+    private var usageTimeSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("틈틈잇 사용 시간")
+                .titleSemibold16()
+                .foregroundColor(.black)
+            
+            Button(action: {
+                store.send(.usageTimeButtonTapped)
+            }) {
+                timeButtonContent(text: "\(store.usageMinutes)분")
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
+    }
+    
+    private func timeButtonContent(text: String) -> some View {
+        HStack {
+            Spacer()
+            Text(text)
+                .font(.system(size: 16))
+                .foregroundColor(.primary)
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .background(Color.white)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.blue, lineWidth: 1)
+        )
+        .cornerRadius(12)
+    }
+}
+
+struct UsageTimePickerModal: View {
+    let title: String
+    @Binding var selectedMinutes: Int
+    let onDismiss: () -> Void
+    
+    @State private var tempMinutes: Int = 5
+    
+    let timeOptions = [5, 7, 10, 15]
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+                .frame(height: 24)
+            
+            headerSection
+            
+            timeOptionsSection
+            
+            Spacer()
+        }
+        .background(Color.white)
+        .onAppear {
+            tempMinutes = selectedMinutes
+        }
+        .presentationDetents([.height(400)])
+        .presentationDragIndicator(.hidden)
+        .presentationCornerRadius(32)
+    }
+    
+    private var headerSection: some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.primary)
+            
+            Spacer()
+            
+            Button {
+                selectedMinutes = tempMinutes
+                onDismiss()
+            } label: {
+                Text("완료")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.blue)
+                    .cornerRadius(16)
+            }
+        }
+        .padding(.horizontal, 32)
+        .padding(.top, 24)
+    }
+    
+    private var timeOptionsSection: some View {
+        VStack(spacing: 16) {
+            ForEach(timeOptions, id: \.self) { minutes in
+                timeOptionButton(minutes: minutes)
+            }
+        }
+        .padding(.horizontal, 32)
+        .padding(.top, 32)
+    }
+    
+    private func timeOptionButton(minutes: Int) -> some View {
+        Button {
+            tempMinutes = minutes
+        } label: {
+            HStack {
+                Spacer()
+                Text("\(minutes)분")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(tempMinutes == minutes ? .white : .primary)
+                Spacer()
+            }
+            .padding(.vertical, 16)
+            .background(tempMinutes == minutes ? Color.blue : Color.gray.opacity(0.1))
+            .cornerRadius(12)
+        }
     }
 }
