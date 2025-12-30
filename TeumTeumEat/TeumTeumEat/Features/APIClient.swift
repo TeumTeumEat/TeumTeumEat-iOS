@@ -168,3 +168,26 @@ extension APIClient {
         return categoryData.categoryResponses
     }
 }
+
+extension APIClient {
+    /// 유저 이름 수정
+    func updateUserName(name: String) async throws {
+        // APIResponse<EmptyData> 형태로 받기
+        let response: APIResponse<EmptyData> = try await request(
+            endpoint: "/api/v1/users/name",
+            method: .patch,
+            body: UpdateUserNameRequest(name: name),
+            requiresAuth: true
+        )
+        
+        // 응답 검증
+        guard response.code == "OK" else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        print("User name updated successfully: \(name)")
+    }
+}
