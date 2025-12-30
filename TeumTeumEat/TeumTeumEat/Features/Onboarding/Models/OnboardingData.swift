@@ -14,7 +14,11 @@ struct OnboardingData: Equatable, Codable {
     var dailyUsageMinutes: Int = 0
     var contentType: ContentType = .category
     var uploadedFileURL: URL?
-    var selectedCategories: [Category] = []
+
+    var selectedMainCategory: MainCategory?
+    var selectedSubCategory: SubCategory?
+    var selectedDetailCategory: DetailCategory?
+    
     var difficulty: String?
     var customPrompt: String = ""
     var programWeeks: Int = 0   

@@ -30,9 +30,9 @@ struct DifficultySelectionFeature {
         }
         
         enum Difficulty: String, CaseIterable, Codable, Equatable {
-            case easy = "쉬움"
-            case normal = "보통"
-            case hard = "어려움"
+            case easy = "하"
+            case normal = "중"
+            case hard = "상"
             
             var description: String {
                 switch self {
@@ -82,6 +82,7 @@ struct DifficultySelectionFeature {
                 
             case let .customPromptChanged(text):
                 // 30자 제한
+                let cleanedText = text.replacingOccurrences(of: "\n", with: "")
                 if text.count <= 30 {
                     state.customPrompt = text
                 }

@@ -15,43 +15,54 @@ struct TimePickerModal: View {
     @State private var tempTime: Date = Date()
     
     var body: some View {
-        NavigationStack {
-            VStack {
-                DatePicker(
-                    "",
-                    selection: $tempTime,
-                    displayedComponents: .hourAndMinute
-                )
-                .datePickerStyle(.wheel)
-                .labelsHidden()
-                .environment(\.locale, Locale(identifier: "ko_KR"))
-                .padding()
+        VStack(spacing: 0) {
+            Spacer()
+                .frame(height: 24)
+
+            
+            HStack {
+                Text(title)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
                 
                 Spacer()
-            }
-            .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        onDismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.gray)
-                    }
+                
+                Button {
+                    selectedTime = tempTime
+                    onDismiss()
+                } label: {
+                    Text("완료")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.blue)
+                        .cornerRadius(16)
                 }
             }
-            .onAppear {
-                if let time = selectedTime {
-                    tempTime = time
-                }
-            }
-            .onDisappear {
-                selectedTime = tempTime
+            .padding(.horizontal, 32)
+            .padding(.top, 24)
+            
+            DatePicker(
+                "",
+                selection: $tempTime,
+                displayedComponents: .hourAndMinute
+            )
+            .datePickerStyle(.wheel)
+            .labelsHidden()
+            .environment(\.locale, Locale(identifier: "ko_KR"))
+            .padding()
+            
+            Spacer()
+        }
+        .background(Color.white)
+        .onAppear {
+            if let time = selectedTime {
+                tempTime = time
             }
         }
         .presentationDetents([.height(270)])
-        .presentationDragIndicator(.visible)
+        .presentationDragIndicator(.hidden)
+        .presentationCornerRadius(32)
     }
 }

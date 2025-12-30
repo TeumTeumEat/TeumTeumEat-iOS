@@ -10,146 +10,170 @@ import ComposableArchitecture
 
 struct TimeSettingView: View {
     let store: StoreOf<TimeSettingFeature>
+    @Environment(\.scenePhase) private var scenePhase
     
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 16) {
-                Button {
-                    store.send(.backTapped)
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                        .frame(width: 40, height: 40)
-                        .contentShape(Rectangle())
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                HStack(spacing: 16) {
+                    Button {
+                        store.send(.backTapped)
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                            .frame(width: 40, height: 40)
+                            .contentShape(Rectangle())
+                    }
+                    
+                    TTEProgressBar(
+                        currentStep: 2,
+                        totalSteps: 5,
+                        height: 15
+                    )
                 }
+                .padding(.horizontal, 24)
                 
-                TTEProgressBar(
-                    currentStep: 2,
-                    totalSteps: 5,
-                    height: 15
-                )
-            }
-            .padding(.horizontal, 24)
-            
-            ScrollView {
-                VStack(spacing: 0) {
-                    Text("대중교통 이용 시간대 입력")
-                        .titleSemibold18()
-                    
-                    Image("pose=front")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 200)
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 80)
-                        .padding(.top, 20)
-                    
-                    // 집을 나오는 시간
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("집을 나오는 시간")
-                            .bodyMedium18()
-                            .foregroundColor(.black)
-                        
-                        Button(action: {
-                            store.send(.leaveTimeButtonTapped)
-                        }) {
-                            HStack {
-                                Spacer()
-                                Text(store.leaveTimeText)
-                                    .font(.system(size: 16))
-                                    .foregroundColor(store.leaveTime != nil ? .primary : .gray)
-                                Spacer()
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 16)
-                            .background(Color.white)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(store.leaveTime != nil ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
-                            )
-                            .cornerRadius(12)
-                        }
-                    }
-                    .padding(.horizontal, 30)
-                    .padding(.top, 25.33)
-                    
-                    // 집에 돌아오는 시간
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("집에 돌아오는 시간")
-                            .bodyMedium18()
-                            .foregroundColor(.black)
-                        
-                        Button(action: {
-                            store.send(.returnTimeButtonTapped)
-                        }) {
-                            HStack {
-                                Spacer()
-                                Text(store.returnTimeText)
-                                    .font(.system(size: 16))
-                                    .foregroundColor(store.returnTime != nil ? .primary : .gray)
-                                Spacer()
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 16)
-                            .background(Color.white)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(store.returnTime != nil ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
-                            )
-                            .cornerRadius(12)
-                        }
-                    }
-                    .padding(.horizontal, 30)
-                    .padding(.top, 50)
-                    
-                    Button(action: {
-                        store.send(.alarmToggleTapped)
-                    }) {
-                        HStack(spacing: 12) {
-                            ZStack {
-                                Circle()
-                                    .stroke(store.enableAlarm ? Color.blue : Color.gray.opacity(0.3), lineWidth: 2)
-                                    .frame(width: 24, height: 24)
+                GeometryReader { scrollGeometry in
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            Image("character_timeSetting")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 285)
+                                .padding(.horizontal, 32)
+                                .padding(.top, 1)
+                            
+                            // 집을 나오는 시간
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("집에서 나오는 시간")
+                                    .titleSemibold16()
+                                    .foregroundColor(.black)
                                 
-                                if store.enableAlarm {
-                                    Circle()
-                                        .fill(Color.blue)
-                                        .frame(width: 24, height: 24)
-                                    
-                                    Image(systemName: "checkmark")
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(.white)
+                                Button(action: {
+                                    store.send(.leaveTimeButtonTapped)
+                                }) {
+                                    HStack {
+                                        Spacer()
+                                        Text(store.leaveTimeText)
+                                            .font(.system(size: 16))
+                                            .foregroundColor(store.leaveTime != nil ? .primary : .gray)
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 16)
+                                    .background(Color.white)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(store.leaveTime != nil ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
+                                    .cornerRadius(12)
                                 }
                             }
+                            .padding(.horizontal, 30)
+                            .padding(.top, 18)
+                            
+                            // 집에 돌아오는 시간
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("집에 돌아오는 시간")
+                                    .titleSemibold16()
+                                    .foregroundColor(.black)
+                                
+                                Button(action: {
+                                    store.send(.returnTimeButtonTapped)
+                                }) {
+                                    HStack {
+                                        Spacer()
+                                        Text(store.returnTimeText)
+                                            .font(.system(size: 16))
+                                            .foregroundColor(store.returnTime != nil ? .primary : .gray)
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 16)
+                                    .background(Color.white)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(store.returnTime != nil ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
+                                    .cornerRadius(12)
+                                }
+                            }
+                            .padding(.horizontal, 30)
+                            .padding(.top, 40)
+                            
+                            Button(action: {
+                                store.send(.alarmToggleTapped)
+                            }) {
+                                HStack(spacing: 12) {
+                                    ZStack {
+                                        Circle()
+                                            .stroke(store.enableAlarm ? Color.blue : Color.gray.opacity(0.3), lineWidth: 2)
+                                            .frame(width: 24, height: 24)
+                                        
+                                        if store.enableAlarm {
+                                            Circle()
+                                                .fill(Color.blue)
+                                                .frame(width: 24, height: 24)
+                                            
+                                            Image(systemName: "checkmark")
+                                                .font(.system(size: 12, weight: .bold))
+                                                .foregroundColor(.white)
+                                        }
+                                    }
 
-                            Text("해당 시간에 알람 받을까요?")
-                                .bodyRegular14()
-                                .foregroundColor(.primary)
+                                    Text("해당 시간에 알림을 받으실건가요?(필수)")
+                                        .bodyRegular14()
+                                        .foregroundColor(.primary)
+                                    
+                                    Spacer()
+                                }
+                                .contentShape(Rectangle())
+                            }
+                            .padding(.horizontal, 30)
+                            .padding(.top, 46)
                             
                             Spacer()
+                                .frame(minHeight: 20)
+                            
+                            TTEButton(
+                                title: "다음",
+                                size: .large,
+                                isEnabled: store.canProceed
+                            ) {
+                                store.send(.nextTapped)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 32)
                         }
-                        .contentShape(Rectangle())
+                        .frame(minHeight: scrollGeometry.size.height)
                     }
-                    .padding(.horizontal, 30)
-                    .padding(.top, 89)
-                    .padding(.bottom, 18)
+                    .scrollDismissesKeyboard(.interactively)
                 }
-                .padding(.top, 60)
             }
-            .scrollDismissesKeyboard(.interactively)
-            
-            Spacer()
-            
-            TTEButton(
-                title: "다음",
-                size: .large,
-                isEnabled: store.canProceed
-            ) {
-                store.send(.nextTapped)
+        }
+        .alert("알림 권한 필요", isPresented: Binding(
+            get: { store.showSettingsAlert },
+            set: { if !$0 { store.send(.dismissSettingsAlert) } }
+        )) {
+            Button("취소", role: .cancel) {
+                store.send(.dismissSettingsAlert)
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 32)
+            Button("설정으로 이동") {
+                store.send(.openSettings)
+            }
+        } message: {
+            Text("알림을 받으려면 설정에서 알림 권한을 허용해주세요.")
+        }
+        .onAppear {
+            // 화면 진입 시 권한 상태 체크
+            store.send(.checkNotificationStatus)
+        }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            if newPhase == .active {
+                // 앱이 포그라운드로 돌아올 때
+                store.send(.checkNotificationStatus)
+            }
         }
         .sheet(isPresented: Binding(
             get: { store.isLeaveTimePickerPresented },

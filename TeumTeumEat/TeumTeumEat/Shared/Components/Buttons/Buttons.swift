@@ -12,10 +12,12 @@ enum ButtonSize {
     case medium // 300 x 50
     case regular // 144 x 50
     case small // 87 x 50
+    case grid // 154 x 60
     
     var width: CGFloat {
         switch self {
         case .large, .medium: return 320
+        case .grid: return 154
         case .regular: return 144
         case .small: return 87
         }
@@ -23,7 +25,7 @@ enum ButtonSize {
     
     var height: CGFloat {
         switch self {
-        case .large: return 60
+        case .large, .grid: return 60
         case .medium: return 50
         case .regular: return 50
         case .small:return 50
@@ -38,6 +40,8 @@ enum ButtonSize {
             return .titleSemibold18
         case .small:
             return .bodyMedium18
+        case .grid:
+            return .titleSemibold20
         }
     }
 }

@@ -13,33 +13,17 @@ struct OnboardingCompleteView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            Spacer()
+            Image("character_complete")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 293)
+                .padding(.horizontal, 32)
+                .padding(.top, 119)
             
-            ZStack {
-                Circle()
-                    .fill(Color.blue.opacity(0.1))
-                    .frame(width: 120, height: 120)
-                
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 80))
-                    .foregroundColor(.blue)
-            }
-            .padding(.bottom, 40)
-            
-            VStack(spacing: 12) {
-                Text("\(store.userName)님,")
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                Text("틈틈잇 준비가 완료되었어요!")
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                Text("이제 퀴즈를 시작해볼까요?")
-                    .font(.system(size: 16))
-                    .foregroundColor(.gray)
-                    .padding(.top, 8)
-            }
+            Text("'\(store.userName)'님 환영합니다")
+                .titleSemibold18()
+                .foregroundColor(.primary)
+                .padding(.top, 20)
             
             Spacer()
             

@@ -13,7 +13,7 @@ struct TTECategoryButton: View {
     let subtitle: String
     let isSelected: Bool
     
-    let width: CGFloat
+    let width: CGFloat?
     let height: CGFloat
     
     let customIconTint: Color?
@@ -27,7 +27,7 @@ struct TTECategoryButton: View {
         title: String,
         subtitle: String,
         isSelected: Bool = false,
-        width: CGFloat = 142,
+        width: CGFloat? = nil,
         height: CGFloat = 200,
         iconTint: Color? = ._7_A_7_A_7_A,
         borderColor: Color? = .C_8_C_8_C_8,
@@ -46,47 +46,57 @@ struct TTECategoryButton: View {
         self.action = action
     }
     
+    private var contentColor: Color {
+        if isSelected {
+            let selectedColor: Color = customSelectedBorderColor ?? ._2_B_8_FFF
+            return selectedColor
+        } else {
+            let normalColor: Color = customIconTint ?? ._7_A_7_A_7_A
+            return normalColor
+        }
+    }
+    
+    private var borderColor: Color {
+        if isSelected {
+            let selectedColor: Color = customSelectedBorderColor ?? ._2_B_8_FFF
+            return selectedColor
+        } else {
+            let normalColor: Color = customBorderColor ?? .C_8_C_8_C_8
+            return normalColor
+        }
+    }
+    
     var body: some View {
         Button(action: action) {
             VStack(spacing: 20) {
                 // 아이콘
-                if let tintColor = customIconTint {
-                    icon
-                        .resizable()
-                        .renderingMode(.template)
-                        .foregroundColor(tintColor)
-                        .frame(width: 60, height: 60)
-                } else {
-                    icon
-                        .resizable()
-                        .frame(width: 60, height: 60)
-                }
+                icon
+                    .resizable()
+                    .renderingMode(.template)
+                    .foregroundColor(contentColor)
+                    .frame(width: 60, height: 60)
                 
                 VStack(spacing: 0) {
                     // 타이틀
                     Text(title)
-                        .headBold20()
-                        .foregroundColor(._7_A_7_A_7_A)
+                        .titleSemibold20()
+                        .foregroundColor(contentColor)
                         .padding(.bottom, 4)
                     
                     // 서브타이틀
                     Text(subtitle)
-                        .bodyRegular16()
-                        .foregroundColor(._7_A_7_A_7_A)
+                        .bodyMedium14()
+                        .foregroundColor(contentColor)
                         .multilineTextAlignment(.center)
                 }
             }
-            .frame(width: width, height: height)
+            .frame(maxWidth: width ?? .infinity)
+            .frame(height: height)
             .background(Color.clear)
             .cornerRadius(16)
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(
-                        isSelected
-                            ? (customSelectedBorderColor ?? ._2_B_8_FFF)
-                        : (customBorderColor ?? .C_8_C_8_C_8),
-                        lineWidth: 2
-                    )
+                    .stroke(borderColor, lineWidth: 2)
             )
         }
     }

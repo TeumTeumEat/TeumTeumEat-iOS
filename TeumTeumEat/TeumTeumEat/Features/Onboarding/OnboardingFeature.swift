@@ -159,7 +159,9 @@ struct OnboardingFeature {
             if type == .fileUpload {
                 state.onboardingData.contentType = .fileUpload
                 // 카테고리 데이터 초기화
-                state.onboardingData.selectedCategories = []
+                state.onboardingData.selectedMainCategory = nil
+                state.onboardingData.selectedSubCategory = nil
+                state.onboardingData.selectedDetailCategory = nil
             } else {
                 state.onboardingData.contentType = .category
                 // 파일 데이터 초기화
@@ -181,11 +183,81 @@ struct OnboardingFeature {
             } else {
                 // CategorySelection State 생성 (복원)
                 var categoryState = CategorySelectionFeature.State()
-                categoryState.selectedCategories = Set(state.onboardingData.selectedCategories)
+                categoryState.selectedMainCategory = state.onboardingData.selectedMainCategory
+                categoryState.selectedSubCategory = state.onboardingData.selectedSubCategory
+                categoryState.selectedDetailCategory = state.onboardingData.selectedDetailCategory
                 state.categorySelection = categoryState
             }
             
             return .none
+
+        case .contentSelection(.backTapped):
+            return .send(.previousStep)
+            
+            
+            
+            
+        case .difficultySelection(.backTapped):
+            state.difficultySelection = nil
+            
+            if state.onboardingData.contentType == .fileUpload {
+                // FileUpload State 생성 (복원)
+                var fileUploadState = FileUploadFeature.State()
+                if let url = state.onboardingData.uploadedFileURL {
+                    fileUploadState.selectedFileURL = url
+                    fileUploadState.selectedFileName = url.lastPathComponent
+                    if let fileSize = try? url.fileSize() {
+                        fileUploadState.selectedFileSize = fileSize
+                    }
+                }
+                state.fileUpload = fileUploadState
+            } else {
+                // CategorySelection State 생성 (복원) - 3단계 마지막으로
+                var categoryState = CategorySelectionFeature.State()
+                categoryState.currentStep = .detailCategory
+                categoryState.selectedMainCategory = state.onboardingData.selectedMainCategory
+                categoryState.selectedSubCategory = state.onboardingData.selectedSubCategory
+                categoryState.selectedDetailCategory = state.onboardingData.selectedDetailCategory
+                state.categorySelection = categoryState
+            }
+            return .none
+            
+        case .categorySelection(.delegate(.saveProgress(let main, let sub, let detail))):
+            print("OnboardingFeature - saveProgress")
+            print("Main: \(main?.rawValue ?? "nil")")
+            print("Sub: \(sub?.rawValue ?? "nil")")
+            print("Detail: \(detail?.rawValue ?? "nil")")
+            
+            // 임시 저장 (완료되지 않았지만 진행 상황 유지)
+            state.onboardingData.selectedMainCategory = main
+            state.onboardingData.selectedSubCategory = sub
+            state.onboardingData.selectedDetailCategory = detail
+            return .none
+            
+            
+        case .categorySelection(.delegate(.backToContentSelection)):
+            print("OnboardingFeature - backToContentSelection")
+            state.categorySelection = nil
+            state.contentSelection = ContentSelectionFeature.State()
+            return .none
+            
+        case .categorySelection(.delegate(.completed(let main, let sub, let detail))):
+            print("OnboardingFeature - category completed")
+            state.onboardingData.selectedMainCategory = main
+            state.onboardingData.selectedSubCategory = sub
+            state.onboardingData.selectedDetailCategory = detail
+            
+            state.categorySelection = nil
+            
+            var difficultyState = DifficultySelectionFeature.State()
+            if let difficulty = state.onboardingData.difficulty,
+               let selectedDifficulty = DifficultySelectionFeature.State.Difficulty(rawValue: difficulty) {
+                difficultyState.selectedDifficulty = selectedDifficulty
+            }
+            difficultyState.customPrompt = state.onboardingData.customPrompt
+            state.difficultySelection = difficultyState
+            return .none
+
             
         case .contentSelection(.backTapped):
             return .send(.previousStep)
@@ -215,51 +287,6 @@ struct OnboardingFeature {
             return .none
             
         // CategorySelection
-        case .categorySelection(.backTapped):
-            state.categorySelection = nil
-            state.contentSelection = ContentSelectionFeature.State()
-            return .none
-            
-        case .categorySelection(.nextTapped):
-            if let categories = state.categorySelection?.selectedCategories {
-                state.onboardingData.selectedCategories = Array(categories)
-            }
-            
-            state.categorySelection = nil
-            
-            // Difficulty State 생성 (복원)
-            var difficultyState = DifficultySelectionFeature.State()
-            if let difficulty = state.onboardingData.difficulty,
-               let selectedDifficulty = DifficultySelectionFeature.State.Difficulty(rawValue: difficulty) {
-                difficultyState.selectedDifficulty = selectedDifficulty
-            }
-            difficultyState.customPrompt = state.onboardingData.customPrompt
-            state.difficultySelection = difficultyState
-            
-            return .none
-            
-        // DifficultySelection
-        case .difficultySelection(.backTapped):
-            state.difficultySelection = nil
-            
-            if state.onboardingData.contentType == .fileUpload {
-                // FileUpload State 생성 (복원)
-                var fileUploadState = FileUploadFeature.State()
-                if let url = state.onboardingData.uploadedFileURL {
-                    fileUploadState.selectedFileURL = url
-                    fileUploadState.selectedFileName = url.lastPathComponent
-                    if let fileSize = try? url.fileSize() {
-                        fileUploadState.selectedFileSize = fileSize
-                    }
-                }
-                state.fileUpload = fileUploadState
-            } else {
-                // CategorySelection State 생성 (복원)
-                var categoryState = CategorySelectionFeature.State()
-                categoryState.selectedCategories = Set(state.onboardingData.selectedCategories)
-                state.categorySelection = categoryState
-            }
-            return .none
             
         case .difficultySelection(.nextTapped):
             if let difficulty = state.difficultySelection?.selectedDifficulty {
@@ -300,10 +327,18 @@ struct OnboardingFeature {
             
             state.durationSelection = nil
             state.summary = OnboardingSummaryFeature.State(
+                userName: state.onboardingData.userName,
                 leaveHomeTime: state.onboardingData.leaveHomeTime,
                 returnHomeTime: state.onboardingData.returnHomeTime,
                 dailyUsageMinutes: state.onboardingData.dailyUsageMinutes,
-                programWeeks: state.onboardingData.programWeeks
+                programWeeks: state.onboardingData.programWeeks,
+                contentType: state.onboardingData.contentType,
+                fileName: state.onboardingData.uploadedFileURL?.lastPathComponent,
+                mainCategory: state.onboardingData.selectedMainCategory?.rawValue,
+                subCategory: state.onboardingData.selectedSubCategory?.rawValue,
+                detailCategory: state.onboardingData.selectedDetailCategory?.rawValue,
+                difficulty: state.onboardingData.difficulty,
+                customPrompt: state.onboardingData.customPrompt
             )
             return .none
             
@@ -335,8 +370,8 @@ struct OnboardingFeature {
             
         // Complete
         case .complete(.startButtonTapped):
-            print("🎉 온보딩 완료!")
-            print("📊 수집된 데이터: \(state.onboardingData)")
+            print("온보딩 완료!")
+            print("수집된 데이터: \(state.onboardingData)")
             // TODO: AppFeature로 완료 알림 → 메인 화면으로 이동
             return .none
             
@@ -455,8 +490,26 @@ private func printOnboardingData(action: OnboardingFeature.Action, data: Onboard
         print("파일: 없음")
     }
     
-    let categories = data.selectedCategories.map { $0.rawValue }.joined(separator: ", ")
-    print("카테고리:", categories.isEmpty ? "없음" : categories)
+    if let main = data.selectedMainCategory {
+         print("선택 카테고리 - 직군:", main.rawValue)
+     } else {
+         print("선택 카테고리 - 직군: 미설정")
+     }
+     
+     if let sub = data.selectedSubCategory {
+         print("선택 카테고리 - 분야:", sub.rawValue)
+     } else {
+         print("선택 카테고리 - 분야: 미설정")
+     }
+     
+     if let detail = data.selectedDetailCategory {
+         print("선택 카테고리 - 세부:", detail.rawValue)
+     } else {
+         print("선택 카테고리 - 세부: 미설정")
+     }
+
+//    let categories = data.selectedCategories.map { $0.rawValue }.joined(separator: ", ")
+
     print("난이도:", data.difficulty ?? "미설정")
     print("프롬프트:", data.customPrompt.isEmpty ? "없음" : data.customPrompt)
     print("기간:", data.programWeeks, "주")

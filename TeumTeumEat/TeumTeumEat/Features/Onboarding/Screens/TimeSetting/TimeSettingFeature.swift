@@ -7,6 +7,8 @@
 
 import ComposableArchitecture
 import Foundation
+import UserNotifications
+import UIKit
 
 @Reducer
 struct TimeSettingFeature {
@@ -17,9 +19,10 @@ struct TimeSettingFeature {
         var isLeaveTimePickerPresented = false
         var isReturnTimePickerPresented = false
         var enableAlarm: Bool = false
+        var showSettingsAlert = false
         
         var canProceed: Bool {
-            leaveTime != nil && returnTime != nil
+            leaveTime != nil && returnTime != nil && enableAlarm
         }
         
         var leaveTimeText: String {
@@ -50,6 +53,11 @@ struct TimeSettingFeature {
         case nextTapped
         case backTapped
         case alarmToggleTapped
+        case notificationPermissionResponse(Bool)
+        case checkNotificationStatus
+        case openSettings
+        case dismissSettingsAlert 
+        case showSettingsAlertToggled
     }
     
     var body: some ReducerOf<Self> {
@@ -84,10 +92,87 @@ struct TimeSettingFeature {
                 
             case .backTapped:
                 return .none
+                
             case .alarmToggleTapped:
-                state.enableAlarm.toggle()
+                if !state.enableAlarm {
+                    // 켜려고 할 때
+                    return .run { send in
+                        let status = await checkNotificationPermission()
+                        
+                        switch status {
+                        case .authorized:
+                            // 이미 허용됨 → 바로 ON
+                            await send(.notificationPermissionResponse(true))
+                            
+                        case .denied:
+                            // 거부됨 → 설정 유도 Alert
+                            await send(.showSettingsAlertToggled)
+                            
+                        case .notDetermined:
+                            // 처음 → 권한 요청
+                            let granted = try? await UNUserNotificationCenter.current()
+                                .requestAuthorization(options: [.alert, .sound, .badge])
+                            await send(.notificationPermissionResponse(granted ?? false))
+                            
+                        default:
+                            await send(.notificationPermissionResponse(false))
+                        }
+                    }
+                } else {
+                    // 끄려고 할 때
+                    state.enableAlarm = false
+                    return .none
+                }
+
+            case .showSettingsAlertToggled:
+                state.showSettingsAlert = true
                 return .none
+                   case .notificationPermissionResponse(let granted):
+                       state.enableAlarm = granted
+                       return .none
+                       
+                   case .checkNotificationStatus:
+                       // 앱 복귀 시 권한 상태 체크
+                       return .run { send in
+                           let status = await checkNotificationPermission()
+                           await send(.notificationPermissionResponse(status == .authorized))
+                       }
+                       
+                   case .openSettings:
+                       state.showSettingsAlert = false
+                       // 설정 앱 열기
+                       return .run { _ in
+                           await MainActor.run {
+                               if let url = URL(string: UIApplication.openSettingsURLString) {
+                                   UIApplication.shared.open(url)
+                               }
+                           }
+                       }
+                       
+                   case .dismissSettingsAlert:
+                       state.showSettingsAlert = false
+                       return .none
             }
         }
+    }
+}
+
+extension TimeSettingFeature {
+    private func requestNotificationPermission() async -> Bool {
+        do {
+            let granted = try await UNUserNotificationCenter.current()
+                .requestAuthorization(options: [.alert, .sound, .badge])
+            return granted
+        } catch {
+            print("알림 권한 요청 실패: \(error)")
+            return false
+        }
+    }
+}
+
+extension TimeSettingFeature {
+    private func checkNotificationPermission() async -> UNAuthorizationStatus {
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        return settings.authorizationStatus
     }
 }
