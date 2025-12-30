@@ -23,6 +23,9 @@ struct MyPageFeature {
         var subjectList: SubjectListFeature.State?
         var isNotificationEnabled: Bool = false
         var appSettings: AppSettingsFeature.State?
+        
+        var socialLoginType: SocialLoginType = .apple
+        var email: String = "user@example.com"
     }
     
     enum Action {
@@ -157,5 +160,43 @@ struct SelectedSubjectCard: View {
                 }
             }
         }
+    }
+}
+
+struct AccountInfoCard: View {
+    let socialLoginType: SocialLoginType
+    let email: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // 소셜 로그인 아이콘과 타입
+            HStack(spacing: 8) {
+                Image(systemName: socialLoginType.icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(socialLoginType.iconColor)
+                
+                Text(socialLoginType.rawValue)
+                    .bodyRegular16()
+                    .foregroundColor(.black)
+            }
+            
+            // 이메일
+            HStack(spacing: 8) {
+                Text("이메일")
+                    .bodyRegular14()
+                    .foregroundColor(.gray)
+                
+                Text(email)
+                    .bodyRegular14()
+                    .foregroundColor(.black)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Color.white)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+        )
     }
 }

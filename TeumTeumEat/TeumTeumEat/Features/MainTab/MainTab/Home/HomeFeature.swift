@@ -171,3 +171,26 @@ struct HomeNavigationBar: View {
         .background(Color.white)
     }
 }
+
+enum SocialLoginType: String, Equatable {
+    case apple = "Apple"
+    case kakao = "Kakao"
+    
+    var icon: String {
+        switch self {
+        case .apple:
+            return "apple.logo"
+        case .kakao:
+            return "message.fill"
+        }
+    }
+    
+    var iconColor: Color {
+        switch self {
+        case .apple:
+            return .black
+        case .kakao:
+            return .yellow
+        }
+    }
+}
