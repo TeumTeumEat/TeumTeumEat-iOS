@@ -22,16 +22,16 @@ struct TeumTeumEatApp: App {
     
     var body: some Scene {
         WindowGroup {
-            OnboardingView(
-                store: Store(initialState: OnboardingFeature.State()) {
-                    OnboardingFeature()
+            AppView(
+                store: Store(initialState: AppFeature.State()) {
+                    AppFeature()
                 } withDependencies: {
                     $0.categoryAPIClient = .liveValue
                 }
             )
-            .onOpenURL(perform:{ url in
-                if(AuthApi.isKakaoTalkLoginUrl(url)){
-                    _ = AuthController.handleOpenUrl(url:url)
+            .onOpenURL(perform: { url in
+                if AuthApi.isKakaoTalkLoginUrl(url) {
+                    _ = AuthController.handleOpenUrl(url: url)
                 }
             })
         }

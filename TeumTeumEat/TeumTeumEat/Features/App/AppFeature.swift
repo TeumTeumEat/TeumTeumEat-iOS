@@ -15,6 +15,7 @@ struct AppFeature {
         var login: LoginFeature.State?
         var termsAgreement: TermsAgreementFeature.State?
         var onboarding: OnboardingFeature.State?
+        var mainTab: MainTabFeature.State?
         var isShowingSplash = true
     }
     
@@ -23,6 +24,7 @@ struct AppFeature {
         case login(LoginFeature.Action)
         case termsAgreement(TermsAgreementFeature.Action)
         case onboarding(OnboardingFeature.Action)
+        case mainTab(MainTabFeature.Action)
         case logout
     }
     
@@ -41,6 +43,7 @@ struct AppFeature {
                 state.login = nil
                 state.termsAgreement = nil
                 state.onboarding = nil
+                state.mainTab = nil
                 
                 // 로그인 화면으로
                 state.login = LoginFeature.State()
@@ -57,7 +60,7 @@ struct AppFeature {
                     if isOnboardingCompleted {
                         // 온보딩 완료 → 메인 화면
                         print("토큰 있음 & 온보딩 완료 → 메인")
-                        // TODO: state.mainTab = MainTabFeature.State()
+                        state.mainTab = MainTabFeature.State()
                     } else {
                         // 온보딩 미완료 → 온보딩 화면
                         print("토큰 있음 & 온보딩 미완료 → 온보딩")
@@ -78,7 +81,8 @@ struct AppFeature {
                 
                 if isOnboardingCompleted {
                     // 온보딩 완료 → TODO: 메인 화면
-                    print("로그인 성공 & 온보딩 완료 - 메인 화면으로 이동 예정")
+                    print("로그인 성공 & 온보딩 완료 - 메인 화면으로 이동")
+                    state.mainTab = MainTabFeature.State()
                 } else {
                     // 온보딩 미완료 → 온보딩 화면
                     state.onboarding = OnboardingFeature.State()
@@ -97,10 +101,11 @@ struct AppFeature {
                 // 온보딩 완료 → TODO: 메인 화면 (나중에 구현)
                 state.onboarding = nil
                 print("온보딩 완료 - 메인 화면으로 이동 예정")
-                UserDefaultsManager.isOnboardingCompleted = true
+              //  UserDefaultsManager.isOnboardingCompleted = true
+                state.mainTab = MainTabFeature.State()
                 return .none
                 
-            case .splash, .login, .termsAgreement, .onboarding:
+            case .splash, .login, .termsAgreement, .onboarding, .mainTab:
                 return .none
             }
         }
@@ -112,6 +117,9 @@ struct AppFeature {
         }
         .ifLet(\.onboarding, action: \.onboarding) {
             OnboardingFeature()
+        }
+        .ifLet(\.mainTab, action: \.mainTab) {  
+            MainTabFeature()
         }
     }
 }
