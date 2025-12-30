@@ -20,6 +20,8 @@ struct MainTabFeature {
         var quiz: QuizFeature.State = .init()
         var register: RegisterFeature.State = .init()
         
+        var addSubject: AddSubjectFeature.State?
+        
         enum Tab {
             case home
             case quiz
@@ -34,6 +36,7 @@ struct MainTabFeature {
         case home(HomeFeature.Action)
         case quiz(QuizFeature.Action)
         case register(RegisterFeature.Action)
+        case addSubject(AddSubjectFeature.Action)
     }
     
     enum RegisterMenuItem {
@@ -62,19 +65,39 @@ struct MainTabFeature {
                 }
                 return .none
                 
-            case .toggleRegisterMenu:  // ✅ 추가
+            case .toggleRegisterMenu:
                 state.isRegisterMenuExpanded.toggle()
                 return .none
                 
-            case .registerMenuItemTapped(let item):  // ✅ 추가
+            case .registerMenuItemTapped(let item):
                 print("메뉴 아이템 선택: \(item)")
                 state.isRegisterMenuExpanded = false
                 // TODO: 각 아이템에 맞는 화면으로 이동
+                if item == .category {
+                     state.addSubject = AddSubjectFeature.State()
+                 }
+                
                 return .none
                 
-            case .home, .quiz, .register:  
+            case .addSubject(.delegate(.completed)):
+                 // 주제 추가 완료
+                 state.addSubject = nil
+                 print("주제 추가 완료 - Sheet 닫힘")
+                 return .none
+                 
+             case .addSubject(.delegate(.cancelled)):
+                 // 취소
+                 state.addSubject = nil
+                 print("주제 추가 취소 - Sheet 닫힘")
+                 return .none
+                
+            case .home, .quiz, .register, .addSubject:
                 return .none
             }
         }
+        .ifLet(\.addSubject, action: \.addSubject) {  
+            AddSubjectFeature()
+        }
+        
     }
 }

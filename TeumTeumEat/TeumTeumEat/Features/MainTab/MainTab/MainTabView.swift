@@ -29,6 +29,7 @@ struct MainTabView: View {
             }
             .animation(.easeInOut(duration: 0.2), value: store.selectedTab)
             
+            // 어두운 배경
             if store.isRegisterMenuExpanded {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
@@ -38,6 +39,7 @@ struct MainTabView: View {
                     .transition(.opacity)
             }
             
+            // Register 플로팅 메뉴
             if store.isRegisterMenuExpanded {
                 RegisterFloatingMenu(
                     onFileUploadTapped: {
@@ -47,12 +49,12 @@ struct MainTabView: View {
                         store.send(.registerMenuItemTapped(.category))
                     }
                 )
-
-                .padding(.leading, 54.5)
+                .padding(.leading, 52.5)
                 .padding(.bottom, 34 + 50 + 18)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
             
+            // 커스텀 TabBar
             CustomTabBar(
                 selectedTab: store.selectedTab,
                 isRegisterMenuExpanded: store.isRegisterMenuExpanded,
@@ -64,10 +66,24 @@ struct MainTabView: View {
                 }
             )
             .padding(.horizontal, 60)
-            .padding(.bottom, 28)
+            .padding(.bottom, 34)
         }
         .ignoresSafeArea(.keyboard)
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: store.isRegisterMenuExpanded)
+        .fullScreenCover(
+            isPresented: Binding(
+                get: { store.addSubject != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        store.send(.addSubject(.closeSheet))
+                    }
+                }
+            )
+        ) {
+            if let addSubjectStore = store.scope(state: \.addSubject, action: \.addSubject) {
+                AddSubjectView(store: addSubjectStore)
+            }
+        }
     }
 }
 

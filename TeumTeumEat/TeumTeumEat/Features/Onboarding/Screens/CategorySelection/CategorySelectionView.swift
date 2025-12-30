@@ -10,6 +10,7 @@ import ComposableArchitecture
 
 struct CategorySelectionView: View {
     let store: StoreOf<CategorySelectionFeature>
+    var showProgressBar: Bool = true
     
     var body: some View {
         Group {
@@ -23,11 +24,11 @@ struct CategorySelectionView: View {
             } else {
                 switch store.currentStep {
                 case .mainCategory:
-                    MainCategoryStepView(store: store)
+                    MainCategoryStepView(store: store, showProgressBar: showProgressBar)
                 case .subCategory:
-                    SubCategoryStepView(store: store)
+                    SubCategoryStepView(store: store, showProgressBar: showProgressBar)
                 case .detailCategory:
-                    DetailCategoryStepView(store: store)
+                    DetailCategoryStepView(store: store, showProgressBar: showProgressBar)
                 }
             }
         }
@@ -83,6 +84,7 @@ struct LoadingView: View {
 
 struct MainCategoryStepView: View {
     let store: StoreOf<CategorySelectionFeature>
+    var showProgressBar: Bool = true
     
     var body: some View {
         GeometryReader { geometry in
@@ -99,11 +101,19 @@ struct MainCategoryStepView: View {
                             .contentShape(Rectangle())
                     }
                     
-                    TTEProgressBar(
-                        currentStep: 4,
-                        totalSteps: 5,
-                        height: 15
-                    )
+                    if showProgressBar {
+                        TTEProgressBar(
+                            currentStep: 4,
+                            totalSteps: 5,
+                            height: 15
+                        )
+                    } else {
+                        Spacer()
+                        Text("카테고리 선택")
+                            .font(.system(size: 18, weight: .semibold))
+                        Spacer()
+                        Color.clear.frame(width: 40, height: 40)
+                    }
                 }
                 .padding(.horizontal, 24)
                 
@@ -161,6 +171,7 @@ struct MainCategoryStepView: View {
 
 struct SubCategoryStepView: View {
     let store: StoreOf<CategorySelectionFeature>
+    var showProgressBar: Bool = true
     
     var body: some View {
         GeometryReader { geometry in
@@ -177,11 +188,19 @@ struct SubCategoryStepView: View {
                             .contentShape(Rectangle())
                     }
                     
-                    TTEProgressBar(
-                        currentStep: 4,
-                        totalSteps: 5,
-                        height: 15
-                    )
+                    if showProgressBar {
+                        TTEProgressBar(
+                            currentStep: 4,
+                            totalSteps: 5,
+                            height: 15
+                        )
+                    } else {
+                        Spacer()
+                        Text("카테고리 선택")
+                            .font(.system(size: 18, weight: .semibold))
+                        Spacer()
+                        Color.clear.frame(width: 40, height: 40)
+                    }
                 }
                 .padding(.horizontal, 24)
                 
@@ -234,6 +253,7 @@ struct SubCategoryStepView: View {
 
 struct DetailCategoryStepView: View {
     let store: StoreOf<CategorySelectionFeature>
+    var showProgressBar: Bool = true
     
     var body: some View {
         GeometryReader { geometry in
@@ -250,11 +270,19 @@ struct DetailCategoryStepView: View {
                             .contentShape(Rectangle())
                     }
                     
-                    TTEProgressBar(
-                        currentStep: 4,
-                        totalSteps: 5,
-                        height: 15
-                    )
+                    if showProgressBar {
+                        TTEProgressBar(
+                            currentStep: 4,
+                            totalSteps: 5,
+                            height: 15
+                        )
+                    } else {
+                        Spacer()
+                        Text("카테고리 선택")
+                            .font(.system(size: 18, weight: .semibold))
+                        Spacer()
+                        Color.clear.frame(width: 40, height: 40)
+                    }
                 }
                 .padding(.horizontal, 24)
                 
