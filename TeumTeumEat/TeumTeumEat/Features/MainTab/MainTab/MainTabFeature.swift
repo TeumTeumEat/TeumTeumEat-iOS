@@ -13,6 +13,7 @@ struct MainTabFeature {
     @ObservableState
     struct State: Equatable {
         var selectedTab: Tab = .home
+        var isRegisterMenuExpanded: Bool = false
         
         // 각 탭의 Feature State
         var home: HomeFeature.State = .init()
@@ -28,9 +29,16 @@ struct MainTabFeature {
     
     enum Action {
         case tabSelected(State.Tab)
+        case toggleRegisterMenu
+        case registerMenuItemTapped(RegisterMenuItem)
         case home(HomeFeature.Action)
         case quiz(QuizFeature.Action)
         case register(RegisterFeature.Action)
+    }
+    
+    enum RegisterMenuItem {
+        case fileUpload
+        case category
     }
     
     var body: some ReducerOf<Self> {
@@ -48,6 +56,20 @@ struct MainTabFeature {
             switch action {
             case .tabSelected(let tab):
                 state.selectedTab = tab
+                
+                if tab != .register {
+                    state.isRegisterMenuExpanded = false
+                }
+                return .none
+                
+            case .toggleRegisterMenu:  // ✅ 추가
+                state.isRegisterMenuExpanded.toggle()
+                return .none
+                
+            case .registerMenuItemTapped(let item):  // ✅ 추가
+                print("메뉴 아이템 선택: \(item)")
+                state.isRegisterMenuExpanded = false
+                // TODO: 각 아이템에 맞는 화면으로 이동
                 return .none
                 
             case .home, .quiz, .register:  
