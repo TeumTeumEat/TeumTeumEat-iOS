@@ -69,3 +69,32 @@ enum CategoryAPIError: Error, LocalizedError {
         }
     }
 }
+
+extension CategoryAPIClient {
+    static let testValue = CategoryAPIClient(
+        fetchCategories: {
+            // Mock 데이터
+            return [
+                CategoryResponse(
+                    categoryId: 1,
+                    name: "SwiftUI",
+                    path: "/IT/앱개발자/iOS"
+                ),
+                CategoryResponse(
+                    categoryId: 2,
+                    name: "Swift 언어",
+                    path: "/IT/앱개발자/iOS"
+                )
+            ]
+        }
+    )
+    
+    static let failingValue = CategoryAPIClient(
+        fetchCategories: {
+            throw CategoryAPIError.invalidResponse(
+                message: "서버 오류가 발생했습니다.",
+                details: "잠시 후 다시 시도해주세요."
+            )
+        }
+    )
+}
