@@ -414,6 +414,7 @@ struct OnboardingFeature {
                 state.nameInput = nil
                 state.currentStep = .welcome
                 state.welcome = WelcomeFeature.State()
+                state.onboardingData = OnboardingData()
                 
             case .timeSetting:
                 state.timeSetting = nil
