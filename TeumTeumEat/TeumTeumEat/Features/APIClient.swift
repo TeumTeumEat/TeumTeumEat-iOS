@@ -220,3 +220,114 @@ extension APIClient {
            print("Commute info updated successfully - Start: \(startTime), End: \(endTime), Usage: \(usageTime)분")
        }
 }
+
+extension APIClient {
+    /// 목표 생성
+      func createGoal(
+          type: CreateGoalRequest.GoalType,
+          studyPeriod: String,
+          difficulty: CreateGoalRequest.Difficulty,
+          prompt: String?,
+          categoryId: Int?
+      ) async throws {
+          let response: APIResponse<EmptyData> = try await request(
+              endpoint: "/api/v1/goals",
+              method: .post,
+              body: CreateGoalRequest(
+                  type: type,
+                  studyPeriod: studyPeriod,
+                  difficulty: difficulty,
+                  prompt: prompt,
+                  categoryId: categoryId
+              ),
+              requiresAuth: true
+          )
+          
+          guard response.code == "OK" else {
+              throw APIError.serverError(
+                  code: response.code,
+                  message: response.message,
+                  details: response.details
+              )
+          }
+          
+          print("Goal created successfully - Type: \(type.rawValue), Period: \(studyPeriod)")
+      }
+    
+    func getPresignedURL(fileName: String) async throws -> PresignedURLData {
+         let response: APIResponse<PresignedURLData> = try await request(
+             endpoint: "/api/v1/s3/presigned",
+             method: .post,
+             body: PresignedURLRequest(fileName: fileName),
+             requiresAuth: true
+         )
+         
+         guard response.code == "OK",
+               let data = response.data else {
+             throw APIError.serverError(
+                 code: response.code,
+                 message: response.message,
+                 details: response.details
+             )
+         }
+         
+         print("   PresignedURL received for file: \(fileName)")
+         print("   URL: \(data.presignedUrl)")
+         print("   Key: \(data.key)")
+         
+         return data
+     }
+    
+    /// S3에 PDF 파일 업로드
+    func uploadFileToS3(fileURL: URL, presignedURL: String) async throws {
+        guard let url = URL(string: presignedURL) else {
+            throw APIError.invalidURL
+        }
+        
+        // 파일 데이터 읽기
+        let fileData: Data
+        do {
+            fileData = try Data(contentsOf: fileURL)
+            print("File loaded - Size: \(fileData.count) bytes")
+        } catch {
+            print("Failed to load file: \(error)")
+            throw APIError.networkError(error)
+        }
+        
+        // URLRequest 생성
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue("application/pdf", forHTTPHeaderField: "Content-Type")
+        request.httpBody = fileData
+        
+        print("Uploading file to S3...")
+        
+        // S3에 업로드
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw APIError.invalidResponse
+            }
+            
+            print("S3 Upload Status: \(httpResponse.statusCode)")
+            
+            // S3는 보통 200 또는 204 반환
+            guard (200...299).contains(httpResponse.statusCode) else {
+                throw APIError.serverError(
+                    code: "S3-\(httpResponse.statusCode)",
+                    message: "S3 업로드 실패 (상태 코드: \(httpResponse.statusCode))",
+                    details: nil
+                )
+            }
+            
+            print("File uploaded to S3 successfully")
+            
+        } catch let error as APIError {
+            throw error
+        } catch {
+            print("S3 Upload Error: \(error)")
+            throw APIError.networkError(error)
+        }
+    }
+}
