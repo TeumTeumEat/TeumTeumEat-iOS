@@ -374,58 +374,49 @@ struct SubjectListView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Custom Navigation Bar
-            HStack {
-                Button {
-                    store.send(.backTapped)
-                } label: {
+            VStack(spacing: 0) {
+                HStack {
+                    Button {
+                        store.send(.backTapped)
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 20))
+                            .foregroundColor(.black)
+                    }
+                    
+                    Spacer()
+                    
+                    Text("학습주제")
+                        .titleSemibold20()
+                    
+                    Spacer()
+                    
                     Image(systemName: "chevron.left")
                         .font(.system(size: 20))
-                        .foregroundColor(.black)
+                        .opacity(0)
                 }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
                 
-                Spacer()
-                
-                Text("학습주제")
-                    .titleSemibold20()
-                
-                Spacer()
-                
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 20))
-                    .opacity(0)
+                Divider()
             }
-            .background(.white)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            
-            Divider()
+            .background(Color.white)
             
             ScrollView {
-                LazyVStack(spacing: 0) {
+                VStack(spacing: 16) {
                     ForEach(store.subjects) { subject in
                         Button {
                             store.send(.subjectTapped(subject))
                         } label: {
-                            HStack {
-                                Text(subject.name)
-                                    .bodyRegular14()
-                                    .foregroundColor(.black)
-                                
-                                Spacer()
-                                
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.gray)
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 16)
+                            SelectedSubjectCard(subject: subject)
                         }
-                        
-                        Divider()
-                            .padding(.leading, 20)
                     }
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 40)
             }
+            .background(Color.white)
         }
         .navigationBarHidden(true)
         .toolbar(.hidden, for: .tabBar)
