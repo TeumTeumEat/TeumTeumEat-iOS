@@ -10,22 +10,24 @@ import ComposableArchitecture
 
 @Reducer
 struct HomeFeature {
-    
     @ObservableState
     struct State: Equatable {
-        // Home 관련 state
+        var fireCount: Int = 0 
+        var stampCount: Int = 0
     }
     
     enum Action {
-        // Home 관련 action
+        case settingTapped
     }
     
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-                
+            case .settingTapped:
+                print("설정 버튼 클릭")
+                // TODO: 설정 화면으로 이동
+                return .none
             }
-            
         }
     }
 }
@@ -35,11 +37,82 @@ struct HomeView: View {
     
     var body: some View {
         NavigationStack {
-            VStack {
-                Text("홈 화면")
-                    .font(.largeTitle)
+            VStack(spacing: 0) {
+                HomeNavigationBar(
+                    fireCount: store.fireCount,
+                    stampCount: store.stampCount,
+                    onSettingTapped: {
+                        store.send(.settingTapped)
+                    }
+                )
+                
+                ScrollView {
+                    VStack {
+                        // TODO: 홈 콘텐츠
+                    }
+                }
             }
-            .navigationTitle("홈")
+            .navigationBarHidden(true)
         }
+    }
+}
+
+struct HomeNavigationBar: View {
+    let fireCount: Int
+    let stampCount: Int
+    let onSettingTapped: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            // 로고
+            Image("logo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 70, height: 22)
+                
+
+            
+            Spacer()
+                .frame(width: 46)
+            
+            HStack(spacing: 6) {
+                Image("fire")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 20, height: 20)
+                
+                Text("\(fireCount)")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+            }
+            
+            Spacer()
+                .frame(width: 46)
+            
+            HStack(spacing: 6) {
+                Image("stamp")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 20, height: 20)
+                
+                Text("\(stampCount)")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+            }
+            
+            Spacer()
+            
+            // 설정 버튼
+            Button(action: onSettingTapped) {
+                Image("setting")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24, height: 24)
+                    .contentShape(Rectangle())
+            }
+        }
+        .frame(height: 48)
+        .padding(.horizontal, 20)
+        .background(Color.white)
     }
 }
