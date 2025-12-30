@@ -15,3 +15,8 @@ struct PresignedURLData: Decodable {
     let presignedUrl: String
     let key: String
 }
+
+struct RegisterDocumentRequest: Encodable {
+    let fileName: String
+    let fileKey: String
+}

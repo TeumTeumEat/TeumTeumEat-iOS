@@ -254,6 +254,33 @@ extension APIClient {
           print("Goal created successfully - Type: \(type.rawValue), Period: \(studyPeriod)")
       }
     
+    /// PDF 문서 등록
+     func registerDocument(
+         goalId: Int,
+         fileName: String,
+         fileKey: String
+     ) async throws {
+         let response: APIResponse<EmptyData> = try await request(
+             endpoint: "/api/v1/goals/\(goalId)/documents",
+             method: .post,
+             body: RegisterDocumentRequest(
+                 fileName: fileName,
+                 fileKey: fileKey
+             ),
+             requiresAuth: true
+         )
+         
+         guard response.code == "OK" else {
+             throw APIError.serverError(
+                 code: response.code,
+                 message: response.message,
+                 details: response.details
+             )
+         }
+         
+         print("Document registered successfully - GoalId: \(goalId), FileName: \(fileName)")
+     }
+    
     func getPresignedURL(fileName: String) async throws -> PresignedURLData {
          let response: APIResponse<PresignedURLData> = try await request(
              endpoint: "/api/v1/s3/presigned",
