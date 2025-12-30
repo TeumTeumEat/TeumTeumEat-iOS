@@ -21,6 +21,7 @@ struct MainTabFeature {
         var register: RegisterFeature.State = .init()
         
         var addSubject: AddSubjectFeature.State?
+        var addSubjectFile: AddSubjectFileFeature.State?
         
         enum Tab {
             case home
@@ -37,6 +38,7 @@ struct MainTabFeature {
         case quiz(QuizFeature.Action)
         case register(RegisterFeature.Action)
         case addSubject(AddSubjectFeature.Action)
+        case addSubjectFile(AddSubjectFileFeature.Action)
     }
     
     enum RegisterMenuItem {
@@ -75,6 +77,8 @@ struct MainTabFeature {
                 // TODO: 각 아이템에 맞는 화면으로 이동
                 if item == .category {
                      state.addSubject = AddSubjectFeature.State()
+                 } else if item == .fileUpload {
+                     state.addSubjectFile = AddSubjectFileFeature.State()
                  }
                 
                 return .none
@@ -91,12 +95,26 @@ struct MainTabFeature {
                  print("주제 추가 취소 - Sheet 닫힘")
                  return .none
                 
-            case .home, .quiz, .register, .addSubject:
+                
+            case .addSubjectFile(.delegate(.completed)): 
+                print("파일 주제 추가 완료 - Sheet 닫힘")
+                state.addSubjectFile = nil
+                return .none
+                
+            case .addSubjectFile(.delegate(.cancelled)):
+                print("파일 주제 추가 취소 - Sheet 닫힘")
+                state.addSubjectFile = nil
+                return .none
+                
+            case .home, .quiz, .register, .addSubject, .addSubjectFile:
                 return .none
             }
         }
         .ifLet(\.addSubject, action: \.addSubject) {  
             AddSubjectFeature()
+        }
+        .ifLet(\.addSubjectFile, action: \.addSubjectFile) {
+            AddSubjectFileFeature()
         }
         
     }

@@ -73,15 +73,23 @@ struct MainTabView: View {
         .fullScreenCover(
             isPresented: Binding(
                 get: { store.addSubject != nil },
-                set: { isPresented in
-                    if !isPresented {
-                        store.send(.addSubject(.closeSheet))
-                    }
+                set: { _ in
+
                 }
             )
         ) {
             if let addSubjectStore = store.scope(state: \.addSubject, action: \.addSubject) {
                 AddSubjectView(store: addSubjectStore)
+            }
+        }
+        .fullScreenCover(
+            isPresented: Binding(
+                get: { store.addSubjectFile != nil },
+                set: { _ in }
+            )
+        ) {
+            if let addSubjectFileStore = store.scope(state: \.addSubjectFile, action: \.addSubjectFile) {
+                AddSubjectFileView(store: addSubjectFileStore)
             }
         }
     }
