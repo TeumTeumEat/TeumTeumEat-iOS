@@ -12,7 +12,7 @@ struct MainTabView: View {
     let store: StoreOf<MainTabFeature>
     
     var body: some View {
-        ZStack(alignment: .bottomLeading) {
+        ZStack(alignment: .bottom) {
             // 메인 콘텐츠 영역
             Group {
                 switch store.selectedTab {
@@ -39,18 +39,24 @@ struct MainTabView: View {
                     .transition(.opacity)
             }
             
-            // Register 플로팅 메뉴
             if store.isRegisterMenuExpanded {
-                RegisterFloatingMenu(
-                    onFileUploadTapped: {
-                        store.send(.registerMenuItemTapped(.fileUpload))
-                    },
-                    onCategoryTapped: {
-                        store.send(.registerMenuItemTapped(.category))
+                VStack {
+                    Spacer()
+                    HStack {
+                        RegisterFloatingMenu(
+                            onFileUploadTapped: {
+                                store.send(.registerMenuItemTapped(.fileUpload))
+                            },
+                            onCategoryTapped: {
+                                store.send(.registerMenuItemTapped(.category))
+                            }
+                        )
+                        .padding(.leading, 60)
+                        .padding(.bottom, 34 + 50 + 18)
+                        
+                        Spacer()
                     }
-                )
-                .padding(.leading, 52.5)
-                .padding(.bottom, 34 + 50 + 18)
+                }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
             
@@ -73,9 +79,7 @@ struct MainTabView: View {
         .fullScreenCover(
             isPresented: Binding(
                 get: { store.addSubject != nil },
-                set: { _ in
-
-                }
+                set: { _ in }
             )
         ) {
             if let addSubjectStore = store.scope(state: \.addSubject, action: \.addSubject) {
