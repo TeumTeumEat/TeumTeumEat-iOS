@@ -143,3 +143,28 @@ extension DependencyValues {
         set { self[APIClient.self] = newValue }
     }
 }
+
+
+extension APIClient {
+    func fetchCategories() async throws -> [CategoryResponse] {
+        // APIResponse<CategoryData>로 디코딩
+        let response: APIResponse<CategoryData> = try await request(
+            endpoint: "/api/v1/categories",
+            method: .get,
+            requiresAuth: true
+        )
+        
+        // 응답 검증
+        guard response.code == "OK",
+              let categoryData = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("Categories loaded: \(categoryData.categoryResponses.count) items")
+        return categoryData.categoryResponses
+    }
+}
