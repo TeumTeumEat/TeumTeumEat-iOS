@@ -10,6 +10,7 @@ import ComposableArchitecture
 
 struct FileUploadView: View {
     let store: StoreOf<FileUploadFeature>
+    var showProgressBar: Bool = true
     
     var body: some View {
         GeometryReader { geometry in
@@ -25,11 +26,19 @@ struct FileUploadView: View {
                             .contentShape(Rectangle())
                     }
                     
-                    TTEProgressBar(
-                        currentStep: 4,
-                        totalSteps: 5,
-                        height: 15
-                    )
+                    if showProgressBar {
+                        TTEProgressBar(
+                            currentStep: 4,
+                            totalSteps: 5,
+                            height: 15
+                        )
+                    } else {
+                        Spacer()
+                        Text("파일 업로드")
+                            .font(.system(size: 18, weight: .semibold))
+                        Spacer()
+                        Color.clear.frame(width: 40, height: 40)
+                    }
                 }
                 .padding(.horizontal, 24)
                 

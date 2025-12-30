@@ -18,28 +18,8 @@ struct AppView: View {
             LoginView(store: loginStore)
         } else if let onboardingStore = store.scope(state: \.onboarding, action: \.onboarding) {
             OnboardingView(store: onboardingStore)
-        } else {
-            VStack {
-                Text("메인 화면")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                
-                Button {
-                    store.send(.logout)
-                } label: {
-                    HStack {
-                        Image(systemName: "rectangle.portrait.and.arrow.right")
-                        Text("로그아웃")
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 30)
-                    .padding(.vertical, 12)
-                    .background(Color.red)
-                    .cornerRadius(10)
-                }
-                .padding(.top, 40)
-            }
+        } else if let mainTabStore = store.scope(state: \.mainTab, action: \.mainTab) { 
+            MainTabView(store: mainTabStore)
         }
     }
 }
-

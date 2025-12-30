@@ -23,13 +23,15 @@ struct TeumTeumEatApp: App {
     var body: some Scene {
         WindowGroup {
             AppView(
-                store: Store(initialState: AppFeature.State()){
+                store: Store(initialState: AppFeature.State()) {
                     AppFeature()
+                } withDependencies: {
+                    $0.categoryAPIClient = .liveValue
                 }
             )
-            .onOpenURL(perform:{ url in
-                if(AuthApi.isKakaoTalkLoginUrl(url)){
-                    _ = AuthController.handleOpenUrl(url:url)
+            .onOpenURL(perform: { url in
+                if AuthApi.isKakaoTalkLoginUrl(url) {
+                    _ = AuthController.handleOpenUrl(url: url)
                 }
             })
         }

@@ -10,21 +10,81 @@ import ComposableArchitecture
 
 struct CategorySelectionView: View {
     let store: StoreOf<CategorySelectionFeature>
+    var showProgressBar: Bool = true
     
     var body: some View {
-        switch store.currentStep {
-        case .mainCategory:
-            MainCategoryStepView(store: store)
-        case .subCategory:
-            SubCategoryStepView(store: store)
-        case .detailCategory:
-            DetailCategoryStepView(store: store)
+        Group {
+            if store.isLoading {
+                LoadingView()
+            } else if let error = store.loadError {
+                CategoryErrorView(
+                    error: error,
+                    onRetry: { store.send(.retryLoad) }
+                )
+            } else {
+                switch store.currentStep {
+                case .mainCategory:
+                    MainCategoryStepView(store: store, showProgressBar: showProgressBar)
+                case .subCategory:
+                    SubCategoryStepView(store: store, showProgressBar: showProgressBar)
+                case .detailCategory:
+                    DetailCategoryStepView(store: store, showProgressBar: showProgressBar)
+                }
+            }
+        }
+        .onAppear {
+            store.send(.onAppear)
+        }
+    }
+}
+
+struct CategoryErrorView: View {
+    let error: String
+    let onRetry: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 60))
+                .foregroundColor(.red)
+            
+            Text("카테고리를 불러올 수 없습니다")
+                .font(.headline)
+            
+            Text(error)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            
+            TTEButton(
+                title: "다시 시도",
+                size: .large,
+                isEnabled: true
+            ) {
+                onRetry()
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+}
+
+struct LoadingView: View {
+    var body: some View {
+        VStack(spacing: 20) {
+            ProgressView()
+                .scaleEffect(1.5)
+            
+            Text("카테고리를 불러오는 중...")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
         }
     }
 }
 
 struct MainCategoryStepView: View {
     let store: StoreOf<CategorySelectionFeature>
+    var showProgressBar: Bool = true
     
     var body: some View {
         GeometryReader { geometry in
@@ -41,11 +101,19 @@ struct MainCategoryStepView: View {
                             .contentShape(Rectangle())
                     }
                     
-                    TTEProgressBar(
-                        currentStep: 4,
-                        totalSteps: 5,
-                        height: 15
-                    )
+                    if showProgressBar {
+                        TTEProgressBar(
+                            currentStep: 4,
+                            totalSteps: 5,
+                            height: 15
+                        )
+                    } else {
+                        Spacer()
+                        Text("카테고리 선택")
+                            .font(.system(size: 18, weight: .semibold))
+                        Spacer()
+                        Color.clear.frame(width: 40, height: 40)
+                    }
                 }
                 .padding(.horizontal, 24)
                 
@@ -66,16 +134,11 @@ struct MainCategoryStepView: View {
                                 ],
                                 spacing: 12
                             ) {
-                                ForEach(MainCategory.allCases, id: \.self) { category in
-                                    TTEButton(
-                                        title: category.rawValue,
-                                        size: .grid,
-                                        style: .secondary,
-                                        isEnabled: true,
-                                        icon: Image(category.icon),
-                                        iconSize: 24,
-                                        foregroundColor: .gray,
-                                        borderColor: .gray
+                                ForEach(store.mainCategories, id: \.self) { category in
+                                    CategoryGridButton(
+                                        title: category,
+                                        icon: category.categoryIcon,
+                                        isSelected: store.selectedMainCategory == category
                                     ) {
                                         store.send(.mainCategorySelected(category))
                                     }
@@ -108,6 +171,7 @@ struct MainCategoryStepView: View {
 
 struct SubCategoryStepView: View {
     let store: StoreOf<CategorySelectionFeature>
+    var showProgressBar: Bool = true
     
     var body: some View {
         GeometryReader { geometry in
@@ -124,11 +188,19 @@ struct SubCategoryStepView: View {
                             .contentShape(Rectangle())
                     }
                     
-                    TTEProgressBar(
-                        currentStep: 4,
-                        totalSteps: 5,
-                        height: 15
-                    )
+                    if showProgressBar {
+                        TTEProgressBar(
+                            currentStep: 4,
+                            totalSteps: 5,
+                            height: 15
+                        )
+                    } else {
+                        Spacer()
+                        Text("카테고리 선택")
+                            .font(.system(size: 18, weight: .semibold))
+                        Spacer()
+                        Color.clear.frame(width: 40, height: 40)
+                    }
                 }
                 .padding(.horizontal, 24)
                 
@@ -144,14 +216,12 @@ struct SubCategoryStepView: View {
                             
                             VStack(spacing: 0) {
                                 FlowLayout(spacing: 12) {
-                                    if let mainCategory = store.selectedMainCategory {
-                                        ForEach(mainCategory.subCategories, id: \.self) { subCategory in
-                                            CategoryChip(
-                                                text: subCategory.rawValue,
-                                                isSelected: store.selectedSubCategory == subCategory
-                                            ) {
-                                                store.send(.subCategorySelected(subCategory))
-                                            }
+                                    ForEach(store.currentSubCategories, id: \.self) { subCategory in
+                                        CategoryChip(
+                                            text: subCategory,
+                                            isSelected: store.selectedSubCategory == subCategory
+                                        ) {
+                                            store.send(.subCategorySelected(subCategory))
                                         }
                                     }
                                 }
@@ -183,6 +253,7 @@ struct SubCategoryStepView: View {
 
 struct DetailCategoryStepView: View {
     let store: StoreOf<CategorySelectionFeature>
+    var showProgressBar: Bool = true
     
     var body: some View {
         GeometryReader { geometry in
@@ -199,11 +270,19 @@ struct DetailCategoryStepView: View {
                             .contentShape(Rectangle())
                     }
                     
-                    TTEProgressBar(
-                        currentStep: 4,
-                        totalSteps: 5,
-                        height: 15
-                    )
+                    if showProgressBar {
+                        TTEProgressBar(
+                            currentStep: 4,
+                            totalSteps: 5,
+                            height: 15
+                        )
+                    } else {
+                        Spacer()
+                        Text("카테고리 선택")
+                            .font(.system(size: 18, weight: .semibold))
+                        Spacer()
+                        Color.clear.frame(width: 40, height: 40)
+                    }
                 }
                 .padding(.horizontal, 24)
                 
@@ -217,7 +296,7 @@ struct DetailCategoryStepView: View {
                                 .padding(.horizontal, 32)
                                 .padding(.top, 14)
                             
-                            detailCategoryButtons  // ✅ 분리
+                            detailCategoryButtons
                                 .padding(.horizontal, 30)
                                 .padding(.top, 20)
                             
@@ -242,21 +321,21 @@ struct DetailCategoryStepView: View {
         }
     }
     
-    // ✅ computed property로 분리
     @ViewBuilder
     private var detailCategoryButtons: some View {
         VStack(spacing: 16) {
-            if let subCategory = store.selectedSubCategory {
-                ForEach(subCategory.detailCategories, id: \.self) { detailCategory in
-                    let isSelected = store.selectedDetailCategory == detailCategory
-                    
-                    TTEButton(
-                        title: detailCategory.rawValue,
-                        size: .large,
-                        style: isSelected ? .primary : .secondary, isEnabled: true
-                    ) {
-                        store.send(.detailCategorySelected(detailCategory))
-                    }
+            ForEach(store.currentDetailCategories) { detailCategory in
+                let isSelected = store.selectedDetailCategory?.id == detailCategory.id
+                
+                TTEButton(
+                    title: detailCategory.name,
+                    size: .large,
+                    style: .secondary,
+                    isEnabled: true,
+                    foregroundColor: isSelected ? .blue : .primary,
+                    borderColor: isSelected ? .blue : .gray.opacity(0.3)
+                ) {
+                    store.send(.detailCategorySelected(detailCategory))
                 }
             }
         }
@@ -338,6 +417,37 @@ struct FlowLayout: Layout {
             }
             
             self.size = CGSize(width: maxWidth, height: y + lineHeight)
+        }
+    }
+}
+
+struct CategoryGridButton: View {
+    let title: String
+    let icon: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(icon)
+                    .resizable()
+                    .frame(width: 24, height: 24)
+                
+                Text(title)
+                    .titleSemibold20()
+                    .foregroundColor(isSelected ? .blue : .primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 60)
+            .background(Color.white)
+            .cornerRadius(16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(isSelected ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1.5)
+            )
         }
     }
 }

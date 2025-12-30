@@ -15,9 +15,9 @@ struct OnboardingData: Equatable, Codable {
     var contentType: ContentType = .category
     var uploadedFileURL: URL?
 
-    var selectedMainCategory: MainCategory?
-    var selectedSubCategory: SubCategory?
-    var selectedDetailCategory: DetailCategory?
+    var selectedMainCategory: String?
+    var selectedSubCategory: String?
+    var selectedDetailCategory: CategoryResponse?
     
     var difficulty: String?
     var customPrompt: String = ""
