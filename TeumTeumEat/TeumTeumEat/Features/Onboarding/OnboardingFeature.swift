@@ -348,16 +348,29 @@ struct OnboardingFeature {
             return .none
             
         case .summary(.completeTapped):
-            state.summary = nil
-            state.loading = OnboardingLoadingFeature.State()
-            return .none
+            // Summary에서 수집한 OnboardingData 전달
+            let onboardingData = state.onboardingData
             
+            state.summary = nil
+            state.loading = OnboardingLoadingFeature.State(
+                onboardingData: onboardingData,
+                isOnboarding: true  // 온보딩 모드
+            )
+            return .none
         // Loading
         case .loading(.loadingCompleted):
             state.loading = nil
             state.complete = OnboardingCompleteFeature.State(
                 userName: state.onboardingData.userName
             )
+            return .none
+            
+        case .loading(.delegate(.onboardingCancelled)):
+            // 온보딩 취소 → Welcome 화면으로
+            state.loading = nil
+            state.currentStep = .welcome
+            state.welcome = WelcomeFeature.State()
+            state.onboardingData = OnboardingData()  // 데이터 초기화
             return .none
             
         // Complete

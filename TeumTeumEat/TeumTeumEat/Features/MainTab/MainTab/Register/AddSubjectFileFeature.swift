@@ -135,24 +135,45 @@ struct AddSubjectFileFeature {
                 state.difficultySelection = difficultyState
                 return .none
                 
-            case .durationSelection(.nextTapped):
-                // 기간 선택 완료 → 로딩으로
-                if let weeks = state.durationSelection?.selectedWeeks {
-                    state.selectedWeeks = weeks.rawValue
-                }
-                
-                print("주제 추가 시작 (파일)")
-                print("파일: \(state.uploadedFileURL?.lastPathComponent ?? "없음")")
-                print("난이도: \(state.selectedDifficulty ?? "")")
-                print("프롬프트: \(state.customPrompt)")
-                print("기간: \(state.selectedWeeks)주")
-                
-                // 로딩 화면으로 전환
-                state.durationSelection = nil
-                state.currentStep = .loading
-                state.loading = OnboardingLoadingFeature.State()
-                
-                return .none
+                // AddSubjectFileFeature.swift
+
+                case .durationSelection(.nextTapped):
+                    // 기간 선택 완료 → 로딩으로
+                    if let weeks = state.durationSelection?.selectedWeeks {
+                        state.selectedWeeks = weeks.rawValue
+                    }
+                    
+                    print("주제 추가 시작 (파일)")
+                    print("파일: \(state.uploadedFileURL?.lastPathComponent ?? "없음")")
+                    print("난이도: \(state.selectedDifficulty ?? "")")
+                    print("프롬프트: \(state.customPrompt)")
+                    print("기간: \(state.selectedWeeks)주")
+                    
+                    // AddSubjectFileFeature 데이터 → OnboardingData 변환
+                    let onboardingData = OnboardingData(
+                        userName: "",           // 주제 추가에서는 사용 안 함
+                        leaveHomeTime: nil,     // 주제 추가에서는 사용 안 함
+                        returnHomeTime: nil,    // 주제 추가에서는 사용 안 함
+                        dailyUsageMinutes: 0,   // 주제 추가에서는 사용 안 함
+                        contentType: .fileUpload,  // 파일 업로드
+                        uploadedFileURL: state.uploadedFileURL,
+                        selectedMainCategory: nil,
+                        selectedSubCategory: nil,
+                        selectedDetailCategory: nil,
+                        difficulty: state.selectedDifficulty,
+                        customPrompt: state.customPrompt,
+                        programWeeks: state.selectedWeeks
+                    )
+                    
+                    // 로딩 화면으로 전환
+                    state.durationSelection = nil
+                    state.currentStep = .loading
+                    state.loading = OnboardingLoadingFeature.State(
+                        onboardingData: onboardingData,
+                        isOnboarding: false  // 주제 추가 모드
+                    )
+                    
+                    return .none
                 
             // MARK: - Loading & Complete
             case .loading(.loadingCompleted):

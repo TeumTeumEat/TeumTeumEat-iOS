@@ -83,7 +83,7 @@ struct CategorySelectionFeature {
         }
     }
     
-    @Dependency(\.categoryAPIClient) var categoryAPIClient
+    @Dependency(\.apiClient) var apiClient
     
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -95,7 +95,7 @@ struct CategorySelectionFeature {
                 return .run { send in
                     await send(.categoriesLoaded(
                         TaskResult {
-                            try await categoryAPIClient.fetchCategories()
+                            try await apiClient.fetchCategories()
                         }
                     ))
                 }
@@ -109,7 +109,7 @@ struct CategorySelectionFeature {
             case .categoriesLoaded(.failure(let error)):
                 state.isLoading = false
                 
-                print("❌ Category Load Error:")
+                print("Category Load Error:")
                 print("Error Type: \(type(of: error))")
                 print("Error: \(error)")
                 print("LocalizedDescription: \(error.localizedDescription)")
