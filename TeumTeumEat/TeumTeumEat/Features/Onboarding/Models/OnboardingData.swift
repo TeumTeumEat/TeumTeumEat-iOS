@@ -21,10 +21,26 @@ struct OnboardingData: Equatable, Codable {
     
     var difficulty: String?
     var customPrompt: String = ""
-    var programWeeks: Int = 0   
+    var programWeeks: Int = 0
     
     enum ContentType: String, Codable {
         case fileUpload
         case category
+    }
+    
+    // Equatable 수동 구현
+    static func == (lhs: OnboardingData, rhs: OnboardingData) -> Bool {
+        lhs.userName == rhs.userName &&
+        lhs.leaveHomeTime == rhs.leaveHomeTime &&
+        lhs.returnHomeTime == rhs.returnHomeTime &&
+        lhs.dailyUsageMinutes == rhs.dailyUsageMinutes &&
+        lhs.contentType == rhs.contentType &&
+        lhs.uploadedFileURL?.absoluteString == rhs.uploadedFileURL?.absoluteString && 
+        lhs.selectedMainCategory == rhs.selectedMainCategory &&
+        lhs.selectedSubCategory == rhs.selectedSubCategory &&
+        lhs.selectedDetailCategory == rhs.selectedDetailCategory &&
+        lhs.difficulty == rhs.difficulty &&
+        lhs.customPrompt == rhs.customPrompt &&
+        lhs.programWeeks == rhs.programWeeks
     }
 }

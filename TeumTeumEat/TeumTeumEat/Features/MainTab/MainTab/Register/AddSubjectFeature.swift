@@ -145,9 +145,28 @@ struct AddSubjectFeature {
                 print("프롬프트: \(state.customPrompt)")
                 print("기간: \(state.selectedWeeks)주")
                 
+                // AddSubjectCategoryFeature 데이터 → OnboardingData 변환
+                let onboardingData = OnboardingData(
+                    userName: "",           // 주제 추가에서는 사용 안 함
+                    leaveHomeTime: nil,     // 주제 추가에서는 사용 안 함
+                    returnHomeTime: nil,    // 주제 추가에서는 사용 안 함
+                    dailyUsageMinutes: 0,   // 주제 추가에서는 사용 안 함
+                    contentType: .category,  // 카테고리 선택
+                    uploadedFileURL: nil,
+                    selectedMainCategory: state.selectedMainCategory,
+                    selectedSubCategory: state.selectedSubCategory,
+                    selectedDetailCategory: state.selectedDetailCategory,
+                    difficulty: state.selectedDifficulty,
+                    customPrompt: state.customPrompt,
+                    programWeeks: state.selectedWeeks
+                )
+                
                 state.durationSelection = nil
                 state.currentStep = .loading
-                state.loading = OnboardingLoadingFeature.State()
+                state.loading = OnboardingLoadingFeature.State(
+                    onboardingData: onboardingData,
+                    isOnboarding: false  // 주제 추가 모드
+                )
                 
                 return .none
                 

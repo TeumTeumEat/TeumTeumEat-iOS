@@ -14,7 +14,7 @@ struct APIErrorResponse: Decodable {
 }
 
 
-enum APIError: Error, LocalizedError {
+enum APIError: Error, LocalizedError, Equatable {
     // 클라이언트 측 에러
     case invalidURL
     case noAccessToken
@@ -118,5 +118,27 @@ enum APIError: Error, LocalizedError {
             return true
         }
         return false
+    }
+    
+    static func == (lhs: APIError, rhs: APIError) -> Bool {
+        switch (lhs, rhs) {
+        case (.invalidURL, .invalidURL):
+            return true
+        case (.noAccessToken, .noAccessToken):
+            return true
+        case (.encodingFailed(let lhsError), .encodingFailed(let rhsError)):
+            return lhsError.localizedDescription == rhsError.localizedDescription
+        case (.serverError(let lhsCode, let lhsMessage, let lhsDetails),
+              .serverError(let rhsCode, let rhsMessage, let rhsDetails)):
+            return lhsCode == rhsCode && lhsMessage == rhsMessage && lhsDetails == rhsDetails
+        case (.networkError(let lhsError), .networkError(let rhsError)):
+            return lhsError.localizedDescription == rhsError.localizedDescription
+        case (.decodingError(let lhsError), .decodingError(let rhsError)):
+            return lhsError.localizedDescription == rhsError.localizedDescription
+        case (.invalidResponse, .invalidResponse):
+            return true
+        default:
+            return false
+        }
     }
 }

@@ -348,10 +348,15 @@ struct OnboardingFeature {
             return .none
             
         case .summary(.completeTapped):
-            state.summary = nil
-            state.loading = OnboardingLoadingFeature.State()
-            return .none
+            // Summary에서 수집한 OnboardingData 전달
+            let onboardingData = state.onboardingData
             
+            state.summary = nil
+            state.loading = OnboardingLoadingFeature.State(
+                onboardingData: onboardingData,
+                isOnboarding: true  // 온보딩 모드
+            )
+            return .none
         // Loading
         case .loading(.loadingCompleted):
             state.loading = nil
