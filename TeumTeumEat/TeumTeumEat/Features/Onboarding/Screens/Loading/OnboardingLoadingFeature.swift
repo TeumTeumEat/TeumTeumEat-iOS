@@ -26,6 +26,9 @@ struct OnboardingLoadingFeature {
         var apiCompleted: Bool = false
         var apiError: APIError?
         
+        @Presents var errorAlert: AlertState<Action.ErrorAlert>?
+        @Presents var confirmCancelAlert: AlertState<Action.ConfirmCancelAlert>?
+        
         // 완료 여부
         var canProceed: Bool {
             animationCompleted && apiCompleted && apiError == nil
@@ -50,6 +53,27 @@ struct OnboardingLoadingFeature {
         case checkCompletion
         
         case loadingCompleted
+        
+        
+        case errorAlert(PresentationAction<ErrorAlert>)
+            case confirmCancelAlert(PresentationAction<ConfirmCancelAlert>)
+            
+            // Delegate 액션 추가
+            case delegate(Delegate)
+            
+            enum ErrorAlert: Equatable {
+                case retry
+                case cancel
+            }
+            
+            enum ConfirmCancelAlert: Equatable {
+                case confirmCancel  // 정말 취소
+                case goBack         // 돌아가기
+            }
+            
+            enum Delegate: Equatable {
+                case onboardingCancelled
+            }
     }
     
     @Dependency(\.apiClient) var apiClient
@@ -154,11 +178,101 @@ struct OnboardingLoadingFeature {
                 return .send(.checkCompletion)
                 
             case .apiFailure(let error):
-                state.apiCompleted = false
-                state.apiError = error
-                print("API Error: \(error.localizedDescription)")
-                // TODO: 에러 UI 표시
-                return .none
+                       state.apiCompleted = false
+                       state.apiError = error
+                       print(" API Error: \(error.localizedDescription)")
+                       
+                       // 1차 Alert - 에러 표시
+                       state.errorAlert = AlertState {
+                           TextState("오류가 발생했습니다")
+                       } actions: {
+                           ButtonState(action: .retry) {
+                               TextState("다시 시도")
+                           }
+                           ButtonState(role: .cancel, action: .cancel) {
+                               TextState("취소")
+                           }
+                       } message: {
+                           TextState(error.userFriendlyMessage)
+                       }
+                       
+                       return .none
+                
+                
+            case .errorAlert(.presented(.retry)):
+                     // 전체 재시도
+                     state.errorAlert = nil
+                     state.apiError = nil
+                     state.apiCompleted = false
+                     
+                     // 애니메이션 초기화
+                     state.currentStepIndex = 0
+                     state.animationCompleted = false
+                     for index in state.loadingSteps.indices {
+                         state.loadingSteps[index].isCompleted = false
+                     }
+                     
+                     // 다시 시작
+                     return .merge(
+                         .run { send in
+                             await send(.updateProgress)
+                         },
+                         .send(.submitOnboardingData)
+                     )
+                
+            case .errorAlert(.presented(.cancel)):
+                        // 2차 Alert 표시 - 취소 확인
+                        state.errorAlert = nil
+                        state.confirmCancelAlert = AlertState {
+                            TextState("정말 취소하시겠어요?")
+                        } actions: {
+                            ButtonState(role: .destructive, action: .confirmCancel) {
+                                TextState("취소")
+                            }
+                            ButtonState(action: .goBack) {
+                                TextState("돌아가기")
+                            }
+                        } message: {
+                            TextState("처음부터 다시 입력해야 합니다.")
+                        }
+                        
+                        return .none
+                        
+                    case .errorAlert:
+                        return .none
+                
+            case .confirmCancelAlert(.presented(.confirmCancel)):
+                     // 정말 취소 → Delegate로 Parent에게 알림
+                     state.confirmCancelAlert = nil
+                     return .send(.delegate(.onboardingCancelled))
+                     
+                 case .confirmCancelAlert(.presented(.goBack)):
+                     // 돌아가기 → 1차 Alert로 다시
+                     state.confirmCancelAlert = nil
+                     
+                     // 다시 에러 Alert 표시
+                     if let error = state.apiError {
+                         state.errorAlert = AlertState {
+                             TextState("오류가 발생했습니다")
+                         } actions: {
+                             ButtonState(action: .retry) {
+                                 TextState("다시 시도")
+                             }
+                             ButtonState(role: .cancel, action: .cancel) {
+                                 TextState("취소")
+                             }
+                         } message: {
+                             TextState(error.userFriendlyMessage)
+                         }
+                     }
+                     
+                     return .none
+                     
+                 case .confirmCancelAlert:
+                     return .none
+                     
+                 case .delegate:
+                     return .none
                 
             case .checkCompletion:
                 if state.canProceed {
@@ -171,6 +285,8 @@ struct OnboardingLoadingFeature {
                 return .none
             }
         }
+        .ifLet(\.$errorAlert, action: \.errorAlert)
+            .ifLet(\.$confirmCancelAlert, action: \.confirmCancelAlert)
     }
     
     // MARK: - Helper Methods

@@ -365,6 +365,14 @@ struct OnboardingFeature {
             )
             return .none
             
+        case .loading(.delegate(.onboardingCancelled)):
+            // 온보딩 취소 → Welcome 화면으로
+            state.loading = nil
+            state.currentStep = .welcome
+            state.welcome = WelcomeFeature.State()
+            state.onboardingData = OnboardingData()  // 데이터 초기화
+            return .none
+            
         // Complete
         case .complete(.startButtonTapped):
             print("온보딩 완료!")

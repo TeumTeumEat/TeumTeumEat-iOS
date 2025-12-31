@@ -9,7 +9,7 @@ import SwiftUI
 import ComposableArchitecture
 
 struct OnboardingLoadingView: View {
-    let store: StoreOf<OnboardingLoadingFeature>
+    @Bindable var store: StoreOf<OnboardingLoadingFeature>
     
     var body: some View {
         VStack(spacing: 0) {            
@@ -44,6 +44,8 @@ struct OnboardingLoadingView: View {
             .padding(.horizontal, 30)
             .padding(.bottom, 60)
         }
+        .alert($store.scope(state: \.errorAlert, action: \.errorAlert))
+        .alert($store.scope(state: \.confirmCancelAlert, action: \.confirmCancelAlert))
         .onAppear {
             store.send(.onAppear)
         }
