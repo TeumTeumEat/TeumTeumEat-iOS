@@ -17,7 +17,7 @@ struct MainTabFeature {
         
         // 각 탭의 Feature State
         var home: HomeFeature.State = .init()
-        var quiz: QuizFeature.State = .init()
+        var quiz: HisotryFeature.State = .init()
         var register: RegisterFeature.State = .init()
         
         var addSubject: AddSubjectFeature.State?
@@ -35,7 +35,7 @@ struct MainTabFeature {
         case toggleRegisterMenu
         case registerMenuItemTapped(RegisterMenuItem)
         case home(HomeFeature.Action)
-        case quiz(QuizFeature.Action)
+        case quiz(HisotryFeature.Action)
         case register(RegisterFeature.Action)
         case addSubject(AddSubjectFeature.Action)
         case addSubjectFile(AddSubjectFileFeature.Action)
@@ -51,7 +51,7 @@ struct MainTabFeature {
             HomeFeature()
         }
         Scope(state: \.quiz, action: \.quiz) {
-            QuizFeature()
+            HisotryFeature()
         }
         Scope(state: \.register, action: \.register) {
             RegisterFeature()

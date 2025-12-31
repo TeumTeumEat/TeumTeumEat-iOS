@@ -20,7 +20,7 @@ struct MainTabView: View {
                     HomeView(store: store.scope(state: \.home, action: \.home))
                         .transition(.opacity)
                 case .quiz:
-                    QuizView(store: store.scope(state: \.quiz, action: \.quiz))
+                    HistoryView(store: store.scope(state: \.quiz, action: \.quiz))
                         .transition(.opacity)
                 case .register:
                     RegisterView(store: store.scope(state: \.register, action: \.register))
