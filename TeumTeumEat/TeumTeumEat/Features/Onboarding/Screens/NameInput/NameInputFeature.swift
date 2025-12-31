@@ -27,16 +27,17 @@ struct NameInputFeature {
                 return "이름은 10글자 이하로 입력해주세요"
             }
             
-            // 특수문자 체크 (한글, 영문, 숫자만 허용)
-            let allowedCharacters = CharacterSet.alphanumerics
-                .union(CharacterSet(charactersIn: "ㄱ-ㅎㅏ-ㅣ가-힣"))
-            if trimmedName.rangeOfCharacter(from: allowedCharacters.inverted) != nil {
-                return "특수문자는 사용할 수 없어요"
+            // 완성된 한글, 영문, 숫자만 허용
+            let allowedPattern = "^[a-zA-Z0-9가-힣]+$"
+            let predicate = NSPredicate(format: "SELF MATCHES %@", allowedPattern)
+            
+            if !predicate.evaluate(with: trimmedName) {
+                return "한글, 영문, 숫자만 사용 가능해요"
             }
             
             return nil
         }
-        
+
         var canProceed: Bool {
             let trimmedName = name.trimmingCharacters(in: .whitespaces)
             
@@ -45,10 +46,11 @@ struct NameInputFeature {
             guard trimmedName.count >= 1 && trimmedName.count <= 10 else { return false }
             guard !name.contains(" ") else { return false }
             
-            // 특수문자 체크
-            let allowedCharacters = CharacterSet.alphanumerics
-                .union(CharacterSet(charactersIn: "ㄱ-ㅎㅏ-ㅣ가-힣"))
-            return trimmedName.rangeOfCharacter(from: allowedCharacters.inverted) == nil
+            // 완성된 한글, 영문, 숫자만 허용
+            let allowedPattern = "^[a-zA-Z0-9가-힣]+$"
+            let predicate = NSPredicate(format: "SELF MATCHES %@", allowedPattern)
+            
+            return predicate.evaluate(with: trimmedName)
         }
     }
     
