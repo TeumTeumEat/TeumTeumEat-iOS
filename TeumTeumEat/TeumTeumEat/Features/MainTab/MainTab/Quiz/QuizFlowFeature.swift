@@ -116,8 +116,8 @@ struct QuizFlowView: View {
                 }
             }
         }
-        .transition(.move(edge: .trailing))
-        .animation(.easeInOut(duration: 0.3), value: store.currentStep)
+        .transition(.opacity)
+        .animation(.easeInOut(duration: 0.2), value: store.currentStep)
     }
 }
 
