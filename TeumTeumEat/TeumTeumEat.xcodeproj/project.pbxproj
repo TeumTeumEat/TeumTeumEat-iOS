@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		46AE2AA12F0125BD0061B2EE /* KakaoSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 46AE2AA02F0125BD0061B2EE /* KakaoSDK */; };
 		46AE2AA32F0125BD0061B2EE /* KakaoSDKAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 46AE2AA22F0125BD0061B2EE /* KakaoSDKAuth */; };
+		46C6475C2F06B813009F030A /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 46C6475B2F06B813009F030A /* MarkdownUI */; };
 		46FE6B842EEACE0B009E626A /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 46FE6B832EEACE0B009E626A /* ComposableArchitecture */; };
 /* End PBXBuildFile section */
 
@@ -74,6 +75,7 @@
 				46FE6B842EEACE0B009E626A /* ComposableArchitecture in Frameworks */,
 				46AE2AA12F0125BD0061B2EE /* KakaoSDK in Frameworks */,
 				46AE2AA32F0125BD0061B2EE /* KakaoSDKAuth in Frameworks */,
+				46C6475C2F06B813009F030A /* MarkdownUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -137,6 +139,7 @@
 				46FE6B832EEACE0B009E626A /* ComposableArchitecture */,
 				46AE2AA02F0125BD0061B2EE /* KakaoSDK */,
 				46AE2AA22F0125BD0061B2EE /* KakaoSDKAuth */,
+				46C6475B2F06B813009F030A /* MarkdownUI */,
 			);
 			productName = TeumTeumEat;
 			productReference = 46FE666E2EE1770E009E626A /* TeumTeumEat.app */;
@@ -223,6 +226,7 @@
 			packageReferences = (
 				46FE6B822EEACE0B009E626A /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
 				46AE2A9F2F0125BD0061B2EE /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */,
+				46C6475A2F06B813009F030A /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 46FE666F2EE1770E009E626A /* Products */;
@@ -613,6 +617,14 @@
 				minimumVersion = 2.26.0;
 			};
 		};
+		46C6475A2F06B813009F030A /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.4.1;
+			};
+		};
 		46FE6B822EEACE0B009E626A /* XCRemoteSwiftPackageReference "swift-composable-architecture" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pointfreeco/swift-composable-architecture.git";
@@ -633,6 +645,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 46AE2A9F2F0125BD0061B2EE /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
 			productName = KakaoSDKAuth;
+		};
+		46C6475B2F06B813009F030A /* MarkdownUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 46C6475A2F06B813009F030A /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
+			productName = MarkdownUI;
 		};
 		46FE6B832EEACE0B009E626A /* ComposableArchitecture */ = {
 			isa = XCSwiftPackageProductDependency;
