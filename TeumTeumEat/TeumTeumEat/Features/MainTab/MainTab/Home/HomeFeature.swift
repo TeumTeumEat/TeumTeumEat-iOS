@@ -22,6 +22,12 @@ struct HomeFeature {
         case settingTapped
         case toggleQuizStatus
         case myPage(MyPageFeature.Action)
+        case characterEatTapped
+        case delegate(Delegate)
+    }
+    
+    enum Delegate {
+        case startQuizFlow  // 퀴즈 플로우 시작 요청
     }
     
     var body: some ReducerOf<Self> {
@@ -35,11 +41,15 @@ struct HomeFeature {
                 state.isTodayQuizCompleted.toggle()
                 return .none
                 
+            case .characterEatTapped:
+                // MainTab에게 퀴즈 플로우 시작하라고 알림
+                return .send(.delegate(.startQuizFlow))
+                
             case .myPage(.delegate(.dismissed)):
                 state.myPage = nil
                 return .none
                 
-            case .myPage:
+            case .myPage, .delegate:
                 return .none
             }
         }
@@ -66,8 +76,14 @@ struct HomeView: View {
                 Spacer()
                     .frame(height: store.isTodayQuizCompleted ? 5 : 11)
                 
-                CharacterImageView(isTodayQuizCompleted: store.isTodayQuizCompleted)
-                
+                CharacterImageView(
+                    isTodayQuizCompleted: store.isTodayQuizCompleted,
+                    onCharacterTapped: {
+                        print("HomeView: 캐릭터 탭!")
+                        store.send(.characterEatTapped)
+                    }
+                )
+                                
                 ScrollView {
                     VStack {
                         // TODO: 홈 콘텐츠
@@ -92,6 +108,7 @@ struct HomeView: View {
 // MARK: - Character Image View
 struct CharacterImageView: View {
     let isTodayQuizCompleted: Bool
+    let onCharacterTapped: () -> Void  
     
     var body: some View {
         if isTodayQuizCompleted {
@@ -101,6 +118,7 @@ struct CharacterImageView: View {
                 .frame(height: 554)
                 .padding(.leading, 30)
                 .padding(.trailing, 8.47)
+
         } else {
             Image("character_hamburger")
                 .resizable()
@@ -108,6 +126,10 @@ struct CharacterImageView: View {
                 .frame(height: 548)
                 .padding(.leading, 30)
                 .padding(.trailing, 3)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    onCharacterTapped()
+                }
         }
     }
 }

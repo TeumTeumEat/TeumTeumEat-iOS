@@ -18,6 +18,7 @@ struct MainTabView: View {
                 switch store.selectedTab {
                 case .home:
                     HomeView(store: store.scope(state: \.home, action: \.home))
+                        .background(Color.yellow.opacity(0.2))
                         .transition(.opacity)
                 case .quiz:
                     HistoryView(store: store.scope(state: \.quiz, action: \.quiz))
@@ -96,6 +97,16 @@ struct MainTabView: View {
         ) {
             if let addSubjectFileStore = store.scope(state: \.addSubjectFile, action: \.addSubjectFile) {
                 AddSubjectFileView(store: addSubjectFileStore)
+            }
+        }
+        .fullScreenCover(
+            isPresented: Binding(
+                get: { store.quizFlow != nil },
+                set: { _ in }
+            )
+        ) {
+            if let quizFlowStore = store.scope(state: \.quizFlow, action: \.quizFlow) {
+                QuizFlowView(store: quizFlowStore)
             }
         }
     }
