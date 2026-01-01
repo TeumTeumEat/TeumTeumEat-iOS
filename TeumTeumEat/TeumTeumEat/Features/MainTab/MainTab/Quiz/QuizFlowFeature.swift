@@ -14,11 +14,13 @@ struct QuizFlowFeature {
     struct State: Equatable {
         var currentStep: Step = .summary
         var contentSummary: ContentSummaryFeature.State = .init()
+        var quizGuide: QuizGuideFeature.State?
         var quiz: QuizFeature.State?
         var result: QuizResultFeature.State?
         
         enum Step {
             case summary    // 요약 화면
+            case quizGuide  // 안내 화면
             case quiz       // 퀴즈 화면
             case result     // 결과 화면
         }
@@ -26,6 +28,7 @@ struct QuizFlowFeature {
     
     enum Action {
         case contentSummary(ContentSummaryFeature.Action)
+        case quizGuide(QuizGuideFeature.Action)
         case quiz(QuizFeature.Action)
         case result(QuizResultFeature.Action)
         case delegate(Delegate)
@@ -48,38 +51,55 @@ struct QuizFlowFeature {
         
         Reduce { state, action in
             switch action {
-            // ContentSummary 관련
+            // ContentSummary에서 퀴즈 시작
             case .contentSummary(.delegate(.startQuiz)):
-                // 퀴즈 시작
-                state.currentStep = .quiz
-                state.quiz = QuizFeature.State()
-                print("QuizFlow: 퀴즈 화면으로 이동")
+                if state.contentSummary.isFirstTime {
+                    // 처음이면 안내 화면으로
+                    state.currentStep = .quizGuide
+                    state.quizGuide = QuizGuideFeature.State()
+                    print("QuizFlow: 퀴즈 안내 화면으로 이동")
+                } else {
+                    // 아니면 바로 퀴즈로
+                    state.currentStep = .quiz
+                    state.quiz = QuizFeature.State()
+                    print("QuizFlow: 퀴즈 화면으로 바로 이동")
+                }
                 return .none
                 
             case .contentSummary(.delegate(.cancelled)):
-                // 취소 - 홈으로
                 print("QuizFlow: 취소됨")
                 return .send(.delegate(.cancelled))
                 
-            // Quiz 관련 (나중에 구현)
+            // QuizGuide에서 퀴즈 시작
+            case .quizGuide(.delegate(.startQuiz)):
+                state.currentStep = .quiz
+                state.quiz = QuizFeature.State()
+                print("QuizFlow: 안내 완료, 퀴즈 시작")
+                return .none
+                
+            // Quiz 완료
             case .quiz(.delegate(.completed)):
                 state.currentStep = .result
                 state.result = QuizResultFeature.State()
                 print("QuizFlow: 결과 화면으로 이동")
                 return .none
                 
-            // Result 관련 (나중에 구현)
+            // Result에서 홈으로
             case .result(.delegate(.navigateToHome)):
                 print("QuizFlow: 홈으로 이동")
                 return .send(.delegate(.completed(destination: .home)))
                 
+            // Result에서 히스토리로
             case .result(.delegate(.navigateToHistory)):
                 print("QuizFlow: 히스토리로 이동")
                 return .send(.delegate(.completed(destination: .history)))
                 
-            case .contentSummary, .quiz, .result, .delegate:
+            case .contentSummary, .quizGuide, .quiz, .result, .delegate:
                 return .none
             }
+        }
+        .ifLet(\.quizGuide, action: \.quizGuide) {
+            QuizGuideFeature()
         }
         .ifLet(\.quiz, action: \.quiz) {
             QuizFeature()
@@ -104,6 +124,11 @@ struct QuizFlowView: View {
                         action: \.contentSummary
                     )
                 )
+                
+            case .quizGuide:
+                if let quizGuideStore = store.scope(state: \.quizGuide, action: \.quizGuide) {
+                    QuizGuideView(store: quizGuideStore)
+                }
                 
             case .quiz:
                 if let quizStore = store.scope(state: \.quiz, action: \.quiz) {
