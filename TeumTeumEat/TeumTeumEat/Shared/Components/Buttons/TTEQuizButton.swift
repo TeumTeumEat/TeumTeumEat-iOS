@@ -7,10 +7,11 @@
 
 import SwiftUI
 
-enum QuizAnswer {
+enum QuizAnswer: Equatable {
     case none       // 선택 안함 (default)
     case correct    // O 선택
     case wrong      // X 선택
+    case choice(Int)
 }
 
 enum QuizButtonType {

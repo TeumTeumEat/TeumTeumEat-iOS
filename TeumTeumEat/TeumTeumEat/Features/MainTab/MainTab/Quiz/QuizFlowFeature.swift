@@ -155,10 +155,23 @@ import ComposableArchitecture
 struct QuizFeature {
     @ObservableState
     struct State: Equatable {
-        // TODO: 나중에 실제 퀴즈 데이터 추가
+        var quizzes: [Quiz] = Quiz.mockData  // 퀴즈 데이터
+        var currentIndex: Int = 0  // 현재 카드 인덱스
+        var selectedAnswers: [Int: QuizAnswer] = [:]  // 선택된 답변들
+        
+        var currentQuiz: Quiz? {
+            guard currentIndex < quizzes.count else { return nil }
+            return quizzes[currentIndex]
+        }
+        
+        var isLastQuiz: Bool {
+            currentIndex == quizzes.count - 1
+        }
     }
     
     enum Action {
+        case answerSelected(QuizAnswer)
+        case nextQuiz
         case delegate(Delegate)
     }
     
@@ -169,6 +182,22 @@ struct QuizFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
+            case .answerSelected(let answer):
+                state.selectedAnswers[state.currentIndex] = answer
+                print("답변 선택: Q\(state.currentIndex + 1) - \(answer)")
+                
+                // 자동으로 다음 문제로 (선택사항)
+                return .send(.nextQuiz)
+                
+            case .nextQuiz:
+                if state.isLastQuiz {
+                    // 마지막 문제면 완료
+                    return .send(.delegate(.completed))
+                } else {
+                    state.currentIndex += 1
+                }
+                return .none
+                
             case .delegate:
                 return .none
             }
@@ -176,21 +205,145 @@ struct QuizFeature {
     }
 }
 
+// MARK: - Models
+struct Quiz: Equatable, Identifiable {
+    let id: Int
+    let question: String
+    let type: QuizType
+    let choices: [String]?  // 객관식일 때만
+    
+    enum QuizType {
+        case ox
+        case multipleChoice
+    }
+    
+    // Mock Data
+    static let mockData: [Quiz] = [
+        Quiz(
+            id: 1,
+            question: "이거는 저거일까?",
+            type: .ox,
+            choices: nil
+        ),
+        Quiz(
+            id: 2,
+            question: "MVP의 정의는 무엇인가요?",
+            type: .multipleChoice,
+            choices: [
+                "최소 기능 제품",
+                "최대 기능 제품",
+                "평균 기능 제품",
+                "표준 기능 제품"
+            ]
+        ),
+        Quiz(
+            id: 3,
+            question: "TDD는 테스트 주도 개발이다?",
+            type: .ox,
+            choices: nil
+        )
+    ]
+}
+
 struct QuizView: View {
     let store: StoreOf<QuizFeature>
     
     var body: some View {
-        VStack {
-            Text("퀴즈 화면 (임시)")
-                .font(.system(size: 24, weight: .bold))
-            
-            Button("완료 (임시)") {
-                store.send(.delegate(.completed))
+        VStack(spacing: 0) {
+            // 상단 진행 상황
+            HStack {
+                Text("\(store.currentIndex + 1) / \(store.quizzes.count)")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.gray)
+                
+                Spacer()
             }
-            .padding()
-            .background(Color.blue)
-            .foregroundColor(.white)
-            .cornerRadius(8)
+            .padding(.horizontal, 40)
+            .padding(.top, 20)
+            .padding(.bottom, 30)
+            
+            // 카드 영역
+            ZStack(alignment: .top) {
+                // 배경: 쌓인 카드 이미지 (밑에 깔림)
+                Image("Group 244")
+                    .resizable()
+                    .scaledToFit()
+                
+                // 실제 카드 (위에 올라감)
+                if let currentQuiz = store.currentQuiz {
+                    QuizCardView(
+                        quiz: currentQuiz,
+                        selectedAnswer: Binding(
+                            get: { store.selectedAnswers[store.currentIndex] ?? .none },
+                            set: { _ in }
+                        ),
+                        onAnswerSelected: { answer in
+                            store.send(.answerSelected(answer))
+                        }
+                    )
+                    .frame(height: 426)
+                    .padding(.top, 34)
+                }
+            }
+            .padding(.horizontal, 40)
+            
+            Spacer()
+            
+            // 다음 문제 버튼
+            Button(action: {
+                store.send(.nextQuiz)
+            }) {
+                Text("다음 문제")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(Color.blue)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal, 40)
+            .padding(.bottom, 34)
+        }
+    }
+}
+
+struct QuizCardView: View {
+    let quiz: Quiz
+    @Binding var selectedAnswer: QuizAnswer
+    let onAnswerSelected: (QuizAnswer) -> Void
+    
+    var body: some View {
+        switch quiz.type {
+        case .ox:
+            TTEQuizCard(
+                questionNumber: quiz.id,
+                question: quiz.question,
+                selectedAnswer: $selectedAnswer,
+                onAnswerSelected: onAnswerSelected
+            )
+            
+        case .multipleChoice:
+            TTEMultipleChoiceCard(
+                questionNumber: quiz.id,
+                question: quiz.question,
+                choices: quiz.choices ?? [],
+                selectedChoice: Binding(
+                    get: {
+                        if case .choice(let index) = selectedAnswer {
+                            return index
+                        }
+                        return nil
+                    },
+                    set: { newValue in
+                        if let index = newValue {
+                            selectedAnswer = .choice(index)
+                        }
+                    }
+                ),
+                onChoiceSelected: { index in
+                    onAnswerSelected(.choice(index))
+                }
+            )
         }
     }
 }
