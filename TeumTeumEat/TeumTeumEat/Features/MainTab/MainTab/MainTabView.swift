@@ -61,8 +61,8 @@ struct MainTabView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
             
-            // 커스텀 TabBar
-            if store.home.myPage == nil {
+            // 커스텀 TabBar - home과 quiz 둘 다 확인
+            if store.home.myPage == nil && store.quiz.myPage == nil {
                 CustomTabBar(
                     selectedTab: store.selectedTab,
                     isRegisterMenuExpanded: store.isRegisterMenuExpanded,
