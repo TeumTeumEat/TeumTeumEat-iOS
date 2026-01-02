@@ -69,7 +69,7 @@ struct HistoryView: View {
                         store.send(.settingTapped)
                     }
                 )
-                .padding(.horizontal, 20)
+                // .padding(.horizontal, 20) <- 제거
                 
                 // 나머지 전체 스크롤
                 ScrollView {
@@ -114,28 +114,86 @@ struct HistoryView: View {
                                     
                                     HistoryCalendarView(
                                         quizDates: [
-                                            Date(), // 오늘
-                                            Calendar.current.date(byAdding: .day, value: -1, to: Date())!, // 어제
-                                            Calendar.current.date(byAdding: .day, value: -2, to: Date())!, // 그저께
-                                            Calendar.current.date(byAdding: .day, value: -7, to: Date())!, // 일주일 전
+                                            Date(),
+                                            Calendar.current.date(byAdding: .day, value: -1, to: Date())!,
+                                            Calendar.current.date(byAdding: .day, value: -2, to: Date())!,
+                                            Calendar.current.date(byAdding: .day, value: -7, to: Date())!,
                                         ],
                                         streakDates: [
                                             Date(),
                                             Calendar.current.date(byAdding: .day, value: -1, to: Date())!,
-                                            Calendar.current.date(byAdding: .day, value: -2, to: Date())!, // 연속 3일
+                                            Calendar.current.date(byAdding: .day, value: -2, to: Date())!,
                                         ]
                                     )
                                     .padding(.top, 5)
                                 }
-                                .padding(.horizontal, 18)
+                                .padding(.horizontal, 18) // 전체에 padding 적용
                                 .padding(.top, 20)
-                                .padding(.bottom, 120) // TabBar 높이만큼 하단 여백 추가
+                                .padding(.bottom, 120)
                                 
                             case 1:
                                 // 주제별
-                                Text("주제별 히스토리")
-                                    .padding(.top, 32)
-                                    .padding(.bottom, 120) // TabBar 높이만큼 하단 여백 추가
+                                VStack(spacing: 16) {
+                                    ExpandableSummaryRow(
+                                        categories: ["앱 개발자", "Swift", "SwiftUI"],
+                                        items: [
+                                            QuizHistoryItem(
+                                                id: "1",
+                                                title: "SwiftUI 레이아웃 기초",
+                                                dateText: "1월 2일 목요일",
+                                                isStreak: true
+                                            ),
+                                            QuizHistoryItem(
+                                                id: "2",
+                                                title: "State와 Binding 이해하기",
+                                                dateText: "1월 1일 수요일",
+                                                isStreak: true
+                                            ),
+                                            QuizHistoryItem(
+                                                id: "3",
+                                                title: "View Modifier 활용",
+                                                dateText: "12월 30일 월요일",
+                                                isStreak: false
+                                            )
+                                        ],
+                                        onItemTapped: { item in
+                                            print("선택된 항목: \(item.title)")
+                                        }
+                                    )
+                                    
+                                    ExpandableSummaryRow(
+                                        categories: ["앱 개발자", "iOS", "UIKit"],
+                                        items: [
+                                            QuizHistoryItem(
+                                                id: "4",
+                                                title: "UIViewController 생명주기",
+                                                dateText: "12월 28일 토요일",
+                                                isStreak: false
+                                            )
+                                        ],
+                                        onItemTapped: { item in
+                                            print("선택된 항목: \(item.title)")
+                                        }
+                                    )
+                                    
+                                    ExpandableSummaryRow(
+                                        categories: ["CS", "알고리즘", "정렬"],
+                                        items: [
+                                            QuizHistoryItem(
+                                                id: "5",
+                                                title: "퀵소트 구현하기",
+                                                dateText: "12월 25일 수요일",
+                                                isStreak: false
+                                            )
+                                        ],
+                                        onItemTapped: { item in
+                                            print("선택된 항목: \(item.title)")
+                                        }
+                                    )
+                                }
+                                .padding(.horizontal, 18)
+                                .padding(.top, 20)
+                                .padding(.bottom, 120)
                                 
                             default:
                                 EmptyView()
@@ -272,7 +330,6 @@ struct HistoryCalendarView: View {
                     .padding(.top, 16)
             }
         }
-        .padding(.horizontal, 18)
     }
     
     // MARK: - 월 헤더
@@ -315,7 +372,7 @@ struct HistoryCalendarView: View {
         let days = getDaysInMonth()
         let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
         
-        return LazyVGrid(columns: columns, spacing: 4) {
+        return LazyVGrid(columns: columns, spacing: 0) {
             ForEach(Array(days.enumerated()), id: \.offset) { index, date in
                 if let date = date {
                     let hasQuiz = quizDates.contains(where: {
@@ -456,7 +513,7 @@ struct DayCell: View {
             
             // 날짜 텍스트
             Text("\(calendar.component(.day, from: date))")
-                .font(.system(size: 16, weight: hasQuiz ? .bold : .regular))
+                .font(.system(size: 14, weight: hasQuiz ? .bold : .regular))
                 .foregroundColor(hasQuiz ? .black : .gray)
             
             // 퀴즈 완료 표시 (동그라미)
