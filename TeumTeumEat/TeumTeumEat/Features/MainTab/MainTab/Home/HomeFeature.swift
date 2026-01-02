@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import Lottie
 
 @Reducer
 struct HomeFeature {
@@ -108,7 +109,7 @@ struct HomeView: View {
 // MARK: - Character Image View
 struct CharacterImageView: View {
     let isTodayQuizCompleted: Bool
-    let onCharacterTapped: () -> Void  
+    let onCharacterTapped: () -> Void
     
     var body: some View {
         if isTodayQuizCompleted {
@@ -118,18 +119,39 @@ struct CharacterImageView: View {
                 .frame(height: 554)
                 .padding(.leading, 30)
                 .padding(.trailing, 8.47)
-
         } else {
-            Image("character_hamburger")
-                .resizable()
-                .scaledToFit()
-                .frame(height: 548)
-                .padding(.leading, 30)
-                .padding(.trailing, 3)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    onCharacterTapped()
+            // 퀴즈 미완료 시 - Lottie + 오버레이
+            ZStack(alignment: .center) {
+                // Lottie 배경
+                LottieView(animation: .named("home_dummy"))
+                    .playing(loopMode: .loop)
+                    .frame(height: 548)
+                
+                VStack(spacing: 16) {
+                    Spacer()
+                    
+                    // 햄버거 이미지
+                    Image("hamburger")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 180, height: 180)
+                    
+                    // 안내 텍스트
+                    Text("오늘의 냠냠지식이\n도착했어요!")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.primary)
+                        .multilineTextAlignment(.center)
+                    
+                    Spacer()
                 }
+            }
+            .frame(height: 548)
+            .padding(.leading, 30)
+            .padding(.trailing, 3)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                onCharacterTapped()
+            }
         }
     }
 }
