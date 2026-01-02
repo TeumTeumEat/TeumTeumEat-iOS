@@ -18,9 +18,10 @@ struct MainTabView: View {
                 switch store.selectedTab {
                 case .home:
                     HomeView(store: store.scope(state: \.home, action: \.home))
+                        .background(Color.yellow.opacity(0.2))
                         .transition(.opacity)
                 case .quiz:
-                    QuizView(store: store.scope(state: \.quiz, action: \.quiz))
+                    HistoryView(store: store.scope(state: \.quiz, action: \.quiz))
                         .transition(.opacity)
                 case .register:
                     RegisterView(store: store.scope(state: \.register, action: \.register))
@@ -96,6 +97,16 @@ struct MainTabView: View {
         ) {
             if let addSubjectFileStore = store.scope(state: \.addSubjectFile, action: \.addSubjectFile) {
                 AddSubjectFileView(store: addSubjectFileStore)
+            }
+        }
+        .fullScreenCover(
+            isPresented: Binding(
+                get: { store.quizFlow != nil },
+                set: { _ in }
+            )
+        ) {
+            if let quizFlowStore = store.scope(state: \.quizFlow, action: \.quizFlow) {
+                QuizFlowView(store: quizFlowStore)
             }
         }
     }

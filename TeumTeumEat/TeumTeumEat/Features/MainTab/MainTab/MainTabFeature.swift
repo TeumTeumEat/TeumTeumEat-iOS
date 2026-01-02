@@ -17,11 +17,12 @@ struct MainTabFeature {
         
         // 각 탭의 Feature State
         var home: HomeFeature.State = .init()
-        var quiz: QuizFeature.State = .init()
+        var quiz: HisotryFeature.State = .init()
         var register: RegisterFeature.State = .init()
         
         var addSubject: AddSubjectFeature.State?
         var addSubjectFile: AddSubjectFileFeature.State?
+        var quizFlow: QuizFlowFeature.State?
         
         enum Tab {
             case home
@@ -35,10 +36,11 @@ struct MainTabFeature {
         case toggleRegisterMenu
         case registerMenuItemTapped(RegisterMenuItem)
         case home(HomeFeature.Action)
-        case quiz(QuizFeature.Action)
+        case quiz(HisotryFeature.Action)
         case register(RegisterFeature.Action)
         case addSubject(AddSubjectFeature.Action)
         case addSubjectFile(AddSubjectFileFeature.Action)
+        case quizFlow(QuizFlowFeature.Action)
     }
     
     enum RegisterMenuItem {
@@ -51,7 +53,7 @@ struct MainTabFeature {
             HomeFeature()
         }
         Scope(state: \.quiz, action: \.quiz) {
-            QuizFeature()
+            HisotryFeature()
         }
         Scope(state: \.register, action: \.register) {
             RegisterFeature()
@@ -83,6 +85,27 @@ struct MainTabFeature {
                 
                 return .none
                 
+            case .home(.delegate(.startQuizFlow)):
+                state.quizFlow = QuizFlowFeature.State()
+                print("퀴즈 플로우 시작")
+                return .none
+                
+                // 퀴즈 플로우 완료
+            case .quizFlow(.delegate(.completed(let destination))):
+                state.quizFlow = nil
+                print("퀴즈 플로우 완료 - 이동: \(destination)")
+                // 원하는 탭으로 이동
+                if destination == .history {
+                    state.selectedTab = .quiz
+                }
+                return .none
+                
+                // 퀴즈 플로우 취소
+            case .quizFlow(.delegate(.cancelled)):
+                state.quizFlow = nil
+                print("퀴즈 플로우 취소")
+                return .none
+                
             case .addSubject(.delegate(.completed)):
                  // 주제 추가 완료
                  state.addSubject = nil
@@ -106,7 +129,7 @@ struct MainTabFeature {
                 state.addSubjectFile = nil
                 return .none
                 
-            case .home, .quiz, .register, .addSubject, .addSubjectFile:
+            case .home, .quiz, .register, .addSubject, .addSubjectFile, .quizFlow:
                 return .none
             }
         }
@@ -115,6 +138,9 @@ struct MainTabFeature {
         }
         .ifLet(\.addSubjectFile, action: \.addSubjectFile) {
             AddSubjectFileFeature()
+        }
+        .ifLet(\.quizFlow, action: \.quizFlow) {
+            QuizFlowFeature()
         }
         
     }

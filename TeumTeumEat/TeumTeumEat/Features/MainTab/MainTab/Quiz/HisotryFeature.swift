@@ -9,7 +9,7 @@ import SwiftUI
 import ComposableArchitecture
 
 @Reducer
-struct QuizFeature {
+struct HisotryFeature {
     @ObservableState
     struct State: Equatable {
         // Quiz 관련 state
@@ -27,8 +27,8 @@ struct QuizFeature {
     }
 }
 
-struct QuizView: View {
-    let store: StoreOf<QuizFeature>
+struct HistoryView: View {
+    let store: StoreOf<HisotryFeature>
     
     var body: some View {
         NavigationStack {
