@@ -69,13 +69,12 @@ struct HistoryView: View {
                         store.send(.settingTapped)
                     }
                 )
-                .padding(.horizontal, 20) // 네비게이션 바만 padding
-               
+                .padding(.horizontal, 20)
                 
                 Spacer()
                     .frame(height: 16)
                 
-                // 탭 헤더 - 전체 너비
+                // 탭 헤더
                 TTETabHeader(
                     selectedTab: Binding(
                         get: { store.selectedTab },
@@ -83,9 +82,8 @@ struct HistoryView: View {
                     ),
                     tabs: store.tabs
                 )
-                .background(.red)
                 
-                // 탭별 콘텐츠 - 전체 너비
+                // 탭별 콘텐츠
                 ScrollView {
                     VStack(spacing: 16) {
                         switch store.selectedTab {
@@ -97,23 +95,23 @@ struct HistoryView: View {
                                     dateText: "얼른 시작 틈틈잇",
                                     characterImage: "Frame 7407"
                                 )
-                                HistoryDateCard(
-                                    fireCount: 5,
-                                    dateText: "얼른 시작 틈틈잇",
-                                    characterImage: "Frame 7408"
-                                )
                                 
-                                HistoryDateCard(
-                                    fireCount: 5,
-                                    dateText: "얼른 시작 틈틈잇",
-                                    characterImage: "Frame 7409"
-                                )
-                                
-                                HistoryDateCard(
-                                    fireCount: 5,
-                                    dateText: "얼른 시작 틈틈잇",
-                                    characterImage: "Frame 7410"
-                                )
+                                // 스탬프 카운트 HStack
+                                HStack(spacing: 12) {
+                                    StampCountCapsule(
+                                        title: "총 스탬프",
+                                        count: store.stampCount,
+                                        iconName: "stamp",
+                                        backgroundColor: Color(hex: "EAF4FF")
+                                    )
+                                    
+                                    StampCountCapsule(
+                                        title: "이번달 스탬프",
+                                        count: store.stampCount,
+                                        iconName: "stamp",
+                                        backgroundColor: Color(hex: "EAF4FF")
+                                    )
+                                }
                             }
                             .padding(.horizontal, 18)
                             .padding(.top, 32)
@@ -127,10 +125,8 @@ struct HistoryView: View {
                             EmptyView()
                         }
                     }
-                    
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(.yellow)
             }
             .navigationBarHidden(true)
             .navigationDestination(
@@ -181,7 +177,7 @@ struct HistoryDateCard: View {
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .frame(maxWidth: .infinity)
-                .background(Color.white)
+                .background(Color(hex: "EAF4FF"))
                 
                 // 오른쪽 영역 - 카드 절반 크기
                 Image(characterImage)
@@ -195,13 +191,44 @@ struct HistoryDateCard: View {
         .frame(height: 188)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
+                .fill(Color(hex: "EAF4FF"))
                 .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
         )
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+        )
+    }
+}
+
+struct StampCountCapsule: View {
+    let title: String
+    let count: Int
+    let iconName: String
+    let backgroundColor: Color
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(title)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.black)
+            
+            Image(iconName)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 24, height: 24)
+            
+            Text("\(count)")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(.black)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity)
+        .background(
+            Capsule()
+                .fill(backgroundColor)
         )
     }
 }
