@@ -155,9 +155,12 @@ import ComposableArchitecture
 struct QuizFeature {
     @ObservableState
     struct State: Equatable {
-        var quizzes: [Quiz] = Quiz.mockData  // 퀴즈 데이터
-        var currentIndex: Int = 0  // 현재 카드 인덱스
-        var selectedAnswers: [Int: QuizAnswer] = [:]  // 선택된 답변들
+        var quizzes: [Quiz] = Quiz.mockData
+        var currentIndex: Int = 0
+        var selectedAnswers: [Int: QuizAnswer] = [:]
+        var isAnimating: Bool = false  // 애니메이션 중
+        var swipeDirection: SwipeDirection? = nil  // 스와이프 방향
+        var isCompleted: Bool = false
         
         var currentQuiz: Quiz? {
             guard currentIndex < quizzes.count else { return nil }
@@ -169,9 +172,16 @@ struct QuizFeature {
         }
     }
     
+    enum SwipeDirection {
+        case left   // O
+        case right  // X
+        case down   // 객관식
+    }
+    
     enum Action {
         case answerSelected(QuizAnswer)
-        case nextQuiz
+        case animationCompleted 
+        case gradeButtonTapped
         case delegate(Delegate)
     }
     
@@ -184,19 +194,36 @@ struct QuizFeature {
             switch action {
             case .answerSelected(let answer):
                 state.selectedAnswers[state.currentIndex] = answer
-                print("답변 선택: Q\(state.currentIndex + 1) - \(answer)")
+                state.isAnimating = true
                 
-                // 자동으로 다음 문제로 (선택사항)
-                return .send(.nextQuiz)
+                // 스와이프 방향 결정
+                let currentQuiz = state.currentQuiz
+                if currentQuiz?.type == .ox {
+                    state.swipeDirection = answer == .correct ? .left : .right
+                } else {
+                    state.swipeDirection = .down
+                }
                 
-            case .nextQuiz:
+                // 0.5초 후 다음 문제로
+                return .run { send in
+                    try await Task.sleep(for: .milliseconds(700))
+                    await send(.animationCompleted)
+                }
+                
+            case .animationCompleted:
+                state.isAnimating = false
+                state.swipeDirection = nil
+                
                 if state.isLastQuiz {
-                    // 마지막 문제면 완료
-                    return .send(.delegate(.completed))
+                    state.isCompleted = true  // 완료 상태
+                    return .none
                 } else {
                     state.currentIndex += 1
                 }
                 return .none
+                
+            case .gradeButtonTapped:
+                return .send(.delegate(.completed))
                 
             case .delegate:
                 return .none
@@ -264,13 +291,25 @@ struct QuizView: View {
             
             // 카드 영역
             ZStack(alignment: .top) {
-                // 배경: 쌓인 카드 이미지 (밑에 깔림)
-                Image("Group 244")
-                    .resizable()
-                    .scaledToFit()
+                // 배경: 완료 전에만 쌓인 이미지
+                if !store.isCompleted {
+                    Image("quiz_card_stack")
+                        .resizable()
+                        .scaledToFit()
+                }
                 
-                // 실제 카드 (위에 올라감)
-                if let currentQuiz = store.currentQuiz {
+                // 카드
+                if store.isCompleted {  // 완료 카드
+                    CompletionCardView(
+                        onGradeButtonTapped: {
+                            store.send(.gradeButtonTapped)
+                        }
+                    )
+                    .frame(height: 426)
+                    .padding(.top, 0)  // 쌓인 이미지 없으니 padding 제거
+                    .transition(.scale.combined(with: .opacity))
+                    
+                } else if let currentQuiz = store.currentQuiz {  // 퀴즈 카드
                     QuizCardView(
                         quiz: currentQuiz,
                         selectedAnswer: Binding(
@@ -283,26 +322,42 @@ struct QuizView: View {
                     )
                     .frame(height: 426)
                     .padding(.top, 34)
+                    .rotationEffect(getRotation(direction: store.swipeDirection))
+                    .offset(getOffset(direction: store.swipeDirection))
+                    .opacity(store.isAnimating ? 0 : 1)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.7), value: store.swipeDirection)
                 }
             }
             .padding(.horizontal, 40)
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: store.isCompleted)
             
             Spacer()
-            
-            // 다음 문제 버튼
-            Button(action: {
-                store.send(.nextQuiz)
-            }) {
-                Text("다음 문제")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(Color.blue)
-                    .cornerRadius(12)
-            }
-            .padding(.horizontal, 40)
-            .padding(.bottom, 34)
+        }
+    }
+    
+    func getRotation(direction: QuizFeature.SwipeDirection?) -> Angle {
+        guard let direction = direction else { return .degrees(0) }
+        
+        switch direction {
+        case .left:
+            return .degrees(-15)
+        case .right:
+            return .degrees(15)
+        case .down:
+            return .degrees(0)
+        }
+    }
+    
+    func getOffset(direction: QuizFeature.SwipeDirection?) -> CGSize {
+        guard let direction = direction else { return .zero }
+        
+        switch direction {
+        case .left:
+            return CGSize(width: -500, height: 100)
+        case .right:
+            return CGSize(width: 500, height: 100)
+        case .down:
+            return CGSize(width: 0, height: 800)
         }
     }
 }
@@ -412,5 +467,48 @@ struct QuizResultView: View {
                 .cornerRadius(8)
             }
         }
+    }
+}
+
+struct CompletionCardView: View {
+    let onGradeButtonTapped: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .center, spacing: 0) {
+            Spacer()
+            
+            // 완료 이미지
+            Image("character_complete 1")  // 완료 이미지
+                .resizable()
+                .scaledToFit()
+                .frame(height: 200)
+                .padding(.bottom, 40)
+            
+            // 완료 텍스트
+            Text("모든 퀴즈를 풀었어요!")
+                .font(.system(size: 24, weight: .bold))
+                .foregroundColor(.black)
+                .padding(.bottom, 32)
+            
+            // 채점하러 가기 버튼
+            Button(action: onGradeButtonTapped) {
+                Text("채점하러 가기")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(Color.blue)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal, 20)
+            
+            Spacer()
+        }
+        .frame(minHeight: 426)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+        )
     }
 }
