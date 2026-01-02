@@ -74,7 +74,7 @@ struct MainTabView: View {
                     }
                 )
                 .padding(.horizontal, 60)
-                .padding(.bottom, 34)
+                .padding(.bottom, 20)
             }
         }
         .ignoresSafeArea(.keyboard)

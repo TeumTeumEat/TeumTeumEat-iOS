@@ -46,6 +46,7 @@ struct TTETabHeader: View {
     
     var body: some View {
         VStack(spacing: 0) {
+            // 탭 버튼들
             HStack(spacing: 0) {
                 ForEach(Array(tabs.enumerated()), id: \.offset) { index, tab in
                     Button(action: {
@@ -53,27 +54,34 @@ struct TTETabHeader: View {
                             selectedTab = index
                         }
                     }) {
-                        VStack(spacing: 8) {
-                            Text(tab.title)
-                                .font(font)
-                                .foregroundColor(selectedTab == index ? selectedTextColor : unselectedTextColor)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                            
-                            // 선택된 탭의 인디케이터
-                            Rectangle()
-                                .fill(selectedTab == index ? indicatorColor : Color.clear)
-                                .frame(height: indicatorHeight)
-                        }
-                        .frame(maxWidth: .infinity) 
-                        .contentShape(Rectangle())
+                        Text(tab.title)
+                            .font(font)
+                            .foregroundColor(selectedTab == index ? selectedTextColor : unselectedTextColor)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 51) // 고정 높이
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
             }
             
-            // 전체 하단 구분선
-            Divider()
+            // 인디케이터와 구분선
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    // 전체 구분선
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(height: indicatorHeight)
+                    
+                    // 선택된 탭 인디케이터
+                    Rectangle()
+                        .fill(indicatorColor)
+                        .frame(width: geometry.size.width / CGFloat(tabs.count), height: indicatorHeight)
+                        .offset(x: geometry.size.width / CGFloat(tabs.count) * CGFloat(selectedTab))
+                        .animation(.easeInOut(duration: 0.3), value: selectedTab)
+                }
+            }
+            .frame(height: indicatorHeight)
         }
     }
 }
