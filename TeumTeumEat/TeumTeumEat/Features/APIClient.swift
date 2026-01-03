@@ -688,6 +688,30 @@ extension APIClient {
         print("History topics fetched successfully - Category Count: \(data.count)")
         return data
     }
+    
+    /// 히스토리 캘린더 조회
+    func fetchCalendarHistory(year: Int, month: Int) async throws -> CalendarHistoryData {
+        let monthString = String(format: "%02d", month)
+        let endpoint = "/api/v1/history/calendar?year=\(year)&month=\(monthString)"
+        
+        let response: APIResponse<CalendarHistoryData> = try await request(
+            endpoint: endpoint,
+            method: .get,
+            requiresAuth: true
+        )
+        
+        guard response.code == "OK",
+              let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print(" Calendar history fetched: \(data.stampedDates.count) stamps found.")
+        return data
+    }
 }
 
 

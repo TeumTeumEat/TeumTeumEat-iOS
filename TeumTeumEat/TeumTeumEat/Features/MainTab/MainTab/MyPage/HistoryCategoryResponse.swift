@@ -19,3 +19,9 @@ struct HistoryItemResponse: Decodable {
     let summarySnippet: String
     let lastStudiedAt: String
 }
+
+struct CalendarHistoryData: Decodable {
+    let stampedDates: [String] 
+    let totalStamps: Int
+    let currentStreak: Int
+}
