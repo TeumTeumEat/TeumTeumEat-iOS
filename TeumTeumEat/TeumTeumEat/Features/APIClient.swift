@@ -507,4 +507,33 @@ extension APIClient {
         
         return statusData
     }
+    
+    /// 오늘의 카테고리 자료(요약글) 조회하기
+    func fetchDailyCategoryDocument(categoryId: Int) async throws -> CategoryDocumentData {
+        let response: APIResponse<CategoryDocumentData> = try await request(
+            endpoint: "/api/v1/categories/\(categoryId)/documents/daily",
+            method: .get,
+            requiresAuth: true
+        )
+        
+        print("fetchDailyCategoryDocument - Response code: \(response.code)")
+        print("fetchDailyCategoryDocument - CategoryId: \(categoryId)")
+        print("etchDailyCategoryDocument - Response data: \(String(describing: response.data))")
+        
+        guard response.code == "OK",
+              let documentData = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("Category Document - documentId: \(documentData.documentId)")
+        print("Category Document - hasSolvedToday: \(documentData.hasSolvedToday)")
+        print("Category Document - isFirstTime: \(documentData.isFirstTime)")
+        print("Category Document - content length: \(documentData.content.count) characters")
+        
+        return documentData
+    }
 }
