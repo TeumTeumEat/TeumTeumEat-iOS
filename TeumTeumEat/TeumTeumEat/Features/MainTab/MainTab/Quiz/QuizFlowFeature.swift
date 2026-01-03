@@ -20,12 +20,18 @@ struct QuizFlowFeature {
         var quizGuide: QuizGuideFeature.State?
         var quiz: QuizFeature.State?
         var result: QuizResultFeature.State?
+        var detailResult: QuizDetailResultFeature.State?
+        var reviewSummary: QuizReviewSummaryFeature.State?  // ✅ 추가
+        var complete: QuizCompleteFeature.State?  // ✅ 추가
         
         enum Step {
             case summary
             case quizGuide
             case quiz
             case result
+            case detailResult
+            case reviewSummary  // ✅ 추가
+            case complete  // ✅ 추가
         }
         
         init(
@@ -45,6 +51,9 @@ struct QuizFlowFeature {
         case quizGuide(QuizGuideFeature.Action)
         case quiz(QuizFeature.Action)
         case result(QuizResultFeature.Action)
+        case detailResult(QuizDetailResultFeature.Action)
+        case reviewSummary(QuizReviewSummaryFeature.Action)  // ✅ 추가
+        case complete(QuizCompleteFeature.Action)  // ✅ 추가
         case delegate(Delegate)
     }
     
@@ -65,15 +74,12 @@ struct QuizFlowFeature {
         
         Reduce { state, action in
             switch action {
-            // ContentSummary에서 퀴즈 시작
             case .contentSummary(.delegate(.startQuiz(let quizzes, let isFirstTime))):
                 if isFirstTime {
-                    // 처음이면 가이드로
                     state.currentStep = .quizGuide
                     state.quizGuide = QuizGuideFeature.State()
                     print("QuizFlow: 퀴즈 가이드로 이동")
                 } else {
-                    // 아니면 바로 퀴즈로
                     state.currentStep = .quiz
                     let convertedQuizzes = quizzes.map { Quiz(from: $0) }
                     state.quiz = QuizFeature.State(quizzes: convertedQuizzes)
@@ -85,7 +91,6 @@ struct QuizFlowFeature {
                 print("QuizFlow: ContentSummary에서 취소")
                 return .send(.delegate(.cancelled))
                 
-            // QuizGuide에서 퀴즈 시작
             case .quizGuide(.delegate(.startQuiz)):
                 state.currentStep = .quiz
                 let convertedQuizzes = state.quizzes.map { Quiz(from: $0) }
@@ -93,24 +98,70 @@ struct QuizFlowFeature {
                 print("QuizFlow: 안내 완료, 퀴즈 시작")
                 return .none
                 
-            // Quiz 완료
             case .quiz(.delegate(.completed)):
                 state.currentStep = .result
-                state.result = QuizResultFeature.State()
+                
+                let quizState = state.quiz
+                state.result = QuizResultFeature.State(
+                    submitResults: quizState?.submitResults ?? [:],
+                    totalQuizCount: state.quizzes.count
+                )
                 print("QuizFlow: 결과 화면으로 이동")
                 return .none
                 
-            // Result에서 홈으로
+            case .result(.delegate(.showDetailResults)):
+                state.currentStep = .detailResult
+                
+                let resultState = state.result
+                state.detailResult = QuizDetailResultFeature.State(
+                    quizzes: state.quizzes,
+                    submitResults: resultState?.submitResults ?? [:],
+                    totalQuizCount: state.quizzes.count
+                )
+                print("QuizFlow: 상세 결과로 이동")
+                return .none
+                
             case .result(.delegate(.navigateToHome)):
                 print("QuizFlow: 홈으로 이동")
                 return .send(.delegate(.completed(destination: .home)))
                 
-            // Result에서 히스토리로
             case .result(.delegate(.navigateToHistory)):
                 print("QuizFlow: 히스토리로 이동")
                 return .send(.delegate(.completed(destination: .history)))
                 
-            case .contentSummary, .quizGuide, .quiz, .result, .delegate:
+            // ✅ DetailResult → ReviewSummary (글 보기)
+            case .detailResult(.delegate(.showReviewSummary)):
+                state.currentStep = .reviewSummary
+                state.reviewSummary = QuizReviewSummaryFeature.State(
+                    summaryText: state.contentSummary.summaryText
+                )
+                print("QuizFlow: 요약본 다시 보기로 이동")
+                return .none
+                
+            // ✅ DetailResult → Complete (다음으로)
+            case .detailResult(.delegate(.showComplete)):
+                state.currentStep = .complete
+                state.complete = QuizCompleteFeature.State()
+                print("QuizFlow: 완료 화면으로 이동")
+                return .none
+                
+            // ✅ ReviewSummary → 뒤로가기 (DetailResult로)
+            case .reviewSummary(.delegate(.back)):
+                state.currentStep = .detailResult
+                print("QuizFlow: 상세 결과로 복귀")
+                return .none
+                
+            // ✅ Complete → 홈으로
+            case .complete(.delegate(.navigateToHome)):
+                print("QuizFlow: 홈으로 이동")
+                return .send(.delegate(.completed(destination: .home)))
+                
+            // ✅ Complete → 히스토리로
+            case .complete(.delegate(.navigateToHistory)):
+                print("QuizFlow: 히스토리로 이동")
+                return .send(.delegate(.completed(destination: .history)))
+                
+            case .contentSummary, .quizGuide, .quiz, .result, .detailResult, .reviewSummary, .complete, .delegate:
                 return .none
             }
         }
@@ -123,6 +174,15 @@ struct QuizFlowFeature {
         .ifLet(\.result, action: \.result) {
             QuizResultFeature()
         }
+        .ifLet(\.detailResult, action: \.detailResult) {
+            QuizDetailResultFeature()
+        }
+        .ifLet(\.reviewSummary, action: \.reviewSummary) {  // ✅ 추가
+            QuizReviewSummaryFeature()
+        }
+        .ifLet(\.complete, action: \.complete) {  // ✅ 추가
+            QuizCompleteFeature()
+        }
     }
 }
 
@@ -133,8 +193,7 @@ struct QuizFlowView: View {
     var body: some View {
         Group {
             switch store.currentStep {
-                
-            case .summary:  
+            case .summary:
                 ContentSummaryView(
                     store: store.scope(
                         state: \.contentSummary,
@@ -155,6 +214,21 @@ struct QuizFlowView: View {
             case .result:
                 if let resultStore = store.scope(state: \.result, action: \.result) {
                     QuizResultView(store: resultStore)
+                }
+                
+            case .detailResult:
+                if let detailResultStore = store.scope(state: \.detailResult, action: \.detailResult) {
+                    QuizDetailResultView(store: detailResultStore)
+                }
+                
+            case .reviewSummary:  // ✅ 추가
+                if let reviewSummaryStore = store.scope(state: \.reviewSummary, action: \.reviewSummary) {
+                    QuizReviewSummaryView(store: reviewSummaryStore)
+                }
+                
+            case .complete:  // ✅ 추가
+                if let completeStore = store.scope(state: \.complete, action: \.complete) {
+                    QuizCompleteView(store: completeStore)
                 }
             }
         }
@@ -479,16 +553,37 @@ import ComposableArchitecture
 struct QuizResultFeature {
     @ObservableState
     struct State: Equatable {
-        // TODO: 나중에 실제 결과 데이터 추가
+        var submitResults: [Int: SubmitQuizAnswerData]
+        var totalQuizCount: Int
+
+        var correctCount: Int {
+            submitResults.values.filter { $0.isCorrect }.count
+        }
+        
+        var incorrectCount: Int {
+            totalQuizCount - correctCount
+        }
+        
+        var score: Int {
+            guard totalQuizCount > 0 else { return 0 }
+            return (correctCount * 100) / totalQuizCount
+        }
+        
+        init(submitResults: [Int: SubmitQuizAnswerData], totalQuizCount: Int) {
+            self.submitResults = submitResults
+            self.totalQuizCount = totalQuizCount
+        }
     }
     
     enum Action {
+        case showDetailResultsButtonTapped
         case homeButtonTapped
         case historyButtonTapped
         case delegate(Delegate)
     }
     
     enum Delegate {
+        case showDetailResults
         case navigateToHome
         case navigateToHistory
     }
@@ -496,6 +591,9 @@ struct QuizResultFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
+            case .showDetailResultsButtonTapped:
+                return .send(.delegate(.showDetailResults))
+                
             case .homeButtonTapped:
                 return .send(.delegate(.navigateToHome))
                 
@@ -513,27 +611,61 @@ struct QuizResultView: View {
     let store: StoreOf<QuizResultFeature>
     
     var body: some View {
-        VStack(spacing: 20) {
-            Text("퀴즈 결과 (임시)")
-                .font(.system(size: 24, weight: .bold))
+        VStack(spacing: 0) {
+            Spacer()
             
-            HStack(spacing: 20) {
-                Button("홈으로") {
-                    store.send(.homeButtonTapped)
-                }
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(8)
+            //  결과 요약
+            VStack(spacing: 16) {
+                // 정답 개수 표시
+                Text("\(store.totalQuizCount)문제 중 \(store.correctCount)문제를 맞췄어요!")
+                    .font(.system(size: 24, weight: .bold))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
                 
-                Button("히스토리로") {
-                    store.send(.historyButtonTapped)
+                // 점수 표시 (선택사항)
+                Text("\(store.score)점")
+                    .font(.system(size: 48, weight: .heavy))
+                    .foregroundColor(.blue)
+                
+                // 정답/오답 표시
+                HStack(spacing: 40) {
+                    VStack(spacing: 8) {
+                        Text("정답")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                        Text("\(store.correctCount)")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.green)
+                    }
+                    
+                    VStack(spacing: 8) {
+                        Text("오답")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                        Text("\(store.incorrectCount)")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.red)
+                    }
                 }
-                .padding()
-                .background(Color.green)
-                .foregroundColor(.white)
-                .cornerRadius(8)
+                .padding(.top, 20)
             }
+            
+            Spacer()
+            
+            // 결과 보기 버튼
+            Button {
+                store.send(.showDetailResultsButtonTapped)
+            } label: {
+                Text("결과 보기")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(Color.blue)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 34)
         }
     }
 }
@@ -578,5 +710,257 @@ struct CompletionCardView: View {
                 .fill(Color.white)
                 .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
         )
+    }
+}
+
+
+@Reducer
+struct QuizDetailResultFeature {
+    @ObservableState
+    struct State: Equatable {
+        var quizzes: [UserQuiz]
+        var submitResults: [Int: SubmitQuizAnswerData]
+        var totalQuizCount: Int
+        
+        // 정렬된 결과 리스트
+        var sortedResults: [(index: Int, result: SubmitQuizAnswerData)] {
+            submitResults
+                .sorted { $0.key < $1.key }
+                .map { (index: $0.key, result: $0.value) }
+        }
+        
+        init(
+            quizzes: [UserQuiz],
+            submitResults: [Int: SubmitQuizAnswerData],
+            totalQuizCount: Int
+        ) {
+            self.quizzes = quizzes
+            self.submitResults = submitResults
+            self.totalQuizCount = totalQuizCount
+        }
+    }
+    
+    enum Action {
+        case reviewSummaryButtonTapped
+        case nextButtonTapped
+        case delegate(Delegate)
+    }
+    
+    enum Delegate {
+        case showReviewSummary
+        case showComplete
+    }
+    
+    var body: some ReducerOf<Self> {
+        Reduce { state, action in
+            switch action {
+            case .reviewSummaryButtonTapped:
+                print("QuizDetailResult: 글 보기 → 요약본으로")
+                return .send(.delegate(.showReviewSummary))
+                
+            case .nextButtonTapped:
+                print("QuizDetailResult: 다음으로 → 완료 화면으로")
+                return .send(.delegate(.showComplete))
+                
+            case .delegate:
+                return .none
+            }
+        }
+    }
+}
+
+struct QuizDetailResultView: View {
+    let store: StoreOf<QuizDetailResultFeature>
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .bottom) {
+                VStack(spacing: 0) {
+                    // Navigation Bar
+                    navigationBar
+                    
+                    // 문제별 결과 리스트
+                    resultsList
+                }
+                
+                // 그라디언트 + 버튼
+                bottomButtons
+            }
+        }
+        .navigationBarHidden(true)
+    }
+    
+    // Navigation Bar
+    private var navigationBar: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                
+                Text("오늘의 정답 확인")
+                    .font(.system(size: 20, weight: .semibold))
+                
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            
+            Divider()
+        }
+        .background(Color.white)
+    }
+    
+    // 결과 리스트
+    private var resultsList: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                ForEach(0..<store.submitResults.count, id: \.self) { index in
+                    if let result = store.submitResults[index] {
+                        answerCardView(index: index, result: result)
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            .padding(.bottom, 180)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .background(Color.white)
+    }
+    
+    // 답안 카드
+    private func answerCardView(index: Int, result: SubmitQuizAnswerData) -> some View {
+        TTEAnswerCard(
+            questionNumber: index + 1,
+            question: getQuestionText(for: index),
+            correctAnswer: result.correctAnswer,
+            explanation: result.explanation,
+            status: result.isCorrect ? .correct : .wrong
+        )
+    }
+    
+    // 하단 버튼 영역
+    private var bottomButtons: some View {
+        VStack(spacing: 0) {
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color.white.opacity(0),
+                    Color.white.opacity(0.8),
+                    Color.white
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 40)
+            
+            buttonsRow
+                .padding(.bottom, 34)
+                .background(Color.white)
+        }
+    }
+    
+    // 버튼 Row
+    private var buttonsRow: some View {
+        HStack(spacing: 12) {
+            reviewButton
+            nextButton
+        }
+        .padding(.horizontal, 20)
+    }
+    
+    // 글 보기 버튼
+    private var reviewButton: some View {
+        Button {
+            store.send(.reviewSummaryButtonTapped)
+        } label: {
+            Text("글 보기")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.blue)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(Color.white)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.blue, lineWidth: 2)
+                )
+                .cornerRadius(12)
+        }
+    }
+    
+    // 다음으로 버튼
+    private var nextButton: some View {
+        Button {
+            store.send(.nextButtonTapped)
+        } label: {
+            Text("다음으로")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(Color.blue)
+                .cornerRadius(12)
+        }
+    }
+    
+    // 문제 텍스트 가져오기
+    private func getQuestionText(for index: Int) -> String {
+        guard index < store.quizzes.count else { return "" }
+        return store.quizzes[index].question
+    }
+}
+
+// 각 문제별 결과 아이템
+struct QuizResultItemView: View {
+    let questionNumber: Int
+    let result: SubmitQuizAnswerData
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // 문제 번호 + 정답/오답
+            HStack {
+                Text("Q\(questionNumber)")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.blue)
+                
+                Spacer()
+                
+                if result.isCorrect {
+                    Label("정답", systemImage: "checkmark.circle.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.green)
+                } else {
+                    Label("오답", systemImage: "xmark.circle.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.red)
+                }
+            }
+            
+            // 정답 표시
+            if !result.isCorrect {
+                HStack(spacing: 8) {
+                    Text("정답:")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                    
+                    Text(result.correctAnswer)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.green)
+                }
+            }
+            
+            // 해설
+            VStack(alignment: .leading, spacing: 4) {
+                Text("해설")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.gray)
+                
+                Text(result.explanation)
+                    .font(.system(size: 14))
+                    .foregroundColor(.black)
+                    .lineSpacing(4)
+            }
+        }
+        .padding(16)
+        .background(Color.gray.opacity(0.05))
+        .cornerRadius(12)
     }
 }

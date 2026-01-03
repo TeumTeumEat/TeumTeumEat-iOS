@@ -302,7 +302,7 @@ extension APIClient {
 //           )
         
         let mockGoal = GoalResponse(
-            goalId: 19,
+            goalId: 1174,
             type: "DOCUMENT",
             startDate: "2025-12-31",
             endDate: "2026-01-07",
@@ -311,7 +311,7 @@ extension APIClient {
             prompt: "ㅋㅋㅋㅋㅋㅋ\n\n\n\n",
             fileName: "sample.pdf",
             category: nil,
-            documentId: 24
+            documentId: 133
         )
            
            print("⚠️ [MOCK] fetchCurrentGoal - Mock 데이터 반환 중")
