@@ -15,17 +15,11 @@ import Foundation
 struct MyPageFeature {
     @ObservableState
     struct State: Equatable {
-        var selectedSubject: Subject? = Subject(
-            id: "1",
-            name: "Swift 기초",
-            duration: "4주",
-            difficulty: "하",
-            category: ["IT", "프로그래밍", "Swift"],
-            description: "Swift 언어의 기본 문법부터 고급 기능까지 배워보세요."
-        )
+        var selectedSubject: Subject?
         var subjectList: SubjectListFeature.State?
         var isNotificationEnabled: Bool = false
         var appSettings: AppSettingsFeature.State?
+        var isLoadingSubject: Bool = false
         
         // 계정 정보
         var socialLoginType: SocialLoginType = .apple
@@ -33,6 +27,8 @@ struct MyPageFeature {
     }
     
     enum Action {
+        case onAppear
+        case selectedSubjectResponse(Result<Subject?, Error>)
         case closeTapped
         case viewAllSubjectsTapped
         case viewAppSettingsTapped
@@ -46,9 +42,35 @@ struct MyPageFeature {
         }
     }
     
+    @Dependency(\.apiClient) var apiClient
+    
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
+            case .onAppear:
+                state.isLoadingSubject = true
+                return .run { send in
+                    do {
+                        let goals = try await apiClient.fetchGoals()
+                        // 가장 최근 goal을 선택된 주제로 설정
+                        let selectedSubject = goals.first.map { Subject(from: $0) }
+                        await send(.selectedSubjectResponse(.success(selectedSubject)))
+                    } catch {
+                        await send(.selectedSubjectResponse(.failure(error)))
+                    }
+                }
+                
+            case .selectedSubjectResponse(.success(let subject)):
+                state.isLoadingSubject = false
+                state.selectedSubject = subject
+                return .none
+                
+            case .selectedSubjectResponse(.failure(let error)):
+                state.isLoadingSubject = false
+                print(" Failed to load selected subject: \(error)")
+                // 에러가 나도 UI는 계속 표시
+                return .none
+                
             case .viewAllSubjectsTapped:
                 state.subjectList = SubjectListFeature.State()
                 return .none
@@ -103,28 +125,32 @@ struct SelectedSubjectCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // 상단: 제목, 기간, 난이도
-            HStack(alignment: .top, spacing: 8) {
-                Text(subject.name)
-                    .titleSemibold16()
-                    .foregroundColor(.black)
-                
-                Spacer()
-                
-                tagSection
-            }
+            // 맨 위: 기간, 난이도 태그
+            tagSection
             
-            // 카테고리 경로
-            categorySection
-            
-            // 설명
-            Text(subject.description)
-                .bodyRegular14()
+            // 제목
+            Text(subject.name)
+                .titleSemibold16()
                 .foregroundColor(.black)
                 .lineLimit(nil)
                 .fixedSize(horizontal: false, vertical: true)
+            
+            // 카테고리 경로 (CATEGORY 타입일 때만 표시)
+            if !subject.category.isEmpty && subject.category != ["문서"] {
+                categorySection
+            }
+            
+            // 설명 (prompt가 있을 때만 표시)
+            if !subject.description.isEmpty {
+                Text(subject.description)
+                    .bodyRegular14()
+                    .foregroundColor(.gray)
+                    .lineLimit(nil)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white)
         .overlay(
             RoundedRectangle(cornerRadius: 8)
@@ -149,6 +175,8 @@ struct SelectedSubjectCard: View {
                 .padding(.vertical, 4)
                 .background(Color.blue)
                 .cornerRadius(4)
+            
+            Spacer()
         }
     }
     
@@ -204,5 +232,59 @@ struct AccountInfoCard: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(Color.gray.opacity(0.3), lineWidth: 1)
         )
+    }
+}
+extension Subject {
+    init(from goal: GoalResponse) {
+        self.id = "\(goal.goalId)"
+        
+        // 이름 결정
+        if goal.type == "CATEGORY", let category = goal.category {
+            // 카테고리 타입: "PM > 제품기획 > MVP 정의"
+            let pathComponents = category.path
+                .components(separatedBy: "/")
+                .filter { !$0.isEmpty }
+            
+            // path의 마지막 부분들과 name을 결합
+            if pathComponents.count >= 2 {
+                let displayPath = Array(pathComponents.dropFirst()) // "IT" 제외
+                self.name = (displayPath + [category.name]).joined(separator: " > ")
+            } else {
+                self.name = category.name
+            }
+        } else {
+            // 문서 타입: 파일명 사용
+            self.name = goal.fileName ?? "문서 기반 학습"
+        }
+        
+        self.duration = goal.studyPeriod
+        self.difficulty = goal.difficulty.displayText
+        
+        // category 배열은 빈 배열로 (표시 안 함)
+        self.category = []
+        
+        // 설명: prompt가 있을 때만 사용 (CATEGORY든 DOCUMENT든)
+        if let prompt = goal.prompt {
+            // 여러 개의 연속된 \n을 하나로 정리
+            let cleaned = prompt
+                .replacingOccurrences(of: "\n\n+", with: "\n", options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            self.description = cleaned.isEmpty ? "" : cleaned
+        } else {
+            self.description = ""
+        }
+    }
+}
+
+
+// Difficulty 변환을 위한 extension
+extension String {
+    var displayText: String {
+        switch self {
+        case "EASY": return "하"
+        case "MEDIUM": return "중"
+        case "HARD": return "상"
+        default: return "중"
+        }
     }
 }

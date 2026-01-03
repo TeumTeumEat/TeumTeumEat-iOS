@@ -70,11 +70,21 @@ struct MyPageView: View {
                     .padding(.top, 20)
                     
                     // 선택된 주제 카드
-                    if let selectedSubject = store.selectedSubject {
+                    if store.isLoadingSubject {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 40)
+                    } else if let selectedSubject = store.selectedSubject {
                         SelectedSubjectCard(subject: selectedSubject)
                             .padding(.horizontal, 20)
                             .padding(.top, 12)
                             .padding(.bottom, 20)
+                    } else {
+                        Text("등록된 학습주제가 없습니다")
+                            .bodyRegular14()
+                            .foregroundColor(.gray)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 40)
                     }
                     
                     // 구분선
@@ -257,6 +267,9 @@ struct MyPageView: View {
         }
         .navigationBarHidden(true)
         .toolbar(.hidden, for: .tabBar)
+        .onAppear {
+             store.send(.onAppear)
+         }
         .navigationDestination(
             isPresented: Binding(
                 get: { store.subjectList != nil },

@@ -262,6 +262,9 @@ extension APIClient {
             requiresAuth: true
         )
         
+        print("🔍 Response code: \(response.code)")
+           print("🔍 Response data: \(String(describing: response.data))")
+        
         guard response.code == "OK",
               let data = response.data else {
             throw APIError.serverError(
@@ -272,6 +275,9 @@ extension APIClient {
         }
         
         print("Goals fetched successfully - Count: \(data.goalResponses.count)")
+        print("🔍 GoalResponses count: \(data.goalResponses.count)")
+           print("🔍 GoalResponses: \(data.goalResponses)")
+           
         return data.goalResponses
     }
     
