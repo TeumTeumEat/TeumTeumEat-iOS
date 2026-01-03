@@ -13,3 +13,13 @@ struct CategoryDocumentData: Codable, Equatable {
     let hasSolvedToday: Bool
     let isFirstTime: Bool
 }
+
+struct PDFSummaryData: Codable, Equatable {
+    let documentId: Int
+    let fileName: String
+    let fileKey: String
+    let summary: String
+    let status: String  // "COMPLETED", "PROCESSING" 등
+    let hasSolvedToday: Bool
+    let isFirstTime: Bool
+}

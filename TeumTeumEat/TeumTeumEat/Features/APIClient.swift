@@ -536,4 +536,34 @@ extension APIClient {
         
         return documentData
     }
+    
+    /// PDF(요약글) 조회하기
+    func fetchDailyPDFSummary(goalId: Int, documentId: Int) async throws -> PDFSummaryData {
+        let response: APIResponse<PDFSummaryData> = try await request(
+            endpoint: "/api/v1/goals/\(goalId)/documents/\(documentId)/summary",
+            method: .get,
+            requiresAuth: true
+        )
+        
+        print("fetchDailyPDFSummary - Response code: \(response.code)")
+        print("fetchDailyPDFSummary - GoalId: \(goalId), DocumentId: \(documentId)")
+        print("fetchDailyPDFSummary - Response data: \(String(describing: response.data))")
+        
+        guard response.code == "OK",
+              let summaryData = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("PDF Summary - documentId: \(summaryData.documentId)")
+        print("PDF Summary - fileName: \(summaryData.fileName)")
+        print("PDF Summary - status: \(summaryData.status)")
+        print("PDF Summary - hasSolvedToday: \(summaryData.hasSolvedToday)")
+        print("PDF Summary - summary length: \(summaryData.summary.count) characters")
+        
+        return summaryData
+    }
 }
