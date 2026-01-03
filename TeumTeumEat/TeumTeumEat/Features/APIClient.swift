@@ -275,10 +275,38 @@ extension APIClient {
         }
         
         print("Goals fetched successfully - Count: \(data.goalResponses.count)")
-        print("🔍 GoalResponses count: \(data.goalResponses.count)")
-           print("🔍 GoalResponses: \(data.goalResponses)")
+        print("GoalResponses count: \(data.goalResponses.count)")
+        print("GoalResponses: \(data.goalResponses)")
            
         return data.goalResponses
+    }
+    
+    /// 현재  목표 목록 조회
+    func fetchCurrentGoal() async throws -> GoalResponse {
+        let response: APIResponse<GoalResponse> = try await request(
+            endpoint: "/api/v1/users/goal",
+            method: .get,
+            requiresAuth: true
+        )
+        
+        print("fetchCurrentGoal - Response code: \(response.code)")
+        print("fetchCurrentGoal - Response data: \(String(describing: response.data))")
+        
+        guard response.code == "OK",
+              let goal = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("Current Goal - ID: \(goal.goalId), Type: \(goal.type)")
+        if let category = goal.category {
+            print("CategoryId: \(category.categoryId), Name: \(category.name)")
+        }
+        
+        return goal
     }
     
     /// PDF 문서 등록
@@ -453,4 +481,5 @@ extension APIClient {
         print("Notification setting updated - pushEnabled: \(pushEnabled)")
     }
 }
+
 

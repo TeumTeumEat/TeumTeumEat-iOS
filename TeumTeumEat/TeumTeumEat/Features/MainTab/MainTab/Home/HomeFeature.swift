@@ -19,6 +19,8 @@ struct HomeFeature {
     }
     
     enum Action {
+        case onAppear
+        case fetchCurrentGoalResponse(Result<GoalResponse, Error>) 
         case settingTapped
         case toggleQuizStatus
         case characterEatTapped
@@ -30,9 +32,33 @@ struct HomeFeature {
         case openMyPageRequested
     }
     
+    @Dependency(\.apiClient) var apiClient
+    
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
+            case .onAppear:
+                return .run { send in
+                    do {
+                        let goal = try await apiClient.fetchCurrentGoal()
+                        await send(.fetchCurrentGoalResponse(.success(goal)))
+                    } catch {
+                        await send(.fetchCurrentGoalResponse(.failure(error)))
+                    }
+                }
+                
+            case .fetchCurrentGoalResponse(.success(let goal)):
+                print("현재 목표 조회 성공")
+                print("Goal ID: \(goal.goalId)")
+                print("Type: \(goal.type)")
+                print("StudyPeriod: \(goal.studyPeriod)")
+                print("Difficulty: \(goal.difficulty)")
+                return .none
+                
+            case .fetchCurrentGoalResponse(.failure(let error)):
+                print("현재 목표 조회 실패: \(error)")
+                return .none
+                
             case .settingTapped:
                 return .send(.delegate(.openMyPageRequested))
                 
@@ -82,6 +108,9 @@ struct HomeView: View {
                 }
             }
             .navigationBarHidden(true)
+            .onAppear {
+                store.send(.onAppear)
+            }
         }
     }
 }
