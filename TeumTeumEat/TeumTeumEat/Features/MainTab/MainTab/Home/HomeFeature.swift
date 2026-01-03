@@ -16,11 +16,34 @@ struct HomeFeature {
         var fireCount: Int = 0
         var stampCount: Int = 0
         var isTodayQuizCompleted: Bool = false
+        
+        // API 관련 상태
+        var currentGoal: GoalResponse?
+        var quizStatus: UserQuizStatusData?
+        var categoryDocument: CategoryDocumentData?
+        var pdfSummary: PDFSummaryData?
+        var quizzes: [UserQuiz] = []
+        
+        var isLoading: Bool = false
+        var errorMessage: String?
     }
     
     enum Action {
         case onAppear
-        case fetchCurrentGoalResponse(Result<GoalResponse, Error>) 
+        
+        // Step 1: 현재 목표 조회
+        case fetchCurrentGoalResponse(Result<GoalResponse, Error>)
+        
+        // Step 2: 퀴즈 상태 확인
+        case fetchQuizStatusResponse(Result<UserQuizStatusData, Error>)
+        
+        // Step 3: 요약글 조회 (Goal Type에 따라)
+        case fetchCategoryDocumentResponse(Result<CategoryDocumentData, Error>)
+        case fetchPDFSummaryResponse(Result<PDFSummaryData, Error>)
+        
+        // Step 4: 퀴즈 조회
+        case fetchQuizzesResponse(Result<[UserQuiz], Error>)
+        
         case settingTapped
         case toggleQuizStatus
         case characterEatTapped
@@ -38,6 +61,10 @@ struct HomeFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
+                state.isLoading = true
+                state.errorMessage = nil
+                
+                // Step 1: 현재 목표 조회
                 return .run { send in
                     do {
                         let goal = try await apiClient.fetchCurrentGoal()
@@ -47,16 +74,149 @@ struct HomeFeature {
                     }
                 }
                 
+            // Step 1 완료 → Step 2 시작
             case .fetchCurrentGoalResponse(.success(let goal)):
-                print("현재 목표 조회 성공")
-                print("Goal ID: \(goal.goalId)")
-                print("Type: \(goal.type)")
-                print("StudyPeriod: \(goal.studyPeriod)")
-                print("Difficulty: \(goal.difficulty)")
-                return .none
+                state.currentGoal = goal
+                print("Step 1 완료 - Goal Type: \(goal.type)")
+                
+                // Step 2: 퀴즈 상태 확인
+                return .run { send in
+                    do {
+                        let status = try await apiClient.fetchUserQuizStatus()
+                        await send(.fetchQuizStatusResponse(.success(status)))
+                    } catch {
+                        await send(.fetchQuizStatusResponse(.failure(error)))
+                    }
+                }
                 
             case .fetchCurrentGoalResponse(.failure(let error)):
-                print("현재 목표 조회 실패: \(error)")
+                state.isLoading = false
+                state.errorMessage = "목표 조회 실패: \(error.localizedDescription)"
+                print("Step 1 실패: \(error)")
+                return .none
+                
+            // Step 2 완료 → Step 3 시작
+            case .fetchQuizStatusResponse(.success(let status)):
+                state.quizStatus = status
+                print("Step 2 완료 - hasSolvedToday: \(status.hasSolvedToday)")
+                
+                // Step 3: Goal Type에 따라 요약글 조회
+                guard let goal = state.currentGoal else {
+                    state.errorMessage = "목표 정보가 없습니다"
+                    state.isLoading = false
+                    return .none
+                }
+                
+                if goal.type == "CATEGORY" {
+                    // 카테고리 타입
+                    guard let categoryId = goal.category?.categoryId else {
+                        state.errorMessage = "카테고리 ID가 없습니다"
+                        state.isLoading = false
+                        return .none
+                    }
+                    
+                    return .run { send in
+                        do {
+                            let document = try await apiClient.fetchDailyCategoryDocument(categoryId: categoryId)
+                            await send(.fetchCategoryDocumentResponse(.success(document)))
+                        } catch {
+                            await send(.fetchCategoryDocumentResponse(.failure(error)))
+                        }
+                    }
+                    
+                } else if goal.type == "DOCUMENT" {
+                    // PDF 타입
+                    guard let documentId = goal.documentId else {
+                        state.errorMessage = "문서 ID가 없습니다"
+                        state.isLoading = false
+                        return .none
+                    }
+                    
+                    return .run { send in
+                        do {
+                            let summary = try await apiClient.fetchDailyPDFSummary(
+                                goalId: goal.goalId,
+                                documentId: documentId
+                            )
+                            await send(.fetchPDFSummaryResponse(.success(summary)))
+                        } catch {
+                            await send(.fetchPDFSummaryResponse(.failure(error)))
+                        }
+                    }
+                    
+                } else {
+                    // 알 수 없는 타입
+                    state.errorMessage = "알 수 없는 Goal Type: \(goal.type)"
+                    state.isLoading = false
+                    return .none
+                }
+                
+            case .fetchQuizStatusResponse(.failure(let error)):
+                state.isLoading = false
+                state.errorMessage = "퀴즈 상태 조회 실패: \(error.localizedDescription)"
+                print("Step 2 실패: \(error)")
+                return .none
+                
+            // Step 3-A 완료 (카테고리) → Step 4 시작
+            case .fetchCategoryDocumentResponse(.success(let document)):
+                state.categoryDocument = document
+                print("Step 3 완료 (카테고리) - documentId: \(document.documentId)")
+                
+                // Step 4: 퀴즈 조회
+                return .run { send in
+                    do {
+                        let quizzes = try await apiClient.fetchUserQuizzes(
+                            documentId: document.documentId,
+                            documentType: .category
+                        )
+                        await send(.fetchQuizzesResponse(.success(quizzes)))
+                    } catch {
+                        await send(.fetchQuizzesResponse(.failure(error)))
+                    }
+                }
+                
+            case .fetchCategoryDocumentResponse(.failure(let error)):
+                state.isLoading = false
+                state.errorMessage = "카테고리 문서 조회 실패: \(error.localizedDescription)"
+                print("Step 3 실패 (카테고리): \(error)")
+                return .none
+                
+            // Step 3-B 완료 (PDF) → Step 4 시작
+            case .fetchPDFSummaryResponse(.success(let summary)):
+                state.pdfSummary = summary
+                print("Step 3 완료 (PDF) - documentId: \(summary.documentId)")
+                
+                // Step 4: 퀴즈 조회
+                return .run { send in
+                    do {
+                        let quizzes = try await apiClient.fetchUserQuizzes(
+                            documentId: summary.documentId,
+                            documentType: .document
+                        )
+                        await send(.fetchQuizzesResponse(.success(quizzes)))
+                    } catch {
+                        await send(.fetchQuizzesResponse(.failure(error)))
+                    }
+                }
+                
+            case .fetchPDFSummaryResponse(.failure(let error)):
+                state.isLoading = false
+                state.errorMessage = "PDF 요약 조회 실패: \(error.localizedDescription)"
+                print("Step 3 실패 (PDF): \(error)")
+                return .none
+                
+            // Step 4 완료
+            case .fetchQuizzesResponse(.success(let quizzes)):
+                state.quizzes = quizzes
+                state.isLoading = false
+                print("Step 4 완료 - 퀴즈 개수: \(quizzes.count)")
+                print("전체 플로우 완료!")
+                return .none
+                
+            case .fetchQuizzesResponse(.failure(let error)):
+                state.isLoading = false
+                state.errorMessage = "퀴즈 조회 실패: \(error.localizedDescription)"
+                print("Step 4 실패: \(error)")
                 return .none
                 
             case .settingTapped:
