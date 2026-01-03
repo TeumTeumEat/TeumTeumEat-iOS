@@ -633,4 +633,38 @@ extension APIClient {
         
         return quizzes
     }
+    
+    func submitQuizAnswer(quizId: Int, userAnswer: String) async throws -> SubmitQuizAnswerData {
+        let requestBody = SubmitQuizAnswerRequest(
+            quizId: quizId,
+            userAnswer: userAnswer
+        )
+        
+        let response: APIResponse<SubmitQuizAnswerData> = try await request(
+            endpoint: "/api/v1/user-quizzes/submit",
+            method: .post,
+            body: requestBody,
+            requiresAuth: true
+        )
+        
+        print(" submitQuizAnswer - Response code: \(response.code)")
+        print(" submitQuizAnswer - QuizId: \(quizId), Answer: \(userAnswer)")
+        
+        guard response.code == "OK",
+              let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print(" Quiz Answer Submitted - isCorrect: \(data.isCorrect)")
+        print("   Correct Answer: \(data.correctAnswer)")
+        print("   Explanation: \(data.explanation)")
+        
+        return data
+    }
 }
+
+

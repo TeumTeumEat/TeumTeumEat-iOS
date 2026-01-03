@@ -16,19 +16,18 @@ struct QuizFlowFeature {
         var isFirstTime: Bool
         
         var currentStep: Step
-        var contentSummary: ContentSummaryFeature.State  // ✅ Optional 제거
+        var contentSummary: ContentSummaryFeature.State
         var quizGuide: QuizGuideFeature.State?
         var quiz: QuizFeature.State?
         var result: QuizResultFeature.State?
         
         enum Step {
-            case summary      // ✅ 다시 추가
+            case summary
             case quizGuide
             case quiz
             case result
         }
         
-        // ✅ 초기화 함수 수정
         init(
             quizzes: [UserQuiz],
             summaryData: ContentSummaryFeature.State,
@@ -36,13 +35,13 @@ struct QuizFlowFeature {
         ) {
             self.quizzes = quizzes
             self.isFirstTime = isFirstTime
-            self.currentStep = .summary  // ✅ 항상 요약부터 시작
+            self.currentStep = .summary
             self.contentSummary = summaryData
         }
     }
     
     enum Action {
-        case contentSummary(ContentSummaryFeature.Action)  // ✅ 다시 추가
+        case contentSummary(ContentSummaryFeature.Action)
         case quizGuide(QuizGuideFeature.Action)
         case quiz(QuizFeature.Action)
         case result(QuizResultFeature.Action)
@@ -60,14 +59,13 @@ struct QuizFlowFeature {
     }
     
     var body: some ReducerOf<Self> {
-        // ✅ contentSummary Scope 다시 추가
         Scope(state: \.contentSummary, action: \.contentSummary) {
             ContentSummaryFeature()
         }
         
         Reduce { state, action in
             switch action {
-            // ✅ ContentSummary에서 퀴즈 시작
+            // ContentSummary에서 퀴즈 시작
             case .contentSummary(.delegate(.startQuiz(let quizzes, let isFirstTime))):
                 if isFirstTime {
                     // 처음이면 가이드로
@@ -87,7 +85,7 @@ struct QuizFlowFeature {
                 print("QuizFlow: ContentSummary에서 취소")
                 return .send(.delegate(.cancelled))
                 
-            // ✅ QuizGuide에서 퀴즈 시작
+            // QuizGuide에서 퀴즈 시작
             case .quizGuide(.delegate(.startQuiz)):
                 state.currentStep = .quiz
                 let convertedQuizzes = state.quizzes.map { Quiz(from: $0) }
@@ -136,7 +134,7 @@ struct QuizFlowView: View {
         Group {
             switch store.currentStep {
                 
-            case .summary:  // ✅ 다시 추가
+            case .summary:  
                 ContentSummaryView(
                     store: store.scope(
                         state: \.contentSummary,
@@ -177,9 +175,11 @@ struct QuizFeature {
         var quizzes: [Quiz]
         var currentIndex: Int = 0
         var selectedAnswers: [Int: QuizAnswer] = [:]
+        var submitResults: [Int: SubmitQuizAnswerData] = [:]
         var isAnimating: Bool = false
         var swipeDirection: SwipeDirection? = nil
         var isCompleted: Bool = false
+        var isSubmitting: Bool = false
         
         var currentQuiz: Quiz? {
             guard currentIndex < quizzes.count else { return nil }
@@ -190,7 +190,6 @@ struct QuizFeature {
             currentIndex == quizzes.count - 1
         }
         
-        // ✅ 초기화 함수
         init(quizzes: [Quiz]) {
             self.quizzes = quizzes
         }
@@ -204,6 +203,7 @@ struct QuizFeature {
     
     enum Action {
         case answerSelected(QuizAnswer)
+        case submitAnswerResponse(Result<SubmitQuizAnswerData, Error>)
         case animationCompleted
         case gradeButtonTapped
         case delegate(Delegate)
@@ -213,24 +213,63 @@ struct QuizFeature {
         case completed
     }
     
+    @Dependency(\.apiClient) var apiClient
+    
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .answerSelected(let answer):
+                guard let currentQuiz = state.currentQuiz else { return .none }
+                
                 state.selectedAnswers[state.currentIndex] = answer
                 state.isAnimating = true
+                state.isSubmitting = true
                 
-                let currentQuiz = state.currentQuiz
-                if currentQuiz?.type == .ox {
+                // 스와이프 방향 결정
+                if currentQuiz.type == .ox {
                     state.swipeDirection = answer == .correct ? .left : .right
                 } else {
                     state.swipeDirection = .down
                 }
                 
+                // API 호출: 답안 제출
+                let quizId = currentQuiz.id
+                let userAnswer = convertAnswerToString(answer: answer, quiz: currentQuiz)
+                
+                return .run { send in
+                    do {
+                        let result = try await apiClient.submitQuizAnswer(
+                            quizId: quizId,
+                            userAnswer: userAnswer
+                        )
+                        await send(.submitAnswerResponse(.success(result)))
+                    } catch {
+                        await send(.submitAnswerResponse(.failure(error)))
+                    }
+                }
+                
+            case .submitAnswerResponse(.success(let result)):
+                state.isSubmitting = false
+                // 결과 저장
+                state.submitResults[state.currentIndex] = result
+                print("답안 제출 성공 - 정답: \(result.isCorrect)")
+                
+                // 애니메이션 시작
                 return .run { send in
                     try await Task.sleep(for: .milliseconds(700))
                     await send(.animationCompleted)
                 }
+                
+            case .submitAnswerResponse(.failure(let error)):
+                state.isSubmitting = false
+                print("답안 제출 실패: \(error)")
+                
+                // 일단 애니메이션은 계속 진행
+                return .run { send in
+                    try await Task.sleep(for: .milliseconds(700))
+                    await send(.animationCompleted)
+                }
+                
                 
             case .animationCompleted:
                 state.isAnimating = false
@@ -252,6 +291,23 @@ struct QuizFeature {
             }
         }
     }
+    private func convertAnswerToString(answer: QuizAnswer, quiz: Quiz) -> String {
+            switch answer {
+            case .correct:
+                return "o"
+            case .wrong:
+                return "x"
+            case .choice(let index):
+                guard quiz.type == .multipleChoice,
+                      let choices = quiz.choices,
+                      index < choices.count else {
+                    return ""
+                }
+                return choices[index]
+            case .none:
+                return ""
+            }
+        }
 }
 
 // MARK: - Models
@@ -266,7 +322,6 @@ struct Quiz: Equatable, Identifiable {
         case multipleChoice
     }
     
-    // ✅ UserQuiz에서 Quiz로 변환
     init(from userQuiz: UserQuiz) {
         self.id = userQuiz.quizId
         self.question = userQuiz.question
@@ -323,6 +378,7 @@ struct QuizView: View {
                 } else if let currentQuiz = store.currentQuiz {  // 퀴즈 카드
                     QuizCardView(
                         quiz: currentQuiz,
+                        quizNumber: store.currentIndex + 1,
                         selectedAnswer: Binding(
                             get: { store.selectedAnswers[store.currentIndex] ?? .none },
                             set: { _ in }
@@ -375,6 +431,7 @@ struct QuizView: View {
 
 struct QuizCardView: View {
     let quiz: Quiz
+    let quizNumber: Int
     @Binding var selectedAnswer: QuizAnswer
     let onAnswerSelected: (QuizAnswer) -> Void
     
@@ -382,7 +439,7 @@ struct QuizCardView: View {
         switch quiz.type {
         case .ox:
             TTEQuizCard(
-                questionNumber: quiz.id,
+                questionNumber: quizNumber,
                 question: quiz.question,
                 selectedAnswer: $selectedAnswer,
                 onAnswerSelected: onAnswerSelected
@@ -390,7 +447,7 @@ struct QuizCardView: View {
             
         case .multipleChoice:
             TTEMultipleChoiceCard(
-                questionNumber: quiz.id,
+                questionNumber: quizNumber,
                 question: quiz.question,
                 choices: quiz.choices ?? [],
                 selectedChoice: Binding(
