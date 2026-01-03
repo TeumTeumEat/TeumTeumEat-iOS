@@ -237,4 +237,16 @@ enum SocialLoginType: String, Equatable {
             return .yellow
         }
     }
+    
+    // API 응답 매핑용 initializer
+    init?(from apiString: String) {
+        switch apiString.uppercased() {
+        case "APPLE":
+            self = .apple
+        case "KAKAO":
+            self = .kakao
+        default:
+            return nil
+        }
+    }
 }

@@ -20,15 +20,17 @@ struct MyPageFeature {
         var isNotificationEnabled: Bool = false
         var appSettings: AppSettingsFeature.State?
         var isLoadingSubject: Bool = false
+        var isLoadingAccountInfo: Bool = false
         
         // 계정 정보
         var socialLoginType: SocialLoginType = .apple
-        var email: String = "user@example.com"
+        var email: String = ""
     }
     
     enum Action {
         case onAppear
         case selectedSubjectResponse(Result<Subject?, Error>)
+        case accountInfoResponse(Result<UserAccountInfoData, Error>)
         case closeTapped
         case viewAllSubjectsTapped
         case viewAppSettingsTapped
@@ -49,15 +51,32 @@ struct MyPageFeature {
             switch action {
             case .onAppear:
                 state.isLoadingSubject = true
+                state.isLoadingAccountInfo = true
+                
                 return .run { send in
-                    do {
-                        let goals = try await apiClient.fetchGoals()
-                        // 가장 최근 goal을 선택된 주제로 설정
-                        let selectedSubject = goals.first.map { Subject(from: $0) }
-                        await send(.selectedSubjectResponse(.success(selectedSubject)))
-                    } catch {
-                        await send(.selectedSubjectResponse(.failure(error)))
-                    }
+                    // 병렬로 두 API 호출
+                    async let goalsTask: Void = {
+                        do {
+                            let goals = try await apiClient.fetchGoals()
+                            let selectedSubject = goals.first.map { Subject(from: $0) }
+                            await send(.selectedSubjectResponse(.success(selectedSubject)))
+                        } catch {
+                            await send(.selectedSubjectResponse(.failure(error)))
+                        }
+                    }()
+                    
+                    async let accountInfoTask: Void = {
+                        do {
+                            let accountInfo = try await apiClient.fetchUserAccountInfo()
+                            await send(.accountInfoResponse(.success(accountInfo)))
+                        } catch {
+                            await send(.accountInfoResponse(.failure(error)))
+                        }
+                    }()
+                    
+                    // 두 작업 모두 완료 대기
+                    await goalsTask
+                    await accountInfoTask
                 }
                 
             case .selectedSubjectResponse(.success(let subject)):
@@ -67,8 +86,26 @@ struct MyPageFeature {
                 
             case .selectedSubjectResponse(.failure(let error)):
                 state.isLoadingSubject = false
-                print(" Failed to load selected subject: \(error)")
-                // 에러가 나도 UI는 계속 표시
+                print("Failed to load selected subject: \(error)")
+                return .none
+                
+            case .accountInfoResponse(.success(let accountInfo)):
+                state.isLoadingAccountInfo = false
+                state.email = accountInfo.email
+                
+                // API 응답 "APPLE" or "KAKAO" -> SocialLoginType 변환
+                if let loginType = SocialLoginType(from: accountInfo.socialProvider) {
+                    state.socialLoginType = loginType
+                    print("Account info loaded - Type: \(loginType.rawValue), Email: \(accountInfo.email)")
+                } else {
+                    // 알 수 없는 provider인 경우 기본값 유지
+                    print("Unknown social provider: \(accountInfo.socialProvider), using default")
+                }
+                return .none
+                
+            case .accountInfoResponse(.failure(let error)):
+                state.isLoadingAccountInfo = false
+                print("Failed to load account info: \(error)")
                 return .none
                 
             case .viewAllSubjectsTapped:

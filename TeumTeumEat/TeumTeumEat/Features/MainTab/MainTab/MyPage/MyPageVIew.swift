@@ -152,13 +152,19 @@ struct MyPageView: View {
                             .padding(.horizontal, 20)
                             .padding(.top, 20)
                         
-                        AccountInfoCard(
-                            socialLoginType: store.socialLoginType,
-                            email: store.email
-                        )
-                        .padding(.horizontal, 20)
-                        .padding(.top, 12)
-                        .padding(.bottom, 20)
+                        if store.isLoadingAccountInfo {
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 40)
+                        } else {
+                            AccountInfoCard(
+                                socialLoginType: store.socialLoginType,
+                                email: store.email
+                            )
+                            .padding(.horizontal, 20)
+                            .padding(.top, 12)
+                            .padding(.bottom, 20)
+                        }
                     }
                     
                     // 구분선

@@ -385,3 +385,26 @@ extension APIClient {
         }
     }
 }
+
+extension APIClient {
+    /// 유저 계정정보 조회
+    func fetchUserAccountInfo() async throws -> UserAccountInfoData {
+        let response: APIResponse<UserAccountInfoData> = try await request(
+            endpoint: "/api/v1/users/account-info",
+            method: .get,
+            requiresAuth: true
+        )
+        
+        guard response.code == "OK",
+              let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("User account info fetched - Provider: \(data.socialProvider), Email: \(data.email)")
+        return data
+    }
+}
