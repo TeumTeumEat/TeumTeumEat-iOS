@@ -480,6 +480,31 @@ extension APIClient {
         
         print("Notification setting updated - pushEnabled: \(pushEnabled)")
     }
+    
+    /// 퀴즈풀이, 요약글 생성 여부 확인
+    func fetchUserQuizStatus() async throws -> UserQuizStatusData {
+        let response: APIResponse<UserQuizStatusData> = try await request(
+            endpoint: "/api/v1/user-quizzes/status",
+            method: .get,
+            requiresAuth: true
+        )
+        
+        print("fetchUserQuizStatus - Response code: \(response.code)")
+        print("fetchUserQuizStatus - Response data: \(String(describing: response.data))")
+        
+        guard response.code == "OK",
+              let statusData = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("Quiz Status - hasSolvedToday: \(statusData.hasSolvedToday)")
+        print("Quiz Status - isFirstTime: \(statusData.isFirstTime)")
+        print("Quiz Status - hasCreatedToday: \(statusData.hasCreatedToday)")
+        
+        return statusData
+    }
 }
-
-
