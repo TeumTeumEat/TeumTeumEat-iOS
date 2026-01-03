@@ -76,10 +76,6 @@ struct MainTabFeature {
                 }
                 return .none
                 
-            case .myPage(.delegate(.logout)):
-                           print("MainTab: MyPage에서 로그아웃 요청 받음")
-                           return .send(.delegate(.logout))
-                
             case .toggleRegisterMenu:
                 state.isRegisterMenuExpanded.toggle()
                 return .none
@@ -95,24 +91,33 @@ struct MainTabFeature {
                 return .none
                 
             case .home(.delegate(.openMyPageRequested)):
-                        state.myPage = MyPageFeature.State()
-                        print("Home에서 MyPage 열기")
-                        return .none
+                state.myPage = MyPageFeature.State()
+                print("Home에서 MyPage 열기")
+                return .none
                 
-            case .home(.delegate(.startQuizFlow)):
-                state.quizFlow = QuizFlowFeature.State()
-                print("퀴즈 플로우 시작")
+            // Home에서 QuizFlow 시작 (summaryData 포함)
+            case .home(.delegate(.startQuizFlow(let quizzes, let summaryData, let isFirstTime))):
+                state.quizFlow = QuizFlowFeature.State(
+                    quizzes: quizzes,
+                    summaryData: summaryData,
+                    isFirstTime: isFirstTime
+                )
+                print("퀴즈 플로우 시작 - 요약부터 표시")
+                return .none
+                
+            case .quiz(.delegate(.openMyPageRequested)):
+                state.myPage = MyPageFeature.State()
+                print("History에서 MyPage 열기")
                 return .none
                 
             case .myPage(.delegate(.dismissed)):
-                        state.myPage = nil
-                        print("MyPage 닫힘")
-                        return .none
+                state.myPage = nil
+                print("MyPage 닫힘")
+                return .none
                 
-            case .quiz(.delegate(.openMyPageRequested)):
-                        state.myPage = MyPageFeature.State()
-                        print("History에서 MyPage 열기")
-                        return .none
+            case .myPage(.delegate(.logout)):
+                print("MainTab: MyPage에서 로그아웃 요청 받음")
+                return .send(.delegate(.logout))
                 
             case .quizFlow(.delegate(.completed(let destination))):
                 state.quizFlow = nil
@@ -160,7 +165,7 @@ struct MainTabFeature {
         .ifLet(\.quizFlow, action: \.quizFlow) {
             QuizFlowFeature()
         }
-        .ifLet(\.myPage, action: \.myPage) { 
+        .ifLet(\.myPage, action: \.myPage) {
             MyPageFeature()
         }
     }

@@ -51,7 +51,11 @@ struct HomeFeature {
     }
     
     enum Delegate {
-        case startQuizFlow
+        case startQuizFlow(
+            quizzes: [UserQuiz],
+            summaryData: ContentSummaryFeature.State,
+            isFirstTime: Bool
+        )
         case openMyPageRequested
     }
     
@@ -227,7 +231,46 @@ struct HomeFeature {
                 return .none
                 
             case .characterEatTapped:
-                return .send(.delegate(.startQuizFlow))
+                // ✅ summaryData 생성 후 QuizFlow에 전달
+                if let categoryDoc = state.categoryDocument {
+                    let summaryData = ContentSummaryFeature.State(
+                        documentId: categoryDoc.documentId,
+                        summaryText: categoryDoc.content,
+                        hasSolvedToday: categoryDoc.hasSolvedToday,
+                        isFirstTime: categoryDoc.isFirstTime,
+                        documentType: .category,
+                        quizzes: state.quizzes
+                    )
+                    
+                    return .send(.delegate(.startQuizFlow(
+                        quizzes: state.quizzes,
+                        summaryData: summaryData,
+                        isFirstTime: categoryDoc.isFirstTime
+                    )))
+                    
+                } else if let pdfSum = state.pdfSummary {
+                    let summaryData = ContentSummaryFeature.State(
+                        documentId: pdfSum.documentId,
+                        summaryText: pdfSum.summary,
+                        hasSolvedToday: pdfSum.hasSolvedToday,
+                        isFirstTime: pdfSum.isFirstTime,
+                        documentType: .document,
+                        quizzes: state.quizzes
+                    )
+                    
+                    return .send(.delegate(.startQuizFlow(
+                        quizzes: state.quizzes,
+                        summaryData: summaryData,
+                        isFirstTime: pdfSum.isFirstTime
+                    )))
+                    
+                } else {
+                    print("⚠️ 요약 데이터가 아직 없습니다")
+                    return .none
+                }
+                
+            // ContentSummary Delegate 처리
+            
                 
             case .delegate:
                 return .none
@@ -271,6 +314,7 @@ struct HomeView: View {
             .onAppear {
                 store.send(.onAppear)
             }
+
         }
     }
 }

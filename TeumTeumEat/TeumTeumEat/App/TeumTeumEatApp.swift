@@ -18,6 +18,8 @@ struct TeumTeumEatApp: App {
     init() {
         let APPKEY = Config.kakaoNativeAppKey
         KakaoSDK.initSDK(appKey: APPKEY)
+        let accessToken = KeyChainManager.shared.getAccessToken()
+        print(accessToken)
     }
     
     var body: some Scene {

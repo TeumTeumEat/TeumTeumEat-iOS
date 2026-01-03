@@ -283,30 +283,68 @@ extension APIClient {
     
     /// 현재  목표 목록 조회
     func fetchCurrentGoal() async throws -> GoalResponse {
-        let response: APIResponse<GoalResponse> = try await request(
-            endpoint: "/api/v1/users/goal",
-            method: .get,
-            requiresAuth: true
+//        let mockGoal = GoalResponse(
+//               goalId: 1172,
+//               type: "CATEGORY",
+//               startDate: "2026-01-04",
+//               endDate: "2026-02-01",
+//               studyPeriod: "4주",
+//               difficulty: "MEDIUM",
+//               prompt: nil,
+//               fileName: nil,
+//               category: CategoryInfo(
+//                   categoryId: 1,
+//                   name: "SwiftUI",
+//                   path: "/IT/앱개발자/iOS",
+//                   description: ""
+//               ),
+//               documentId: nil
+//           )
+        
+        let mockGoal = GoalResponse(
+            goalId: 19,
+            type: "DOCUMENT",
+            startDate: "2025-12-31",
+            endDate: "2026-01-07",
+            studyPeriod: "1주",
+            difficulty: "MEDIUM",
+            prompt: "ㅋㅋㅋㅋㅋㅋ\n\n\n\n",
+            fileName: "sample.pdf",
+            category: nil,
+            documentId: 24
         )
-        
-        print("fetchCurrentGoal - Response code: \(response.code)")
-        print("fetchCurrentGoal - Response data: \(String(describing: response.data))")
-        
-        guard response.code == "OK",
-              let goal = response.data else {
-            throw APIError.serverError(
-                code: response.code,
-                message: response.message,
-                details: response.details
-            )
-        }
-        
-        print("Current Goal - ID: \(goal.goalId), Type: \(goal.type)")
-        if let category = goal.category {
-            print("CategoryId: \(category.categoryId), Name: \(category.name)")
-        }
-        
-        return goal
+           
+           print("⚠️ [MOCK] fetchCurrentGoal - Mock 데이터 반환 중")
+           print("Current Goal - ID: \(mockGoal.goalId), Type: \(mockGoal.type)")
+           if let category = mockGoal.category {
+               print("CategoryId: \(category.categoryId), Name: \(category.name)")
+           }
+           
+           return mockGoal
+//        let response: APIResponse<GoalResponse> = try await request(
+//            endpoint: "/api/v1/users/goal",
+//            method: .get,
+//            requiresAuth: true
+//        )
+//        
+//        print("fetchCurrentGoal - Response code: \(response.code)")
+//        print("fetchCurrentGoal - Response data: \(String(describing: response.data))")
+//        
+//        guard response.code == "OK",
+//              let goal = response.data else {
+//            throw APIError.serverError(
+//                code: response.code,
+//                message: response.message,
+//                details: response.details
+//            )
+//        }
+//        
+//        print("Current Goal - ID: \(goal.goalId), Type: \(goal.type)")
+//        if let category = goal.category {
+//            print("CategoryId: \(category.categoryId), Name: \(category.name)")
+//        }
+//        
+//        return goal
     }
     
     /// PDF 문서 등록
@@ -569,18 +607,18 @@ extension APIClient {
     
     /// 유저퀴즈 조회
     func fetchUserQuizzes(documentId: Int, documentType: DocumentType) async throws -> [UserQuiz] {
-        let response: APIResponse<UserQuizData> = try await request(
+        let response: APIResponse<[UserQuiz]> = try await request(
             endpoint: "/api/v1/user-quizzes?documentId=\(documentId)&documentType=\(documentType.rawValue)",
             method: .get,
             requiresAuth: true
         )
         
-        print("fetchUserQuizzes - Response code: \(response.code)")
-        print("fetchUserQuizzes - DocumentId: \(documentId), Type: \(documentType.rawValue)")
-        print("fetchUserQuizzes - Response data: \(String(describing: response.data))")
+        print("🔍 fetchUserQuizzes - Response code: \(response.code)")
+        print("🔍 fetchUserQuizzes - DocumentId: \(documentId), Type: \(documentType.rawValue)")
+        print("🔍 fetchUserQuizzes - Response data: \(String(describing: response.data))")
         
         guard response.code == "OK",
-              let quizData = response.data else {
+              let quizzes = response.data else {
             throw APIError.serverError(
                 code: response.code,
                 message: response.message,
@@ -588,11 +626,11 @@ extension APIClient {
             )
         }
         
-        print("User Quizzes - Count: \(quizData.quizzes.count)")
-        quizData.quizzes.forEach { quiz in
+        print("User Quizzes - Count: \(quizzes.count)")
+        quizzes.forEach { quiz in
             print("   Quiz ID: \(quiz.quizId), Type: \(quiz.type)")
         }
         
-        return quizData.quizzes
+        return quizzes
     }
 }

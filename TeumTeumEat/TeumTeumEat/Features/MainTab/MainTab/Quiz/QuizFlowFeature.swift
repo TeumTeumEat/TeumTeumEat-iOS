@@ -12,22 +12,37 @@ import ComposableArchitecture
 struct QuizFlowFeature {
     @ObservableState
     struct State: Equatable {
-        var currentStep: Step = .summary
-        var contentSummary: ContentSummaryFeature.State = .init()
+        var quizzes: [UserQuiz]
+        var isFirstTime: Bool
+        
+        var currentStep: Step
+        var contentSummary: ContentSummaryFeature.State  // ✅ Optional 제거
         var quizGuide: QuizGuideFeature.State?
         var quiz: QuizFeature.State?
         var result: QuizResultFeature.State?
         
         enum Step {
-            case summary    // 요약 화면
-            case quizGuide  // 안내 화면
-            case quiz       // 퀴즈 화면
-            case result     // 결과 화면
+            case summary      // ✅ 다시 추가
+            case quizGuide
+            case quiz
+            case result
+        }
+        
+        // ✅ 초기화 함수 수정
+        init(
+            quizzes: [UserQuiz],
+            summaryData: ContentSummaryFeature.State,
+            isFirstTime: Bool
+        ) {
+            self.quizzes = quizzes
+            self.isFirstTime = isFirstTime
+            self.currentStep = .summary  // ✅ 항상 요약부터 시작
+            self.contentSummary = summaryData
         }
     }
     
     enum Action {
-        case contentSummary(ContentSummaryFeature.Action)
+        case contentSummary(ContentSummaryFeature.Action)  // ✅ 다시 추가
         case quizGuide(QuizGuideFeature.Action)
         case quiz(QuizFeature.Action)
         case result(QuizResultFeature.Action)
@@ -45,35 +60,38 @@ struct QuizFlowFeature {
     }
     
     var body: some ReducerOf<Self> {
+        // ✅ contentSummary Scope 다시 추가
         Scope(state: \.contentSummary, action: \.contentSummary) {
             ContentSummaryFeature()
         }
         
         Reduce { state, action in
             switch action {
-            // ContentSummary에서 퀴즈 시작
-            case .contentSummary(.delegate(.startQuiz)):
-                if state.contentSummary.isFirstTime {
-                    // 처음이면 안내 화면으로
+            // ✅ ContentSummary에서 퀴즈 시작
+            case .contentSummary(.delegate(.startQuiz(let quizzes, let isFirstTime))):
+                if isFirstTime {
+                    // 처음이면 가이드로
                     state.currentStep = .quizGuide
                     state.quizGuide = QuizGuideFeature.State()
-                    print("QuizFlow: 퀴즈 안내 화면으로 이동")
+                    print("QuizFlow: 퀴즈 가이드로 이동")
                 } else {
                     // 아니면 바로 퀴즈로
                     state.currentStep = .quiz
-                    state.quiz = QuizFeature.State()
-                    print("QuizFlow: 퀴즈 화면으로 바로 이동")
+                    let convertedQuizzes = quizzes.map { Quiz(from: $0) }
+                    state.quiz = QuizFeature.State(quizzes: convertedQuizzes)
+                    print("QuizFlow: 퀴즈로 바로 이동")
                 }
                 return .none
                 
             case .contentSummary(.delegate(.cancelled)):
-                print("QuizFlow: 취소됨")
+                print("QuizFlow: ContentSummary에서 취소")
                 return .send(.delegate(.cancelled))
                 
-            // QuizGuide에서 퀴즈 시작
+            // ✅ QuizGuide에서 퀴즈 시작
             case .quizGuide(.delegate(.startQuiz)):
                 state.currentStep = .quiz
-                state.quiz = QuizFeature.State()
+                let convertedQuizzes = state.quizzes.map { Quiz(from: $0) }
+                state.quiz = QuizFeature.State(quizzes: convertedQuizzes)
                 print("QuizFlow: 안내 완료, 퀴즈 시작")
                 return .none
                 
@@ -117,7 +135,8 @@ struct QuizFlowView: View {
     var body: some View {
         Group {
             switch store.currentStep {
-            case .summary:
+                
+            case .summary:  // ✅ 다시 추가
                 ContentSummaryView(
                     store: store.scope(
                         state: \.contentSummary,
@@ -155,11 +174,11 @@ import ComposableArchitecture
 struct QuizFeature {
     @ObservableState
     struct State: Equatable {
-        var quizzes: [Quiz] = Quiz.mockData
+        var quizzes: [Quiz]
         var currentIndex: Int = 0
         var selectedAnswers: [Int: QuizAnswer] = [:]
-        var isAnimating: Bool = false  // 애니메이션 중
-        var swipeDirection: SwipeDirection? = nil  // 스와이프 방향
+        var isAnimating: Bool = false
+        var swipeDirection: SwipeDirection? = nil
         var isCompleted: Bool = false
         
         var currentQuiz: Quiz? {
@@ -169,6 +188,11 @@ struct QuizFeature {
         
         var isLastQuiz: Bool {
             currentIndex == quizzes.count - 1
+        }
+        
+        // ✅ 초기화 함수
+        init(quizzes: [Quiz]) {
+            self.quizzes = quizzes
         }
     }
     
@@ -180,7 +204,7 @@ struct QuizFeature {
     
     enum Action {
         case answerSelected(QuizAnswer)
-        case animationCompleted 
+        case animationCompleted
         case gradeButtonTapped
         case delegate(Delegate)
     }
@@ -196,7 +220,6 @@ struct QuizFeature {
                 state.selectedAnswers[state.currentIndex] = answer
                 state.isAnimating = true
                 
-                // 스와이프 방향 결정
                 let currentQuiz = state.currentQuiz
                 if currentQuiz?.type == .ox {
                     state.swipeDirection = answer == .correct ? .left : .right
@@ -204,7 +227,6 @@ struct QuizFeature {
                     state.swipeDirection = .down
                 }
                 
-                // 0.5초 후 다음 문제로
                 return .run { send in
                     try await Task.sleep(for: .milliseconds(700))
                     await send(.animationCompleted)
@@ -215,7 +237,7 @@ struct QuizFeature {
                 state.swipeDirection = nil
                 
                 if state.isLastQuiz {
-                    state.isCompleted = true  // 완료 상태
+                    state.isCompleted = true
                     return .none
                 } else {
                     state.currentIndex += 1
@@ -244,32 +266,21 @@ struct Quiz: Equatable, Identifiable {
         case multipleChoice
     }
     
-    // Mock Data
-    static let mockData: [Quiz] = [
-        Quiz(
-            id: 1,
-            question: "이거는 저거일까?",
-            type: .ox,
-            choices: nil
-        ),
-        Quiz(
-            id: 2,
-            question: "MVP의 정의는 무엇인가요?",
-            type: .multipleChoice,
-            choices: [
-                "최소 기능 제품",
-                "최대 기능 제품",
-                "평균 기능 제품",
-                "표준 기능 제품"
-            ]
-        ),
-        Quiz(
-            id: 3,
-            question: "TDD는 테스트 주도 개발이다?",
-            type: .ox,
-            choices: nil
-        )
-    ]
+    // ✅ UserQuiz에서 Quiz로 변환
+    init(from userQuiz: UserQuiz) {
+        self.id = userQuiz.quizId
+        self.question = userQuiz.question
+        
+        // type 변환
+        if userQuiz.type == "OX" {
+            self.type = .ox
+            self.choices = nil
+        } else {
+            self.type = .multipleChoice
+            self.choices = userQuiz.options.isEmpty ? nil : userQuiz.options
+        }
+    }
+    
 }
 
 struct QuizView: View {
