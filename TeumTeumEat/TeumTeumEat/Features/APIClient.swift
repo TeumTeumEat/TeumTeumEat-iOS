@@ -735,6 +735,34 @@ extension APIClient {
         print("History for \(date) fetched: \(data.count) items found.")
         return data
     }
+    
+    
+    /// 퀴즈목록 상세보기
+    func fetchQuizHistoryDetails(type: DocumentType, id: Int) async throws -> QuizHistoryDetailData {
+
+        let typePath = type.rawValue.lowercased()
+        let endpoint = "/api/v1/history/details/quizzes/\(typePath)/\(id)"
+        
+        // 2. 공통 request 함수 호출
+        let response: APIResponse<QuizHistoryDetailData> = try await request(
+            endpoint: endpoint,
+            method: .get,
+            requiresAuth: true
+        )
+        
+        // 3. 응답 처리
+        guard response.code == "OK",
+              let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("\(typePath) (ID: \(id)) 퀴즈 내역 조회 성공: \(data.quizzes.count)문항")
+        return data
+    }
 }
 
 

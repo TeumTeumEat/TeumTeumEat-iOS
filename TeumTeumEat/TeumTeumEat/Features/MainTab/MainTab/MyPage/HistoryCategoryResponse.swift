@@ -25,3 +25,18 @@ struct CalendarHistoryData: Decodable {
     let totalStamps: Int
     let currentStreak: Int
 }
+
+struct QuizHistoryDetailData: Decodable {
+    let createdAt: String
+    let quizzes: [QuizDetailItem]
+}
+
+struct QuizDetailItem: Decodable {
+    let quizId: Int
+    let question: String
+    let options: [String]
+    let answer: String
+    let type: String       
+    let explanation: String
+    let isCorrect: Bool
+}
