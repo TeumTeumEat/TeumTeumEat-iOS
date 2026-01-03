@@ -24,6 +24,9 @@ struct HistoryFeature {
         var calendarData: CalendarHistoryData?
         var currentYear: Int = Calendar.current.component(.year, from: Date())
         var currentMonth: Int = Calendar.current.component(.month, from: Date())
+        
+        var selectedDateHistoryItems: [HistoryItemResponse] = []
+        var selectedDateString: String?
     }
     
     enum Action {
@@ -31,7 +34,9 @@ struct HistoryFeature {
         case settingTapped
         case tabSelected(Int)
         case monthChanged(year: Int, month: Int)
+        case dateSelected(String?)
         case calendarDataLoaded(Result<CalendarHistoryData, Error>)
+        case historyItemsLoaded(Result<[HistoryItemResponse], Error>)
         case delegate(Delegate)
     }
     
@@ -59,6 +64,8 @@ struct HistoryFeature {
              case .monthChanged(let year, let month):
                  state.currentYear = year
                  state.currentMonth = month
+                 state.selectedDateString = nil // 월 변경 시 선택 초기화
+                 state.selectedDateHistoryItems = []
                  
                  return .run { send in
                      await send(.calendarDataLoaded(
@@ -67,6 +74,24 @@ struct HistoryFeature {
                          }
                      ))
                  }
+                 
+             case .dateSelected(let dateString):
+                  state.selectedDateString = dateString
+                  
+                  guard let dateString = dateString else {
+                      // 선택 해제
+                      state.selectedDateHistoryItems = []
+                      return .none
+                  }
+                  
+                  // 선택된 날짜의 히스토리 조회
+                  return .run { send in
+                      await send(.historyItemsLoaded(
+                          Result {
+                              try await apiClient.fetchHistoryByDate(dateString)
+                          }
+                      ))
+                  }
                  
              case .calendarDataLoaded(.success(let data)):
                  state.calendarData = data
@@ -78,6 +103,16 @@ struct HistoryFeature {
              case .calendarDataLoaded(.failure(let error)):
                  print("    Failed to load calendar data: \(error)")
                  return .none
+                 
+             case .historyItemsLoaded(.success(let items)):
+                  state.selectedDateHistoryItems = items
+                  print("✅ History items loaded: \(items.count) items")
+                  return .none
+                  
+              case .historyItemsLoaded(.failure(let error)):
+                  print("❌ Failed to load history items: \(error)")
+                  state.selectedDateHistoryItems = []
+                  return .none
                  
              case .delegate:
                  return .none
@@ -146,8 +181,13 @@ struct HistoryView: View {
                                         currentYear: store.currentYear,
                                         currentMonth: store.currentMonth,
                                         stampedDates: store.calendarData?.stampedDates ?? [],
+                                        selectedDateString: store.selectedDateString,
+                                        historyItems: store.selectedDateHistoryItems,
                                         onMonthChanged: { year, month in
                                             store.send(.monthChanged(year: year, month: month))
+                                        },
+                                        onDateSelected: { dateString in
+                                            store.send(.dateSelected(dateString))
                                         }
                                     )
                                     .padding(.top, 5)
@@ -329,10 +369,11 @@ struct StampCountCapsule: View {
 struct HistoryCalendarView: View {
     let currentYear: Int
     let currentMonth: Int
-    let stampedDates: [String]
+    let stampedDates: [String] // "2026-01-04" 형식
+    let selectedDateString: String? // 선택된 날짜 문자열
+    let historyItems: [HistoryItemResponse] // 선택된 날짜의 히스토리 아이템
     let onMonthChanged: (Int, Int) -> Void
-    
-    @State private var selectedDate: Date?
+    let onDateSelected: (String?) -> Void // 날짜 선택/해제 콜백
     
     let calendar = Calendar.current
     
@@ -356,11 +397,13 @@ struct HistoryCalendarView: View {
             calendarGrid
             
             // 선택된 날짜 정보
-            if let selectedDate = selectedDate {
-                selectedDateInfo(date: selectedDate)
+            if selectedDateString != nil, !historyItems.isEmpty {
+                selectedDateInfo()
                     .padding(.top, 16)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
+        .animation(.easeInOut(duration: 0.3), value: selectedDateString)
     }
     
     // MARK: - 월 헤더
@@ -414,19 +457,23 @@ struct HistoryCalendarView: View {
         return LazyVGrid(columns: columns, spacing: 0) {
             ForEach(Array(days.enumerated()), id: \.offset) { index, date in
                 if let date = date {
-                    let hasQuiz = quizDates.contains(where: {
-                        calendar.isDate($0, inSameDayAs: date)
-                    })
+                    let dateString = dateToString(date)
+                    let hasQuiz = stampedDates.contains(dateString)
                     
                     DayCell(
                         date: date,
-                        isSelected: selectedDate != nil && calendar.isDate(date, inSameDayAs: selectedDate!),
+                        isSelected: selectedDateString == dateString,
                         hasQuiz: hasQuiz,
                         isStreak: false // TODO: 연속 달성 로직 추가 필요 시
                     )
                     .onTapGesture {
                         if hasQuiz {
-                            selectedDate = date
+                            // 토글 방식
+                            if selectedDateString == dateString {
+                                onDateSelected(nil) // 선택 해제
+                            } else {
+                                onDateSelected(dateString) // 선택
+                            }
                         }
                     }
                     .disabled(!hasQuiz)
@@ -439,30 +486,43 @@ struct HistoryCalendarView: View {
     }
     
     // MARK: - 선택된 날짜 정보
-    private func selectedDateInfo(date: Date) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(dateString(date))
-                .font(.system(size: 16, weight: .bold))
+    private func selectedDateInfo() -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // 제목 (테두리 밖)
+            Text("이날 공부한 내용")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.black)
             
-            HStack(spacing: 16) {
-                HStack(spacing: 4) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.blue)
-                    Text("퀴즈 완료")
-                        .font(.system(size: 14))
-                        .foregroundColor(.gray)
+            // 히스토리 아이템들
+            VStack(spacing: 12) {
+                ForEach(historyItems, id: \.id) { item in
+                    VStack(alignment: .leading, spacing: 8) {
+                        // 제목과 날짜
+                        HStack {
+                            Text(item.title)
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(.black)
+                            
+                            Spacer()
+                            
+                            Text(formatDate(item.lastStudiedAt))
+                                .font(.system(size: 14))
+                                .foregroundColor(.gray)
+                        }
+                        
+                        // 요약 내용
+                        Text(item.summarySnippet)
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                            .lineLimit(2)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color(hex: "EAF4FF"))
+                    .cornerRadius(12)
                 }
             }
-            
-            // TODO: 실제 퀴즈 데이터 표시
-            Text("완료한 퀴즈: 확인 필요")
-                .font(.system(size: 14))
-                .foregroundColor(.gray)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(hex: "EAF4FF"))
-        .cornerRadius(12)
     }
     
     // MARK: - Helper Methods
@@ -473,11 +533,35 @@ struct HistoryCalendarView: View {
         return formatter.string(from: currentMonthDate)
     }
     
-    private func dateString(_ date: Date) -> String {
+    private func dateToString(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ko_KR")
-        formatter.dateFormat = "M월 d일 EEEE"
+        formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: date)
+    }
+    
+    private func formatDate(_ dateString: String) -> String {
+        let inputFormatter = DateFormatter()
+        inputFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS" 
+        
+        let outputFormatter = DateFormatter()
+        outputFormatter.locale = Locale(identifier: "ko_KR")
+        outputFormatter.dateFormat = "M월 d일"
+        
+        if let date = inputFormatter.date(from: dateString) {
+            return outputFormatter.string(from: date)
+        }
+        
+        // 파싱 실패 시 앞부분만 잘라서 표시
+        if dateString.count >= 10 {
+            let dateOnly = String(dateString.prefix(10)) // "2026-01-04"
+            let fallbackFormatter = DateFormatter()
+            fallbackFormatter.dateFormat = "yyyy-MM-dd"
+            if let date = fallbackFormatter.date(from: dateOnly) {
+                return outputFormatter.string(from: date)
+            }
+        }
+        
+        return dateString
     }
     
     private func getDaysInMonth() -> [Date?] {

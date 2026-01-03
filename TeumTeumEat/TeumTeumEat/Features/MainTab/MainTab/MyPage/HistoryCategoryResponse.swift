@@ -12,7 +12,7 @@ struct HistoryCategoryResponse: Decodable {
     let histories: [HistoryItemResponse]
 }
 
-struct HistoryItemResponse: Decodable {
+struct HistoryItemResponse: Decodable, Equatable {
     let id: Int
     let type: String
     let title: String
