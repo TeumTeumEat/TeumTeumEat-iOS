@@ -250,7 +250,7 @@ struct MyPageView: View {
                                 Spacer()
                                 
                                 Button {
-                                    print("로그아웃 탭")
+                                 store.send(.logoutButtonTapped)
                                 } label: {
                                     Text("로그아웃")
                                         .bodyRegular14()

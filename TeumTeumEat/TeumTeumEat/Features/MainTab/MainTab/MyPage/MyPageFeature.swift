@@ -47,10 +47,12 @@ struct MyPageFeature {
         case dismissNotificationAlert
         case subjectList(SubjectListFeature.Action)
         case appSettings(AppSettingsFeature.Action)
+        case logoutButtonTapped
         case delegate(Delegate)
         
         enum Delegate {
             case dismissed
+            case logout
         }
     }
     
@@ -276,6 +278,10 @@ struct MyPageFeature {
                 
             case .appSettings:
                 return .none
+                
+            case .logoutButtonTapped:
+                print("로그아웃 버튼 탭됨")
+                return .send(.delegate(.logout))
                 
             case .delegate:
                 return .none

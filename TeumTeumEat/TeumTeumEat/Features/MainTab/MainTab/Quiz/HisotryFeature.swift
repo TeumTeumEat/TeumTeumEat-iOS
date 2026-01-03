@@ -14,8 +14,6 @@ struct HistoryFeature {
     struct State: Equatable {
         var fireCount: Int = 0
         var stampCount: Int = 0
-        var myPage: MyPageFeature.State?
-        
         // 탭 관련 상태
         var selectedTab: Int = 0
         let tabs: [TTETabItem] = [
@@ -26,31 +24,27 @@ struct HistoryFeature {
     
     enum Action {
         case settingTapped
-        case myPage(MyPageFeature.Action)
         case tabSelected(Int)
+        case delegate(Delegate)
+    }
+    
+    enum Delegate {
+        case openMyPageRequested
     }
     
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .settingTapped:
-                state.myPage = MyPageFeature.State()
-                return .none
+                return .send(.delegate(.openMyPageRequested))
                 
             case .tabSelected(let index):
                 state.selectedTab = index
                 return .none
                 
-            case .myPage(.delegate(.dismissed)):
-                state.myPage = nil
-                return .none
-                
-            case .myPage:
+            case .delegate:
                 return .none
             }
-        }
-        .ifLet(\.myPage, action: \.myPage) {
-            MyPageFeature()
         }
     }
 }
@@ -204,16 +198,7 @@ struct HistoryView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .navigationBarHidden(true)
-            .navigationDestination(
-                isPresented: Binding(
-                    get: { store.myPage != nil },
-                    set: { if !$0 { store.send(.myPage(.delegate(.dismissed))) } }
-                )
-            ) {
-                if let myPageStore = store.scope(state: \.myPage, action: \.myPage) {
-                    MyPageView(store: myPageStore)
-                }
-            }
+
         }
     }
 }

@@ -23,6 +23,7 @@ struct MainTabFeature {
         var addSubject: AddSubjectFeature.State?
         var addSubjectFile: AddSubjectFileFeature.State?
         var quizFlow: QuizFlowFeature.State?
+        var myPage: MyPageFeature.State?
         
         enum Tab {
             case home
@@ -41,6 +42,7 @@ struct MainTabFeature {
         case addSubject(AddSubjectFeature.Action)
         case addSubjectFile(AddSubjectFileFeature.Action)
         case quizFlow(QuizFlowFeature.Action)
+        case myPage(MyPageFeature.Action)
     }
     
     enum RegisterMenuItem {
@@ -76,50 +78,57 @@ struct MainTabFeature {
             case .registerMenuItemTapped(let item):
                 print("메뉴 아이템 선택: \(item)")
                 state.isRegisterMenuExpanded = false
-                // TODO: 각 아이템에 맞는 화면으로 이동
                 if item == .category {
                      state.addSubject = AddSubjectFeature.State()
                  } else if item == .fileUpload {
                      state.addSubjectFile = AddSubjectFileFeature.State()
                  }
-                
                 return .none
+                
+            case .home(.delegate(.openMyPageRequested)):
+                        state.myPage = MyPageFeature.State()
+                        print("Home에서 MyPage 열기")
+                        return .none
                 
             case .home(.delegate(.startQuizFlow)):
                 state.quizFlow = QuizFlowFeature.State()
                 print("퀴즈 플로우 시작")
                 return .none
                 
-                // 퀴즈 플로우 완료
+            case .myPage(.delegate(.dismissed)):
+                        state.myPage = nil
+                        print("MyPage 닫힘")
+                        return .none
+                
+            case .quiz(.delegate(.openMyPageRequested)):
+                        state.myPage = MyPageFeature.State()
+                        print("History에서 MyPage 열기")
+                        return .none
+                
             case .quizFlow(.delegate(.completed(let destination))):
                 state.quizFlow = nil
                 print("퀴즈 플로우 완료 - 이동: \(destination)")
-                // 원하는 탭으로 이동
                 if destination == .history {
                     state.selectedTab = .quiz
                 }
                 return .none
                 
-                // 퀴즈 플로우 취소
             case .quizFlow(.delegate(.cancelled)):
                 state.quizFlow = nil
                 print("퀴즈 플로우 취소")
                 return .none
                 
             case .addSubject(.delegate(.completed)):
-                 // 주제 추가 완료
                  state.addSubject = nil
                  print("주제 추가 완료 - Sheet 닫힘")
                  return .none
                  
              case .addSubject(.delegate(.cancelled)):
-                 // 취소
                  state.addSubject = nil
                  print("주제 추가 취소 - Sheet 닫힘")
                  return .none
                 
-                
-            case .addSubjectFile(.delegate(.completed)): 
+            case .addSubjectFile(.delegate(.completed)):
                 print("파일 주제 추가 완료 - Sheet 닫힘")
                 state.addSubjectFile = nil
                 return .none
@@ -129,11 +138,11 @@ struct MainTabFeature {
                 state.addSubjectFile = nil
                 return .none
                 
-            case .home, .quiz, .register, .addSubject, .addSubjectFile, .quizFlow:
+            case .home, .quiz, .register, .addSubject, .addSubjectFile, .quizFlow, .myPage:
                 return .none
             }
         }
-        .ifLet(\.addSubject, action: \.addSubject) {  
+        .ifLet(\.addSubject, action: \.addSubject) {
             AddSubjectFeature()
         }
         .ifLet(\.addSubjectFile, action: \.addSubjectFile) {
@@ -142,6 +151,8 @@ struct MainTabFeature {
         .ifLet(\.quizFlow, action: \.quizFlow) {
             QuizFlowFeature()
         }
-        
+        .ifLet(\.myPage, action: \.myPage) { 
+            MyPageFeature()
+        }
     }
 }

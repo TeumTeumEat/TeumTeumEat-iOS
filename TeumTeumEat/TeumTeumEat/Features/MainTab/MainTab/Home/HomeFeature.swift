@@ -16,46 +16,36 @@ struct HomeFeature {
         var fireCount: Int = 0
         var stampCount: Int = 0
         var isTodayQuizCompleted: Bool = false
-        var myPage: MyPageFeature.State?
     }
     
     enum Action {
         case settingTapped
         case toggleQuizStatus
-        case myPage(MyPageFeature.Action)
         case characterEatTapped
         case delegate(Delegate)
     }
     
     enum Delegate {
-        case startQuizFlow  // 퀴즈 플로우 시작 요청
+        case startQuizFlow
+        case openMyPageRequested
     }
     
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .settingTapped:
-                state.myPage = MyPageFeature.State()
-                return .none
+                return .send(.delegate(.openMyPageRequested))
                 
             case .toggleQuizStatus:
                 state.isTodayQuizCompleted.toggle()
                 return .none
                 
             case .characterEatTapped:
-                // MainTab에게 퀴즈 플로우 시작하라고 알림
                 return .send(.delegate(.startQuizFlow))
                 
-            case .myPage(.delegate(.dismissed)):
-                state.myPage = nil
-                return .none
-                
-            case .myPage, .delegate:
+            case .delegate:
                 return .none
             }
-        }
-        .ifLet(\.myPage, action: \.myPage) {
-            MyPageFeature()
         }
     }
 }
@@ -92,16 +82,6 @@ struct HomeView: View {
                 }
             }
             .navigationBarHidden(true)
-            .navigationDestination(
-                isPresented: Binding(
-                    get: { store.myPage != nil },
-                    set: { if !$0 { store.send(.myPage(.delegate(.dismissed))) } }
-                )
-            ) {
-                if let myPageStore = store.scope(state: \.myPage, action: \.myPage) {
-                    MyPageView(store: myPageStore)
-                }
-            }
         }
     }
 }
