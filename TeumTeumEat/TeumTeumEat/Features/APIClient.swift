@@ -763,6 +763,30 @@ extension APIClient {
         print("\(typePath) (ID: \(id)) 퀴즈 내역 조회 성공: \(data.quizzes.count)문항")
         return data
     }
+    
+    /// 요약글 상세보기
+    func fetchHistorySummaryDetail(type: DocumentType, id: Int, date: String) async throws -> HistorySummaryDetailData {
+        let typePath = type.rawValue.lowercased()
+        let endpoint = "/api/v1/history/details/summary/\(typePath)/\(id)?date=\(date)"
+        
+        let response: APIResponse<HistorySummaryDetailData> = try await request(
+            endpoint: endpoint,
+            method: .get,
+            requiresAuth: true
+        )
+        
+        guard response.code == "OK",
+              let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("Summary fetched: \(data.title) (Date: \(date))")
+        return data
+    }
 }
 
 

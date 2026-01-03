@@ -40,3 +40,9 @@ struct QuizDetailItem: Decodable {
     let explanation: String
     let isCorrect: Bool
 }
+
+struct HistorySummaryDetailData: Decodable {
+    let title: String
+    let summary: String 
+    let createdAt: String
+}
