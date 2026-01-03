@@ -20,11 +20,18 @@ struct HistoryFeature {
             TTETabItem(title: "날짜별"),
             TTETabItem(title: "주제별")
         ]
+        
+        var calendarData: CalendarHistoryData?
+        var currentYear: Int = Calendar.current.component(.year, from: Date())
+        var currentMonth: Int = Calendar.current.component(.month, from: Date())
     }
     
     enum Action {
+        case onAppear
         case settingTapped
         case tabSelected(Int)
+        case monthChanged(year: Int, month: Int)
+        case calendarDataLoaded(Result<CalendarHistoryData, Error>)
         case delegate(Delegate)
     }
     
@@ -32,22 +39,52 @@ struct HistoryFeature {
         case openMyPageRequested
     }
     
+    @Dependency(\.apiClient) var apiClient
+    
     var body: some ReducerOf<Self> {
-        Reduce { state, action in
-            switch action {
-            case .settingTapped:
-                return .send(.delegate(.openMyPageRequested))
-                
-            case .tabSelected(let index):
-                state.selectedTab = index
-                return .none
-                
-            case .delegate:
-                return .none
-            }
-        }
-    }
-}
+         Reduce { state, action in
+             switch action {
+             case .onAppear:
+                 return .run { [year = state.currentYear, month = state.currentMonth] send in
+                     await send(.monthChanged(year: year, month: month))
+                 }
+                 
+             case .settingTapped:
+                 return .send(.delegate(.openMyPageRequested))
+                 
+             case .tabSelected(let index):
+                 state.selectedTab = index
+                 return .none
+                 
+             case .monthChanged(let year, let month):
+                 state.currentYear = year
+                 state.currentMonth = month
+                 
+                 return .run { send in
+                     await send(.calendarDataLoaded(
+                         Result {
+                             try await apiClient.fetchCalendarHistory(year: year, month: month)
+                         }
+                     ))
+                 }
+                 
+             case .calendarDataLoaded(.success(let data)):
+                 state.calendarData = data
+                 // stampCount를 totalStamps로 업데이트
+                 state.stampCount = data.totalStamps
+                 print("Calendar data loaded: \(data.stampedDates.count) stamped dates, total: \(data.totalStamps)")
+                 return .none
+                 
+             case .calendarDataLoaded(.failure(let error)):
+                 print("    Failed to load calendar data: \(error)")
+                 return .none
+                 
+             case .delegate:
+                 return .none
+             }
+         }
+     }
+ }
 
 struct HistoryView: View {
     let store: StoreOf<HistoryFeature>
@@ -63,7 +100,6 @@ struct HistoryView: View {
                         store.send(.settingTapped)
                     }
                 )
-                // .padding(.horizontal, 20) <- 제거
                 
                 // 나머지 전체 스크롤
                 ScrollView {
@@ -84,7 +120,7 @@ struct HistoryView: View {
                                 // 날짜별
                                 VStack(spacing: 16) {
                                     HistoryDateCard(
-                                        fireCount: 5,
+                                        fireCount: store.fireCount,
                                         dateText: "얼른 시작 틈틈잇",
                                         characterImage: "Frame 7407"
                                     )
@@ -93,35 +129,30 @@ struct HistoryView: View {
                                     HStack(spacing: 12) {
                                         StampCountCapsule(
                                             title: "총 스탬프",
-                                            count: store.stampCount,
+                                            count: store.calendarData?.totalStamps ?? 0,
                                             iconName: "stamp",
                                             backgroundColor: Color(hex: "EAF4FF")
                                         )
                                         
                                         StampCountCapsule(
                                             title: "이번달 스탬프",
-                                            count: store.stampCount,
+                                            count: store.calendarData?.stampedDates.count ?? 0,
                                             iconName: "stamp",
                                             backgroundColor: Color(hex: "EAF4FF")
                                         )
                                     }
                                     
                                     HistoryCalendarView(
-                                        quizDates: [
-                                            Date(),
-                                            Calendar.current.date(byAdding: .day, value: -1, to: Date())!,
-                                            Calendar.current.date(byAdding: .day, value: -2, to: Date())!,
-                                            Calendar.current.date(byAdding: .day, value: -7, to: Date())!,
-                                        ],
-                                        streakDates: [
-                                            Date(),
-                                            Calendar.current.date(byAdding: .day, value: -1, to: Date())!,
-                                            Calendar.current.date(byAdding: .day, value: -2, to: Date())!,
-                                        ]
+                                        currentYear: store.currentYear,
+                                        currentMonth: store.currentMonth,
+                                        stampedDates: store.calendarData?.stampedDates ?? [],
+                                        onMonthChanged: { year, month in
+                                            store.send(.monthChanged(year: year, month: month))
+                                        }
                                     )
                                     .padding(.top, 5)
                                 }
-                                .padding(.horizontal, 18) // 전체에 padding 적용
+                                .padding(.horizontal, 18)
                                 .padding(.top, 20)
                                 .padding(.bottom, 120)
                                 
@@ -198,7 +229,9 @@ struct HistoryView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .navigationBarHidden(true)
-
+            .onAppear {
+                store.send(.onAppear)
+            }
         }
     }
 }
@@ -294,13 +327,26 @@ struct StampCountCapsule: View {
 }
 
 struct HistoryCalendarView: View {
-    @State private var currentMonth = Date()
+    let currentYear: Int
+    let currentMonth: Int
+    let stampedDates: [String]
+    let onMonthChanged: (Int, Int) -> Void
+    
     @State private var selectedDate: Date?
     
     let calendar = Calendar.current
     
-    let quizDates: [Date]
-    let streakDates: [Date]
+    // stampedDates를 Date 배열로 변환
+    private var quizDates: [Date] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return stampedDates.compactMap { formatter.date(from: $0) }
+    }
+    
+    private var currentMonthDate: Date {
+        let components = DateComponents(year: currentYear, month: currentMonth)
+        return calendar.date(from: components) ?? Date()
+    }
     
     var body: some View {
         VStack(spacing: 8) {
@@ -320,7 +366,11 @@ struct HistoryCalendarView: View {
     // MARK: - 월 헤더
     private var monthHeader: some View {
         HStack(spacing: 12) {
-            Button(action: { changeMonth(by: -1) }) {
+            Button(action: {
+                let newMonth = currentMonth == 1 ? 12 : currentMonth - 1
+                let newYear = currentMonth == 1 ? currentYear - 1 : currentYear
+                onMonthChanged(newYear, newMonth)
+            }) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(.black)
@@ -329,7 +379,11 @@ struct HistoryCalendarView: View {
             Text(monthYearString)
                 .font(.system(size: 18, weight: .bold))
             
-            Button(action: { changeMonth(by: 1) }) {
+            Button(action: {
+                let newMonth = currentMonth == 12 ? 1 : currentMonth + 1
+                let newYear = currentMonth == 12 ? currentYear + 1 : currentYear
+                onMonthChanged(newYear, newMonth)
+            }) {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(.black)
@@ -363,23 +417,19 @@ struct HistoryCalendarView: View {
                     let hasQuiz = quizDates.contains(where: {
                         calendar.isDate($0, inSameDayAs: date)
                     })
-                    let isStreak = streakDates.contains(where: {
-                        calendar.isDate($0, inSameDayAs: date)
-                    })
                     
                     DayCell(
                         date: date,
                         isSelected: selectedDate != nil && calendar.isDate(date, inSameDayAs: selectedDate!),
                         hasQuiz: hasQuiz,
-                        isStreak: isStreak
+                        isStreak: false // TODO: 연속 달성 로직 추가 필요 시
                     )
                     .onTapGesture {
-                        // 퀴즈가 있는 날짜만 선택 가능
                         if hasQuiz {
                             selectedDate = date
                         }
                     }
-                    .disabled(!hasQuiz) // 퀴즈 없는 날짜는 비활성화
+                    .disabled(!hasQuiz)
                 } else {
                     Color.clear
                         .frame(height: 40)
@@ -390,16 +440,11 @@ struct HistoryCalendarView: View {
     
     // MARK: - 선택된 날짜 정보
     private func selectedDateInfo(date: Date) -> some View {
-        let isStreak = streakDates.contains(where: {
-            calendar.isDate($0, inSameDayAs: date)
-        })
-        
-        return VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 12) {
             Text(dateString(date))
                 .font(.system(size: 16, weight: .bold))
             
             HStack(spacing: 16) {
-                // 퀴즈 완료 정보
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.blue)
@@ -407,21 +452,10 @@ struct HistoryCalendarView: View {
                         .font(.system(size: 14))
                         .foregroundColor(.gray)
                 }
-                
-                // 스트릭 정보
-                if isStreak {
-                    HStack(spacing: 4) {
-                        Image(systemName: "flame.fill")
-                            .foregroundColor(.orange)
-                        Text("연속 달성")
-                            .font(.system(size: 14))
-                            .foregroundColor(.gray)
-                    }
-                }
             }
             
             // TODO: 실제 퀴즈 데이터 표시
-            Text("완료한 퀴즈: 5개")
+            Text("완료한 퀴즈: 확인 필요")
                 .font(.system(size: 14))
                 .foregroundColor(.gray)
         }
@@ -436,7 +470,7 @@ struct HistoryCalendarView: View {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
         formatter.dateFormat = "yyyy년 M월"
-        return formatter.string(from: currentMonth)
+        return formatter.string(from: currentMonthDate)
     }
     
     private func dateString(_ date: Date) -> String {
@@ -446,15 +480,8 @@ struct HistoryCalendarView: View {
         return formatter.string(from: date)
     }
     
-    private func changeMonth(by value: Int) {
-        if let newMonth = calendar.date(byAdding: .month, value: value, to: currentMonth) {
-            currentMonth = newMonth
-            selectedDate = nil // 월 변경 시 선택 초기화
-        }
-    }
-    
     private func getDaysInMonth() -> [Date?] {
-        guard let monthInterval = calendar.dateInterval(of: .month, for: currentMonth) else {
+        guard let monthInterval = calendar.dateInterval(of: .month, for: currentMonthDate) else {
             return []
         }
         
@@ -464,7 +491,7 @@ struct HistoryCalendarView: View {
         
         var days: [Date?] = Array(repeating: nil, count: emptyDays)
         
-        let range = calendar.range(of: .day, in: .month, for: currentMonth)!
+        let range = calendar.range(of: .day, in: .month, for: currentMonthDate)!
         for day in range {
             if let date = calendar.date(byAdding: .day, value: day - 1, to: monthFirstDay) {
                 days.append(date)

@@ -20,7 +20,7 @@ struct HistoryItemResponse: Decodable {
     let lastStudiedAt: String
 }
 
-struct CalendarHistoryData: Decodable {
+struct CalendarHistoryData: Decodable, Equatable {
     let stampedDates: [String] 
     let totalStamps: Int
     let currentStreak: Int
