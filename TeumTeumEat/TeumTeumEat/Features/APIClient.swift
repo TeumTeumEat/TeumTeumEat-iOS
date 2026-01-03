@@ -566,4 +566,33 @@ extension APIClient {
         
         return summaryData
     }
+    
+    /// 유저퀴즈 조회
+    func fetchUserQuizzes(documentId: Int, documentType: DocumentType) async throws -> [UserQuiz] {
+        let response: APIResponse<UserQuizData> = try await request(
+            endpoint: "/api/v1/user-quizzes?documentId=\(documentId)&documentType=\(documentType.rawValue)",
+            method: .get,
+            requiresAuth: true
+        )
+        
+        print("fetchUserQuizzes - Response code: \(response.code)")
+        print("fetchUserQuizzes - DocumentId: \(documentId), Type: \(documentType.rawValue)")
+        print("fetchUserQuizzes - Response data: \(String(describing: response.data))")
+        
+        guard response.code == "OK",
+              let quizData = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("User Quizzes - Count: \(quizData.quizzes.count)")
+        quizData.quizzes.forEach { quiz in
+            print("   Quiz ID: \(quiz.quizId), Type: \(quiz.type)")
+        }
+        
+        return quizData.quizzes
+    }
 }
