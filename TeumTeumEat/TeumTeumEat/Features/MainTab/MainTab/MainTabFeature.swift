@@ -43,6 +43,11 @@ struct MainTabFeature {
         case addSubjectFile(AddSubjectFileFeature.Action)
         case quizFlow(QuizFlowFeature.Action)
         case myPage(MyPageFeature.Action)
+        case delegate(Delegate)
+    }
+    
+    enum Delegate {
+        case logout
     }
     
     enum RegisterMenuItem {
@@ -70,6 +75,10 @@ struct MainTabFeature {
                     state.isRegisterMenuExpanded = false
                 }
                 return .none
+                
+            case .myPage(.delegate(.logout)):
+                           print("MainTab: MyPage에서 로그아웃 요청 받음")
+                           return .send(.delegate(.logout))
                 
             case .toggleRegisterMenu:
                 state.isRegisterMenuExpanded.toggle()
@@ -138,7 +147,7 @@ struct MainTabFeature {
                 state.addSubjectFile = nil
                 return .none
                 
-            case .home, .quiz, .register, .addSubject, .addSubjectFile, .quizFlow, .myPage:
+            case .home, .quiz, .register, .addSubject, .addSubjectFile, .quizFlow, .myPage, .delegate:
                 return .none
             }
         }

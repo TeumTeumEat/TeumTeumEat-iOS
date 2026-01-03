@@ -24,6 +24,7 @@ struct MyPageFeature {
         var isLoadingAccountInfo: Bool = false
         var isLoadingNotificationSetting: Bool = false
         var showNotificationSettingsAlert: Bool = false
+        var showLogoutAlert: Bool = false
         
         // 계정 정보
         var socialLoginType: SocialLoginType = .apple
@@ -48,6 +49,8 @@ struct MyPageFeature {
         case subjectList(SubjectListFeature.Action)
         case appSettings(AppSettingsFeature.Action)
         case logoutButtonTapped
+        case confirmLogout
+        case cancelLogout
         case delegate(Delegate)
         
         enum Delegate {
@@ -280,8 +283,19 @@ struct MyPageFeature {
                 return .none
                 
             case .logoutButtonTapped:
-                print("로그아웃 버튼 탭됨")
+                print("로그아웃 버튼 탭됨 - Alert 표시")
+                state.showLogoutAlert = true 
+                return .none
+                
+            case .confirmLogout:
+                print("로그아웃 확인됨")
+                state.showLogoutAlert = false
                 return .send(.delegate(.logout))
+                
+            case .cancelLogout:
+                print("로그아웃 취소됨")
+                state.showLogoutAlert = false
+                return .none
                 
             case .delegate:
                 return .none

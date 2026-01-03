@@ -300,6 +300,19 @@ struct MyPageView: View {
         } message: {
             Text("알림을 받으려면 설정에서 알림 권한을 허용해주세요.")
         }
+        .alert("로그아웃", isPresented: Binding(
+            get: { store.showLogoutAlert },
+            set: { if !$0 { store.send(.cancelLogout) } }
+        )) {
+            Button("취소", role: .cancel) {
+                store.send(.cancelLogout)
+            }
+            Button("로그아웃", role: .destructive) {
+                store.send(.confirmLogout)
+            }
+        } message: {
+            Text("정말 로그아웃 하시겠습니까?")
+        }
         .navigationDestination(
             isPresented: Binding(
                 get: { store.subjectList != nil },
