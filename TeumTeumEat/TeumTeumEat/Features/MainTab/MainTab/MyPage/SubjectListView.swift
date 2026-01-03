@@ -42,23 +42,51 @@ struct SubjectListView: View {
             }
             .background(Color.white)
             
-            ScrollView {
+            if store.isLoading {
+                Spacer()
+                ProgressView()
+                    .scaleEffect(1.5)
+                Spacer()
+            } else if let errorMessage = store.errorMessage {
+                Spacer()
                 VStack(spacing: 16) {
-                    ForEach(store.subjects) { subject in
-                        Button {
-                            store.send(.subjectTapped(subject))
-                        } label: {
-                            SelectedSubjectCard(subject: subject)
+                    Text("목록을 불러올 수 없습니다")
+                        .font(.system(size: 16, weight: .semibold))
+                    Text(errorMessage)
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                }
+                Spacer()
+            } else if store.subjects.isEmpty {
+                Spacer()
+                Text("등록된 학습주제가 없습니다")
+                    .font(.system(size: 16))
+                    .foregroundColor(.gray)
+                Spacer()
+            } else {
+                ScrollView {
+                    VStack(spacing: 16) {
+                        ForEach(store.subjects) { subject in
+                            Button {
+                                print("🔍 Subject tapped: \(subject.name)")
+                                store.send(.subjectTapped(subject))
+                            } label: {
+                                SelectedSubjectCard(subject: subject)
+                            }
                         }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 40)
+                .background(Color.white)
             }
-            .background(Color.white)
         }
         .navigationBarHidden(true)
         .toolbar(.hidden, for: .tabBar)
+        .onAppear {
+            print("🔍 SubjectListView appeared - calling API")
+            store.send(.onAppear)
+        }
     }
 }

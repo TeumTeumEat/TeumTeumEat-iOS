@@ -36,6 +36,10 @@ struct AppFeature {
         Reduce { state, action in
             switch action {
                 
+            case .mainTab(.delegate(.logout)):
+                print("AppFeature: 로그아웃 요청 받음")
+                return .send(.logout)
+                
             case .logout:
                 // 토큰 삭제
                 KeyChainManager.shared.deleteAll()

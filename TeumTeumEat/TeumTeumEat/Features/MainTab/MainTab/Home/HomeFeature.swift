@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import Lottie
 
 @Reducer
 struct HomeFeature {
@@ -15,46 +16,222 @@ struct HomeFeature {
         var fireCount: Int = 0
         var stampCount: Int = 0
         var isTodayQuizCompleted: Bool = false
-        var myPage: MyPageFeature.State?
+        
+        // API 관련 상태
+        var currentGoal: GoalResponse?
+        var quizStatus: UserQuizStatusData?
+        var categoryDocument: CategoryDocumentData?
+        var pdfSummary: PDFSummaryData?
+        var quizzes: [UserQuiz] = []
+        
+        var isLoading: Bool = false
+        var errorMessage: String?
     }
     
     enum Action {
+        case onAppear
+        
+        // Step 1: 현재 목표 조회
+        case fetchCurrentGoalResponse(Result<GoalResponse, Error>)
+        
+        // Step 2: 퀴즈 상태 확인
+        case fetchQuizStatusResponse(Result<UserQuizStatusData, Error>)
+        
+        // Step 3: 요약글 조회 (Goal Type에 따라)
+        case fetchCategoryDocumentResponse(Result<CategoryDocumentData, Error>)
+        case fetchPDFSummaryResponse(Result<PDFSummaryData, Error>)
+        
+        // Step 4: 퀴즈 조회
+        case fetchQuizzesResponse(Result<[UserQuiz], Error>)
+        
         case settingTapped
         case toggleQuizStatus
-        case myPage(MyPageFeature.Action)
         case characterEatTapped
         case delegate(Delegate)
     }
     
     enum Delegate {
-        case startQuizFlow  // 퀴즈 플로우 시작 요청
+        case startQuizFlow
+        case openMyPageRequested
     }
+    
+    @Dependency(\.apiClient) var apiClient
     
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .settingTapped:
-                state.myPage = MyPageFeature.State()
+            case .onAppear:
+                state.isLoading = true
+                state.errorMessage = nil
+                
+                // Step 1: 현재 목표 조회
+                return .run { send in
+                    do {
+                        let goal = try await apiClient.fetchCurrentGoal()
+                        await send(.fetchCurrentGoalResponse(.success(goal)))
+                    } catch {
+                        await send(.fetchCurrentGoalResponse(.failure(error)))
+                    }
+                }
+                
+            // Step 1 완료 → Step 2 시작
+            case .fetchCurrentGoalResponse(.success(let goal)):
+                state.currentGoal = goal
+                print("Step 1 완료 - Goal Type: \(goal.type)")
+                
+                // Step 2: 퀴즈 상태 확인
+                return .run { send in
+                    do {
+                        let status = try await apiClient.fetchUserQuizStatus()
+                        await send(.fetchQuizStatusResponse(.success(status)))
+                    } catch {
+                        await send(.fetchQuizStatusResponse(.failure(error)))
+                    }
+                }
+                
+            case .fetchCurrentGoalResponse(.failure(let error)):
+                state.isLoading = false
+                state.errorMessage = "목표 조회 실패: \(error.localizedDescription)"
+                print("Step 1 실패: \(error)")
                 return .none
+                
+            // Step 2 완료 → Step 3 시작
+            case .fetchQuizStatusResponse(.success(let status)):
+                state.quizStatus = status
+                print("Step 2 완료 - hasSolvedToday: \(status.hasSolvedToday)")
+                
+                // Step 3: Goal Type에 따라 요약글 조회
+                guard let goal = state.currentGoal else {
+                    state.errorMessage = "목표 정보가 없습니다"
+                    state.isLoading = false
+                    return .none
+                }
+                
+                if goal.type == "CATEGORY" {
+                    // 카테고리 타입
+                    guard let categoryId = goal.category?.categoryId else {
+                        state.errorMessage = "카테고리 ID가 없습니다"
+                        state.isLoading = false
+                        return .none
+                    }
+                    
+                    return .run { send in
+                        do {
+                            let document = try await apiClient.fetchDailyCategoryDocument(categoryId: categoryId)
+                            await send(.fetchCategoryDocumentResponse(.success(document)))
+                        } catch {
+                            await send(.fetchCategoryDocumentResponse(.failure(error)))
+                        }
+                    }
+                    
+                } else if goal.type == "DOCUMENT" {
+                    // PDF 타입
+                    guard let documentId = goal.documentId else {
+                        state.errorMessage = "문서 ID가 없습니다"
+                        state.isLoading = false
+                        return .none
+                    }
+                    
+                    return .run { send in
+                        do {
+                            let summary = try await apiClient.fetchDailyPDFSummary(
+                                goalId: goal.goalId,
+                                documentId: documentId
+                            )
+                            await send(.fetchPDFSummaryResponse(.success(summary)))
+                        } catch {
+                            await send(.fetchPDFSummaryResponse(.failure(error)))
+                        }
+                    }
+                    
+                } else {
+                    // 알 수 없는 타입
+                    state.errorMessage = "알 수 없는 Goal Type: \(goal.type)"
+                    state.isLoading = false
+                    return .none
+                }
+                
+            case .fetchQuizStatusResponse(.failure(let error)):
+                state.isLoading = false
+                state.errorMessage = "퀴즈 상태 조회 실패: \(error.localizedDescription)"
+                print("Step 2 실패: \(error)")
+                return .none
+                
+            // Step 3-A 완료 (카테고리) → Step 4 시작
+            case .fetchCategoryDocumentResponse(.success(let document)):
+                state.categoryDocument = document
+                print("Step 3 완료 (카테고리) - documentId: \(document.documentId)")
+                
+                // Step 4: 퀴즈 조회
+                return .run { send in
+                    do {
+                        let quizzes = try await apiClient.fetchUserQuizzes(
+                            documentId: document.documentId,
+                            documentType: .category
+                        )
+                        await send(.fetchQuizzesResponse(.success(quizzes)))
+                    } catch {
+                        await send(.fetchQuizzesResponse(.failure(error)))
+                    }
+                }
+                
+            case .fetchCategoryDocumentResponse(.failure(let error)):
+                state.isLoading = false
+                state.errorMessage = "카테고리 문서 조회 실패: \(error.localizedDescription)"
+                print("Step 3 실패 (카테고리): \(error)")
+                return .none
+                
+            // Step 3-B 완료 (PDF) → Step 4 시작
+            case .fetchPDFSummaryResponse(.success(let summary)):
+                state.pdfSummary = summary
+                print("Step 3 완료 (PDF) - documentId: \(summary.documentId)")
+                
+                // Step 4: 퀴즈 조회
+                return .run { send in
+                    do {
+                        let quizzes = try await apiClient.fetchUserQuizzes(
+                            documentId: summary.documentId,
+                            documentType: .document
+                        )
+                        await send(.fetchQuizzesResponse(.success(quizzes)))
+                    } catch {
+                        await send(.fetchQuizzesResponse(.failure(error)))
+                    }
+                }
+                
+            case .fetchPDFSummaryResponse(.failure(let error)):
+                state.isLoading = false
+                state.errorMessage = "PDF 요약 조회 실패: \(error.localizedDescription)"
+                print("Step 3 실패 (PDF): \(error)")
+                return .none
+                
+            // Step 4 완료
+            case .fetchQuizzesResponse(.success(let quizzes)):
+                state.quizzes = quizzes
+                state.isLoading = false
+                print("Step 4 완료 - 퀴즈 개수: \(quizzes.count)")
+                print("전체 플로우 완료!")
+                return .none
+                
+            case .fetchQuizzesResponse(.failure(let error)):
+                state.isLoading = false
+                state.errorMessage = "퀴즈 조회 실패: \(error.localizedDescription)"
+                print("Step 4 실패: \(error)")
+                return .none
+                
+            case .settingTapped:
+                return .send(.delegate(.openMyPageRequested))
                 
             case .toggleQuizStatus:
                 state.isTodayQuizCompleted.toggle()
                 return .none
                 
             case .characterEatTapped:
-                // MainTab에게 퀴즈 플로우 시작하라고 알림
                 return .send(.delegate(.startQuizFlow))
                 
-            case .myPage(.delegate(.dismissed)):
-                state.myPage = nil
-                return .none
-                
-            case .myPage, .delegate:
+            case .delegate:
                 return .none
             }
-        }
-        .ifLet(\.myPage, action: \.myPage) {
-            MyPageFeature()
         }
     }
 }
@@ -91,15 +268,8 @@ struct HomeView: View {
                 }
             }
             .navigationBarHidden(true)
-            .navigationDestination(
-                isPresented: Binding(
-                    get: { store.myPage != nil },
-                    set: { if !$0 { store.send(.myPage(.delegate(.dismissed))) } }
-                )
-            ) {
-                if let myPageStore = store.scope(state: \.myPage, action: \.myPage) {
-                    MyPageView(store: myPageStore)
-                }
+            .onAppear {
+                store.send(.onAppear)
             }
         }
     }
@@ -108,7 +278,7 @@ struct HomeView: View {
 // MARK: - Character Image View
 struct CharacterImageView: View {
     let isTodayQuizCompleted: Bool
-    let onCharacterTapped: () -> Void  
+    let onCharacterTapped: () -> Void
     
     var body: some View {
         if isTodayQuizCompleted {
@@ -118,18 +288,39 @@ struct CharacterImageView: View {
                 .frame(height: 554)
                 .padding(.leading, 30)
                 .padding(.trailing, 8.47)
-
         } else {
-            Image("character_hamburger")
-                .resizable()
-                .scaledToFit()
-                .frame(height: 548)
-                .padding(.leading, 30)
-                .padding(.trailing, 3)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    onCharacterTapped()
+            // 퀴즈 미완료 시 - Lottie + 오버레이
+            ZStack(alignment: .center) {
+                // Lottie 배경
+                LottieView(animation: .named("home_dummy"))
+                    .playing(loopMode: .loop)
+                    .frame(height: 548)
+                
+                VStack(spacing: 16) {
+                    Spacer()
+                    
+                    // 햄버거 이미지
+                    Image("hamburger")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 180, height: 180)
+                    
+                    // 안내 텍스트
+                    Text("오늘의 냠냠지식이\n도착했어요!")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.primary)
+                        .multilineTextAlignment(.center)
+                    
+                    Spacer()
                 }
+            }
+            .frame(height: 548)
+            .padding(.leading, 30)
+            .padding(.trailing, 3)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                onCharacterTapped()
+            }
         }
     }
 }
@@ -213,6 +404,18 @@ enum SocialLoginType: String, Equatable {
             return .black
         case .kakao:
             return .yellow
+        }
+    }
+    
+    // API 응답 매핑용 initializer
+    init?(from apiString: String) {
+        switch apiString.uppercased() {
+        case "APPLE":
+            self = .apple
+        case "KAKAO":
+            self = .kakao
+        default:
+            return nil
         }
     }
 }

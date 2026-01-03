@@ -262,6 +262,9 @@ extension APIClient {
             requiresAuth: true
         )
         
+        print("🔍 Response code: \(response.code)")
+           print("🔍 Response data: \(String(describing: response.data))")
+        
         guard response.code == "OK",
               let data = response.data else {
             throw APIError.serverError(
@@ -272,7 +275,38 @@ extension APIClient {
         }
         
         print("Goals fetched successfully - Count: \(data.goalResponses.count)")
+        print("GoalResponses count: \(data.goalResponses.count)")
+        print("GoalResponses: \(data.goalResponses)")
+           
         return data.goalResponses
+    }
+    
+    /// 현재  목표 목록 조회
+    func fetchCurrentGoal() async throws -> GoalResponse {
+        let response: APIResponse<GoalResponse> = try await request(
+            endpoint: "/api/v1/users/goal",
+            method: .get,
+            requiresAuth: true
+        )
+        
+        print("fetchCurrentGoal - Response code: \(response.code)")
+        print("fetchCurrentGoal - Response data: \(String(describing: response.data))")
+        
+        guard response.code == "OK",
+              let goal = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("Current Goal - ID: \(goal.goalId), Type: \(goal.type)")
+        if let category = goal.category {
+            print("CategoryId: \(category.categoryId), Name: \(category.name)")
+        }
+        
+        return goal
     }
     
     /// PDF 문서 등록
@@ -377,5 +411,188 @@ extension APIClient {
             print("S3 Upload Error: \(error)")
             throw APIError.networkError(error)
         }
+    }
+}
+
+extension APIClient {
+    /// 유저 계정정보 조회
+    func fetchUserAccountInfo() async throws -> UserAccountInfoData {
+        let response: APIResponse<UserAccountInfoData> = try await request(
+            endpoint: "/api/v1/users/account-info",
+            method: .get,
+            requiresAuth: true
+        )
+        
+        guard response.code == "OK",
+              let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("User account info fetched - Provider: \(data.socialProvider), Email: \(data.email)")
+        return data
+    }
+}
+
+extension APIClient {
+    // GET - 알림 설정 조회
+    func fetchNotificationSettings() async throws -> UserNotificationSettingsData {
+        let response: APIResponse<UserNotificationSettingsData> = try await request(
+            endpoint: "/api/v1/users/settings",
+            method: .get,
+            requiresAuth: true
+        )
+        
+        guard response.code == "OK",
+              let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("✅ Notification settings fetched - pushEnabled: \(data.pushEnabled)")
+        return data
+    }
+    
+    // PATCH - 알림 설정 업데이트
+    func updateNotificationSetting(pushEnabled: Bool) async throws {
+        let requestBody = UpdateNotificationSettingRequest(pushEnabled: pushEnabled)
+        
+        let response: APIResponse<EmptyData> = try await request(
+            endpoint: "/api/v1/users/settings",
+            method: .patch,
+            body: requestBody,
+            requiresAuth: true
+        )
+        
+        guard response.code == "OK" else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("Notification setting updated - pushEnabled: \(pushEnabled)")
+    }
+    
+    /// 퀴즈풀이, 요약글 생성 여부 확인
+    func fetchUserQuizStatus() async throws -> UserQuizStatusData {
+        let response: APIResponse<UserQuizStatusData> = try await request(
+            endpoint: "/api/v1/user-quizzes/status",
+            method: .get,
+            requiresAuth: true
+        )
+        
+        print("fetchUserQuizStatus - Response code: \(response.code)")
+        print("fetchUserQuizStatus - Response data: \(String(describing: response.data))")
+        
+        guard response.code == "OK",
+              let statusData = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("Quiz Status - hasSolvedToday: \(statusData.hasSolvedToday)")
+        print("Quiz Status - isFirstTime: \(statusData.isFirstTime)")
+        print("Quiz Status - hasCreatedToday: \(statusData.hasCreatedToday)")
+        
+        return statusData
+    }
+    
+    /// 오늘의 카테고리 자료(요약글) 조회하기
+    func fetchDailyCategoryDocument(categoryId: Int) async throws -> CategoryDocumentData {
+        let response: APIResponse<CategoryDocumentData> = try await request(
+            endpoint: "/api/v1/categories/\(categoryId)/documents/daily",
+            method: .get,
+            requiresAuth: true
+        )
+        
+        print("fetchDailyCategoryDocument - Response code: \(response.code)")
+        print("fetchDailyCategoryDocument - CategoryId: \(categoryId)")
+        print("etchDailyCategoryDocument - Response data: \(String(describing: response.data))")
+        
+        guard response.code == "OK",
+              let documentData = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("Category Document - documentId: \(documentData.documentId)")
+        print("Category Document - hasSolvedToday: \(documentData.hasSolvedToday)")
+        print("Category Document - isFirstTime: \(documentData.isFirstTime)")
+        print("Category Document - content length: \(documentData.content.count) characters")
+        
+        return documentData
+    }
+    
+    /// PDF(요약글) 조회하기
+    func fetchDailyPDFSummary(goalId: Int, documentId: Int) async throws -> PDFSummaryData {
+        let response: APIResponse<PDFSummaryData> = try await request(
+            endpoint: "/api/v1/goals/\(goalId)/documents/\(documentId)/summary",
+            method: .get,
+            requiresAuth: true
+        )
+        
+        print("fetchDailyPDFSummary - Response code: \(response.code)")
+        print("fetchDailyPDFSummary - GoalId: \(goalId), DocumentId: \(documentId)")
+        print("fetchDailyPDFSummary - Response data: \(String(describing: response.data))")
+        
+        guard response.code == "OK",
+              let summaryData = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("PDF Summary - documentId: \(summaryData.documentId)")
+        print("PDF Summary - fileName: \(summaryData.fileName)")
+        print("PDF Summary - status: \(summaryData.status)")
+        print("PDF Summary - hasSolvedToday: \(summaryData.hasSolvedToday)")
+        print("PDF Summary - summary length: \(summaryData.summary.count) characters")
+        
+        return summaryData
+    }
+    
+    /// 유저퀴즈 조회
+    func fetchUserQuizzes(documentId: Int, documentType: DocumentType) async throws -> [UserQuiz] {
+        let response: APIResponse<UserQuizData> = try await request(
+            endpoint: "/api/v1/user-quizzes?documentId=\(documentId)&documentType=\(documentType.rawValue)",
+            method: .get,
+            requiresAuth: true
+        )
+        
+        print("fetchUserQuizzes - Response code: \(response.code)")
+        print("fetchUserQuizzes - DocumentId: \(documentId), Type: \(documentType.rawValue)")
+        print("fetchUserQuizzes - Response data: \(String(describing: response.data))")
+        
+        guard response.code == "OK",
+              let quizData = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("User Quizzes - Count: \(quizData.quizzes.count)")
+        quizData.quizzes.forEach { quiz in
+            print("   Quiz ID: \(quiz.quizId), Type: \(quiz.type)")
+        }
+        
+        return quizData.quizzes
     }
 }

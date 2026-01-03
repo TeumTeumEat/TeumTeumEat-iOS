@@ -12,73 +12,84 @@ struct MainTabView: View {
     let store: StoreOf<MainTabFeature>
     
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // 메인 콘텐츠 영역
-            Group {
-                switch store.selectedTab {
-                case .home:
-                    HomeView(store: store.scope(state: \.home, action: \.home))
-                        .background(Color.yellow.opacity(0.2))
-                        .transition(.opacity)
-                case .quiz:
-                    HistoryView(store: store.scope(state: \.quiz, action: \.quiz))
-                        .transition(.opacity)
-                case .register:
-                    RegisterView(store: store.scope(state: \.register, action: \.register))
+        NavigationStack {
+            ZStack(alignment: .bottom) {
+                // 메인 콘텐츠 영역
+                Group {
+                    switch store.selectedTab {
+                    case .home:
+                        HomeView(store: store.scope(state: \.home, action: \.home))
+                            .transition(.opacity)
+                    case .quiz:
+                        HistoryView(store: store.scope(state: \.quiz, action: \.quiz))
+                            .transition(.opacity)
+                    case .register:
+                        RegisterView(store: store.scope(state: \.register, action: \.register))
+                            .transition(.opacity)
+                    }
+                }
+                .animation(.easeInOut(duration: 0.2), value: store.selectedTab)
+                
+                // 어두운 배경
+                if store.isRegisterMenuExpanded {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            store.send(.toggleRegisterMenu)
+                        }
                         .transition(.opacity)
                 }
-            }
-            .animation(.easeInOut(duration: 0.2), value: store.selectedTab)
-            
-            // 어두운 배경
-            if store.isRegisterMenuExpanded {
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        store.send(.toggleRegisterMenu)
-                    }
-                    .transition(.opacity)
-            }
-            
-            if store.isRegisterMenuExpanded {
-                VStack {
-                    Spacer()
-                    HStack {
-                        RegisterFloatingMenu(
-                            onFileUploadTapped: {
-                                store.send(.registerMenuItemTapped(.fileUpload))
-                            },
-                            onCategoryTapped: {
-                                store.send(.registerMenuItemTapped(.category))
-                            }
-                        )
-                        .padding(.leading, 60)
-                        .padding(.bottom, 34 + 50 + 18)
-                        
+                
+                if store.isRegisterMenuExpanded {
+                    VStack {
                         Spacer()
+                        HStack {
+                            RegisterFloatingMenu(
+                                onFileUploadTapped: {
+                                    store.send(.registerMenuItemTapped(.fileUpload))
+                                },
+                                onCategoryTapped: {
+                                    store.send(.registerMenuItemTapped(.category))
+                                }
+                            )
+                            .padding(.leading, 60)
+                            .padding(.bottom, 34 + 50 + 18)
+                            
+                            Spacer()
+                        }
                     }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+                
+                if store.myPage == nil {
+                    CustomTabBar(
+                        selectedTab: store.selectedTab,
+                        isRegisterMenuExpanded: store.isRegisterMenuExpanded,
+                        onTabSelected: { tab in
+                            store.send(.tabSelected(tab))
+                        },
+                        onRegisterTapped: {
+                            store.send(.toggleRegisterMenu)
+                        }
+                    )
+                    .padding(.horizontal, 60)
+                    .padding(.bottom, 20)
+                }
             }
-            
-            // 커스텀 TabBar
-            if store.home.myPage == nil {
-                CustomTabBar(
-                    selectedTab: store.selectedTab,
-                    isRegisterMenuExpanded: store.isRegisterMenuExpanded,
-                    onTabSelected: { tab in
-                        store.send(.tabSelected(tab))
-                    },
-                    onRegisterTapped: {
-                        store.send(.toggleRegisterMenu)
-                    }
+            .ignoresSafeArea(.keyboard)
+            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: store.isRegisterMenuExpanded)
+            .navigationDestination(
+                isPresented: Binding(
+                    get: { store.myPage != nil },
+                    set: { if !$0 { store.send(.myPage(.delegate(.dismissed))) } }
                 )
-                .padding(.horizontal, 60)
-                .padding(.bottom, 20)
+            ) {
+                if let myPageStore = store.scope(state: \.myPage, action: \.myPage) {
+                    MyPageView(store: myPageStore)
+                }
             }
+            .navigationBarHidden(true)
         }
-        .ignoresSafeArea(.keyboard)
-        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: store.isRegisterMenuExpanded)
         .fullScreenCover(
             isPresented: Binding(
                 get: { store.addSubject != nil },

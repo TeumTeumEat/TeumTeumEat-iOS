@@ -10,6 +10,7 @@ import ComposableArchitecture
 
 struct MyPageView: View {
     let store: StoreOf<MyPageFeature>
+    @Environment(\.scenePhase) private var scenePhase
     
     var body: some View {
         VStack(spacing: 0) {
@@ -70,11 +71,21 @@ struct MyPageView: View {
                     .padding(.top, 20)
                     
                     // 선택된 주제 카드
-                    if let selectedSubject = store.selectedSubject {
+                    if store.isLoadingSubject {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 40)
+                    } else if let selectedSubject = store.selectedSubject {
                         SelectedSubjectCard(subject: selectedSubject)
                             .padding(.horizontal, 20)
                             .padding(.top, 12)
                             .padding(.bottom, 20)
+                    } else {
+                        Text("등록된 학습주제가 없습니다")
+                            .bodyRegular14()
+                            .foregroundColor(.gray)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 40)
                     }
                     
                     // 구분선
@@ -90,11 +101,15 @@ struct MyPageView: View {
                         
                         Spacer()
                         
-                        Toggle("", isOn: Binding(
-                            get: { store.isNotificationEnabled },
-                            set: { store.send(.notificationToggled($0)) }
-                        ))
-                        .labelsHidden()
+                        if store.isLoadingNotificationSetting {
+                            ProgressView()
+                        } else {
+                            Toggle("", isOn: Binding(
+                                get: { store.isNotificationEnabled },
+                                set: { store.send(.notificationToggled($0)) }
+                            ))
+                            .labelsHidden()
+                        }
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 20)
@@ -142,13 +157,19 @@ struct MyPageView: View {
                             .padding(.horizontal, 20)
                             .padding(.top, 20)
                         
-                        AccountInfoCard(
-                            socialLoginType: store.socialLoginType,
-                            email: store.email
-                        )
-                        .padding(.horizontal, 20)
-                        .padding(.top, 12)
-                        .padding(.bottom, 20)
+                        if store.isLoadingAccountInfo {
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 40)
+                        } else {
+                            AccountInfoCard(
+                                socialLoginType: store.socialLoginType,
+                                email: store.email
+                            )
+                            .padding(.horizontal, 20)
+                            .padding(.top, 12)
+                            .padding(.bottom, 20)
+                        }
                     }
                     
                     // 구분선
@@ -229,7 +250,7 @@ struct MyPageView: View {
                                 Spacer()
                                 
                                 Button {
-                                    print("로그아웃 탭")
+                                 store.send(.logoutButtonTapped)
                                 } label: {
                                     Text("로그아웃")
                                         .bodyRegular14()
@@ -257,6 +278,41 @@ struct MyPageView: View {
         }
         .navigationBarHidden(true)
         .toolbar(.hidden, for: .tabBar)
+        .onAppear {
+            store.send(.onAppear)
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            store.send(.scenePhaseChanged(newPhase))
+        }
+        .alert("알림 권한 필요", isPresented: Binding(
+            get: { store.showNotificationSettingsAlert },
+            set: { if !$0 { store.send(.dismissNotificationAlert) } }
+        )) {
+            Button("취소", role: .cancel) {
+                store.send(.dismissNotificationAlert)
+            }
+            Button("설정으로 이동") {
+                store.send(.dismissNotificationAlert)
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+        } message: {
+            Text("알림을 받으려면 설정에서 알림 권한을 허용해주세요.")
+        }
+        .alert("로그아웃", isPresented: Binding(
+            get: { store.showLogoutAlert },
+            set: { if !$0 { store.send(.cancelLogout) } }
+        )) {
+            Button("취소", role: .cancel) {
+                store.send(.cancelLogout)
+            }
+            Button("로그아웃", role: .destructive) {
+                store.send(.confirmLogout)
+            }
+        } message: {
+            Text("정말 로그아웃 하시겠습니까?")
+        }
         .navigationDestination(
             isPresented: Binding(
                 get: { store.subjectList != nil },
