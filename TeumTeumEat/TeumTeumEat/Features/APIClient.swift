@@ -262,8 +262,8 @@ extension APIClient {
             requiresAuth: true
         )
         
-        print("🔍 Response code: \(response.code)")
-           print("🔍 Response data: \(String(describing: response.data))")
+        print("Response code: \(response.code)")
+        print("Response data: \(String(describing: response.data))")
         
         guard response.code == "OK",
               let data = response.data else {
@@ -493,7 +493,7 @@ extension APIClient {
             )
         }
         
-        print("✅ Notification settings fetched - pushEnabled: \(data.pushEnabled)")
+        print("Notification settings fetched - pushEnabled: \(data.pushEnabled)")
         return data
     }
     
@@ -663,6 +663,29 @@ extension APIClient {
         print("   Correct Answer: \(data.correctAnswer)")
         print("   Explanation: \(data.explanation)")
         
+        return data
+    }
+    
+    /// 주제별 히스토리 내역 확인
+    func fetchHistoryTopics() async throws -> [HistoryCategoryResponse] {
+        let response: APIResponse<[HistoryCategoryResponse]> = try await request(
+            endpoint: "/api/v1/history/topics",
+            method: .get,
+            requiresAuth: true
+        )
+        
+        print("Response code: \(response.code)")
+        
+        guard response.code == "OK",
+              let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("History topics fetched successfully - Category Count: \(data.count)")
         return data
     }
 }
