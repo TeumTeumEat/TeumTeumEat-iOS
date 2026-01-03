@@ -10,6 +10,7 @@ import ComposableArchitecture
 
 struct MyPageView: View {
     let store: StoreOf<MyPageFeature>
+    @Environment(\.scenePhase) private var scenePhase
     
     var body: some View {
         VStack(spacing: 0) {
@@ -100,11 +101,15 @@ struct MyPageView: View {
                         
                         Spacer()
                         
-                        Toggle("", isOn: Binding(
-                            get: { store.isNotificationEnabled },
-                            set: { store.send(.notificationToggled($0)) }
-                        ))
-                        .labelsHidden()
+                        if store.isLoadingNotificationSetting {
+                            ProgressView()
+                        } else {
+                            Toggle("", isOn: Binding(
+                                get: { store.isNotificationEnabled },
+                                set: { store.send(.notificationToggled($0)) }
+                            ))
+                            .labelsHidden()
+                        }
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 20)
@@ -274,8 +279,27 @@ struct MyPageView: View {
         .navigationBarHidden(true)
         .toolbar(.hidden, for: .tabBar)
         .onAppear {
-             store.send(.onAppear)
-         }
+            store.send(.onAppear)
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            store.send(.scenePhaseChanged(newPhase))
+        }
+        .alert("알림 권한 필요", isPresented: Binding(
+            get: { store.showNotificationSettingsAlert },
+            set: { if !$0 { store.send(.dismissNotificationAlert) } }
+        )) {
+            Button("취소", role: .cancel) {
+                store.send(.dismissNotificationAlert)
+            }
+            Button("설정으로 이동") {
+                store.send(.dismissNotificationAlert)
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+        } message: {
+            Text("알림을 받으려면 설정에서 알림 권한을 허용해주세요.")
+        }
         .navigationDestination(
             isPresented: Binding(
                 get: { store.subjectList != nil },

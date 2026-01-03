@@ -11,6 +11,7 @@ import ComposableArchitecture
 
 import Foundation
 
+import UIKit
 @Reducer
 struct MyPageFeature {
     @ObservableState
@@ -21,6 +22,8 @@ struct MyPageFeature {
         var appSettings: AppSettingsFeature.State?
         var isLoadingSubject: Bool = false
         var isLoadingAccountInfo: Bool = false
+        var isLoadingNotificationSetting: Bool = false
+        var showNotificationSettingsAlert: Bool = false
         
         // 계정 정보
         var socialLoginType: SocialLoginType = .apple
@@ -29,12 +32,19 @@ struct MyPageFeature {
     
     enum Action {
         case onAppear
+        case scenePhaseChanged(ScenePhase)
         case selectedSubjectResponse(Result<Subject?, Error>)
         case accountInfoResponse(Result<UserAccountInfoData, Error>)
+        case notificationSettingsResponse(Result<UserNotificationSettingsData, Error>)
         case closeTapped
         case viewAllSubjectsTapped
         case viewAppSettingsTapped
         case notificationToggled(Bool)
+        case updateNotificationSettingResponse(Result<Void, Error>)
+        case checkSystemNotificationStatus
+        case systemNotificationStatusChecked(UNAuthorizationStatus)
+        case openNotificationSettings
+        case dismissNotificationAlert
         case subjectList(SubjectListFeature.Action)
         case appSettings(AppSettingsFeature.Action)
         case delegate(Delegate)
@@ -52,9 +62,10 @@ struct MyPageFeature {
             case .onAppear:
                 state.isLoadingSubject = true
                 state.isLoadingAccountInfo = true
+                state.isLoadingNotificationSetting = true
                 
                 return .run { send in
-                    // 병렬로 두 API 호출
+                    // 병렬로 세 API 호출
                     async let goalsTask: Void = {
                         do {
                             let goals = try await apiClient.fetchGoals()
@@ -74,9 +85,19 @@ struct MyPageFeature {
                         }
                     }()
                     
-                    // 두 작업 모두 완료 대기
+                    async let notificationSettingsTask: Void = {
+                        do {
+                            let settings = try await apiClient.fetchNotificationSettings()
+                            await send(.notificationSettingsResponse(.success(settings)))
+                        } catch {
+                            await send(.notificationSettingsResponse(.failure(error)))
+                        }
+                    }()
+                    
+                    // 세 작업 모두 완료 대기
                     await goalsTask
                     await accountInfoTask
+                    await notificationSettingsTask
                 }
                 
             case .selectedSubjectResponse(.success(let subject)):
@@ -86,26 +107,144 @@ struct MyPageFeature {
                 
             case .selectedSubjectResponse(.failure(let error)):
                 state.isLoadingSubject = false
-                print("Failed to load selected subject: \(error)")
+                print("❌ Failed to load selected subject: \(error)")
                 return .none
                 
             case .accountInfoResponse(.success(let accountInfo)):
                 state.isLoadingAccountInfo = false
                 state.email = accountInfo.email
                 
-                // API 응답 "APPLE" or "KAKAO" -> SocialLoginType 변환
                 if let loginType = SocialLoginType(from: accountInfo.socialProvider) {
                     state.socialLoginType = loginType
-                    print("Account info loaded - Type: \(loginType.rawValue), Email: \(accountInfo.email)")
+                    print("✅ Account info loaded - Type: \(loginType.rawValue), Email: \(accountInfo.email)")
                 } else {
-                    // 알 수 없는 provider인 경우 기본값 유지
-                    print("Unknown social provider: \(accountInfo.socialProvider), using default")
+                    print("⚠️ Unknown social provider: \(accountInfo.socialProvider)")
                 }
                 return .none
                 
             case .accountInfoResponse(.failure(let error)):
                 state.isLoadingAccountInfo = false
-                print("Failed to load account info: \(error)")
+                print("❌ Failed to load account info: \(error)")
+                return .none
+                
+            case .notificationSettingsResponse(.success(let settings)):
+                state.isLoadingNotificationSetting = false
+                state.isNotificationEnabled = settings.pushEnabled
+                print("✅ Notification settings loaded - pushEnabled: \(settings.pushEnabled)")
+                return .none
+                
+            case .notificationSettingsResponse(.failure(let error)):
+                state.isLoadingNotificationSetting = false
+                print("❌ Failed to load notification settings: \(error)")
+                return .none
+                
+            case .notificationToggled(let shouldEnable):
+                if shouldEnable {
+                    // ON으로 켜려고 할 때
+                    return .run { send in
+                        let status = await checkNotificationPermission()
+                        
+                        switch status {
+                        case .authorized:
+                            // 권한 있음 → 바로 서버 업데이트
+                            do {
+                                try await apiClient.updateNotificationSetting(pushEnabled: true)
+                                await send(.updateNotificationSettingResponse(.success(())))
+                            } catch {
+                                await send(.updateNotificationSettingResponse(.failure(error)))
+                            }
+                            
+                        case .denied:
+                            // 권한 없음 → 설정 유도 Alert
+                            await send(.openNotificationSettings)
+                            
+                        case .notDetermined:
+                            // 권한 요청
+                            do {
+                                let granted = try await UNUserNotificationCenter.current()
+                                    .requestAuthorization(options: [.alert, .sound, .badge])
+                                
+                                if granted {
+                                    try await apiClient.updateNotificationSetting(pushEnabled: true)
+                                    await send(.updateNotificationSettingResponse(.success(())))
+                                } else {
+                                    await send(.updateNotificationSettingResponse(.failure(
+                                        NSError(domain: "Notification", code: -1, userInfo: [NSLocalizedDescriptionKey: "권한 거부됨"])
+                                    )))
+                                }
+                            } catch {
+                                await send(.updateNotificationSettingResponse(.failure(error)))
+                            }
+                            
+                        default:
+                            await send(.updateNotificationSettingResponse(.failure(
+                                NSError(domain: "Notification", code: -1, userInfo: [NSLocalizedDescriptionKey: "알 수 없는 권한 상태"])
+                            )))
+                        }
+                    }
+                } else {
+                    // OFF로 끄려고 할 때
+                    return .run { send in
+                        do {
+                            try await apiClient.updateNotificationSetting(pushEnabled: false)
+                            await send(.updateNotificationSettingResponse(.success(())))
+                        } catch {
+                            await send(.updateNotificationSettingResponse(.failure(error)))
+                        }
+                    }
+                }
+                
+            case .updateNotificationSettingResponse(.success):
+                // 서버 업데이트 성공 → 서버에서 다시 가져오기
+                return .run { send in
+                    do {
+                        let settings = try await apiClient.fetchNotificationSettings()
+                        await send(.notificationSettingsResponse(.success(settings)))
+                    } catch {
+                        await send(.notificationSettingsResponse(.failure(error)))
+                    }
+                }
+                
+            case .updateNotificationSettingResponse(.failure(let error)):
+                print("❌ Failed to update notification setting: \(error)")
+                return .none
+                
+            case .scenePhaseChanged(let phase):
+                if phase == .active {
+                    // 앱 복귀 시 시스템 권한 체크
+                    return .send(.checkSystemNotificationStatus)
+                }
+                return .none
+                
+            case .checkSystemNotificationStatus:
+                let currentToggleState = state.isNotificationEnabled
+                
+                return .run { send in
+                    let status = await checkNotificationPermission()
+                    await send(.systemNotificationStatusChecked(status))
+                }
+                
+            case .systemNotificationStatusChecked(let status):
+                // 케이스 2 감지: Toggle ON + 시스템 OFF
+                if state.isNotificationEnabled && status != .authorized {
+                    print("⚠️ 케이스 2 감지: Toggle ON이지만 시스템 권한 OFF → 서버 동기화")
+                    return .run { send in
+                        do {
+                            try await apiClient.updateNotificationSetting(pushEnabled: false)
+                            await send(.updateNotificationSettingResponse(.success(())))
+                        } catch {
+                            await send(.updateNotificationSettingResponse(.failure(error)))
+                        }
+                    }
+                }
+                return .none
+                
+            case .openNotificationSettings:
+                state.showNotificationSettingsAlert = true
+                return .none
+                
+            case .dismissNotificationAlert:
+                state.showNotificationSettingsAlert = false
                 return .none
                 
             case .viewAllSubjectsTapped:
@@ -114,11 +253,6 @@ struct MyPageFeature {
                 
             case .viewAppSettingsTapped:
                 state.appSettings = AppSettingsFeature.State()
-                return .none
-                
-            case .notificationToggled(let isEnabled):
-                state.isNotificationEnabled = isEnabled
-                print("알림 설정: \(isEnabled)")
                 return .none
                 
             case .subjectList(.delegate(.subjectSelected(let subject))):
@@ -153,6 +287,14 @@ struct MyPageFeature {
         .ifLet(\.appSettings, action: \.appSettings) {
             AppSettingsFeature()
         }
+    }
+}
+
+// MARK: - Helper Functions
+extension MyPageFeature {
+    private func checkNotificationPermission() async -> UNAuthorizationStatus {
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        return settings.authorizationStatus
     }
 }
 

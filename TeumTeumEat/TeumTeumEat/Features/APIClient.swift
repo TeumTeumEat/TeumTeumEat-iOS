@@ -408,3 +408,49 @@ extension APIClient {
         return data
     }
 }
+
+extension APIClient {
+    // GET - 알림 설정 조회
+    func fetchNotificationSettings() async throws -> UserNotificationSettingsData {
+        let response: APIResponse<UserNotificationSettingsData> = try await request(
+            endpoint: "/api/v1/users/settings",
+            method: .get,
+            requiresAuth: true
+        )
+        
+        guard response.code == "OK",
+              let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("✅ Notification settings fetched - pushEnabled: \(data.pushEnabled)")
+        return data
+    }
+    
+    // PATCH - 알림 설정 업데이트
+    func updateNotificationSetting(pushEnabled: Bool) async throws {
+        let requestBody = UpdateNotificationSettingRequest(pushEnabled: pushEnabled)
+        
+        let response: APIResponse<EmptyData> = try await request(
+            endpoint: "/api/v1/users/settings",
+            method: .patch,
+            body: requestBody,
+            requiresAuth: true
+        )
+        
+        guard response.code == "OK" else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("Notification setting updated - pushEnabled: \(pushEnabled)")
+    }
+}
+
