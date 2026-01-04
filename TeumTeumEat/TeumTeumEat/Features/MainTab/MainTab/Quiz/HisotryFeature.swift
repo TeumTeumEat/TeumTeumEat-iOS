@@ -27,6 +27,9 @@ struct HistoryFeature {
         
         var selectedDateHistoryItems: [HistoryItemResponse] = []
         var selectedDateString: String?
+        
+        var topicCategories: [HistoryCategoryResponse] = []
+        var isLoadingTopics: Bool = false
     }
     
     enum Action {
@@ -37,6 +40,8 @@ struct HistoryFeature {
         case dateSelected(String?)
         case calendarDataLoaded(Result<CalendarHistoryData, Error>)
         case historyItemsLoaded(Result<[HistoryItemResponse], Error>)
+        case fetchTopicHistories
+        case topicHistoriesLoaded(Result<[HistoryCategoryResponse], Error>)
         case delegate(Delegate)
     }
     
@@ -59,7 +64,13 @@ struct HistoryFeature {
                  
              case .tabSelected(let index):
                  state.selectedTab = index
+                 
+                 // 주제별 탭으로 전환 시 데이터 로드
+                 if index == 1 && state.topicCategories.isEmpty {
+                     return .send(.fetchTopicHistories)
+                 }
                  return .none
+                 
                  
              case .monthChanged(let year, let month):
                  state.currentYear = year
@@ -113,6 +124,28 @@ struct HistoryFeature {
                   print("❌ Failed to load history items: \(error)")
                   state.selectedDateHistoryItems = []
                   return .none
+                 
+             case .fetchTopicHistories:
+                 state.isLoadingTopics = true
+                 return .run { send in
+                     await send(.topicHistoriesLoaded(
+                        Result {
+                            try await apiClient.fetchHistoryTopics()
+                        }
+                     ))
+                 }
+                 
+             case .topicHistoriesLoaded(.success(let categories)):
+                 state.isLoadingTopics = false
+                 state.topicCategories = categories
+                 print("✅ Topic histories loaded: \(categories.count) categories")
+                 return .none
+                 
+             case .topicHistoriesLoaded(.failure(let error)):
+                 state.isLoadingTopics = false
+                 print("❌ Failed to load topic histories: \(error)")
+                 return .none
+
                  
              case .delegate:
                  return .none
@@ -199,67 +232,36 @@ struct HistoryView: View {
                             case 1:
                                 // 주제별
                                 VStack(spacing: 16) {
-                                    ExpandableSummaryRow(
-                                        categories: ["앱 개발자", "Swift", "SwiftUI"],
-                                        items: [
-                                            QuizHistoryItem(
-                                                id: "1",
-                                                title: "SwiftUI 레이아웃 기초",
-                                                dateText: "1월 2일 목요일",
-                                                isStreak: true
-                                            ),
-                                            QuizHistoryItem(
-                                                id: "2",
-                                                title: "State와 Binding 이해하기",
-                                                dateText: "1월 1일 수요일",
-                                                isStreak: true
-                                            ),
-                                            QuizHistoryItem(
-                                                id: "3",
-                                                title: "View Modifier 활용",
-                                                dateText: "12월 30일 월요일",
-                                                isStreak: false
-                                            )
-                                        ],
-                                        onItemTapped: { item in
-                                            print("선택된 항목: \(item.title)")
-                                        }
-                                    )
-                                    
-                                    ExpandableSummaryRow(
-                                        categories: ["앱 개발자", "iOS", "UIKit"],
-                                        items: [
-                                            QuizHistoryItem(
-                                                id: "4",
-                                                title: "UIViewController 생명주기",
-                                                dateText: "12월 28일 토요일",
-                                                isStreak: false
-                                            )
-                                        ],
-                                        onItemTapped: { item in
-                                            print("선택된 항목: \(item.title)")
-                                        }
-                                    )
-                                    
-                                    ExpandableSummaryRow(
-                                        categories: ["CS", "알고리즘", "정렬"],
-                                        items: [
-                                            QuizHistoryItem(
-                                                id: "5",
-                                                title: "퀵소트 구현하기",
-                                                dateText: "12월 25일 수요일",
-                                                isStreak: false
-                                            )
-                                        ],
-                                        onItemTapped: { item in
-                                            print("선택된 항목: \(item.title)")
-                                        }
-                                    )
-                                }
-                                .padding(.horizontal, 18)
-                                .padding(.top, 20)
-                                .padding(.bottom, 120)
-                                
+                                     if store.isLoadingTopics {
+                                         ProgressView()
+                                             .frame(maxWidth: .infinity, maxHeight: 300)
+                                     } else if store.topicCategories.isEmpty {
+                                         Text("주제별 히스토리가 없습니다")
+                                             .foregroundColor(.gray)
+                                             .frame(maxWidth: .infinity, maxHeight: 300)
+                                     } else {
+                                         ForEach(store.topicCategories) { category in
+                                             ExpandableSummaryRow(
+                                                 categories: [category.categoryName],
+                                                 items: category.histories.map { history in
+                                                     QuizHistoryItem(
+                                                        id: "\(history.id)",
+                                                        title: history.title,
+                                                        dateText: formatDate(history.lastStudiedAt),
+                                                        summarySnippet: history.summarySnippet,
+                                                        isStreak: false
+                                                     )
+                                                 },
+                                                 onItemTapped: { item in
+                                                     print("선택된 항목: \(item.title)")
+                                                 }
+                                             )
+                                         }
+                                     }
+                                 }
+                                 .padding(.horizontal, 18)
+                                 .padding(.top, 20)
+                                 .padding(.bottom, 120)
                             default:
                                 EmptyView()
                             }
@@ -273,6 +275,20 @@ struct HistoryView: View {
                 store.send(.onAppear)
             }
         }
+    }
+    
+    private func formatDate(_ isoString: String) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        guard let date = formatter.date(from: isoString) else {
+            return isoString
+        }
+        
+        let displayFormatter = DateFormatter()
+        displayFormatter.dateFormat = "MM.dd"
+        
+        return displayFormatter.string(from: date)
     }
 }
 

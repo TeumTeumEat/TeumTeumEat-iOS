@@ -284,67 +284,67 @@ extension APIClient {
     /// 현재  목표 목록 조회
     func fetchCurrentGoal() async throws -> GoalResponse {
 //        let mockGoal = GoalResponse(
-//               goalId: 1172,
+//               goalId: 1175,
 //               type: "CATEGORY",
 //               startDate: "2026-01-04",
-//               endDate: "2026-02-01",
-//               studyPeriod: "4주",
+//               endDate: "2026-01-18",
+//               studyPeriod: "2주",
 //               difficulty: "MEDIUM",
 //               prompt: nil,
 //               fileName: nil,
 //               category: CategoryInfo(
-//                   categoryId: 1,
-//                   name: "SwiftUI",
-//                   path: "/IT/앱개발자/iOS",
+//                   categoryId: 104,
+//                   name: "데이터 타입",
+//                   path: "/IT/데이터베이스/Redis/Caching",
 //                   description: ""
 //               ),
 //               documentId: nil
 //           )
         
-        let mockGoal = GoalResponse(
-            goalId: 1174,
-            type: "DOCUMENT",
-            startDate: "2025-12-31",
-            endDate: "2026-01-07",
-            studyPeriod: "1주",
-            difficulty: "MEDIUM",
-            prompt: "ㅋㅋㅋㅋㅋㅋ\n\n\n\n",
-            fileName: "sample.pdf",
-            category: nil,
-            documentId: 133
-        )
-           
-           print("⚠️ [MOCK] fetchCurrentGoal - Mock 데이터 반환 중")
-           print("Current Goal - ID: \(mockGoal.goalId), Type: \(mockGoal.type)")
-           if let category = mockGoal.category {
-               print("CategoryId: \(category.categoryId), Name: \(category.name)")
-           }
-           
-           return mockGoal
-//        let response: APIResponse<GoalResponse> = try await request(
-//            endpoint: "/api/v1/users/goal",
-//            method: .get,
-//            requiresAuth: true
+//        let mockGoal = GoalResponse(
+//            goalId: 1174,
+//            type: "DOCUMENT",
+//            startDate: "2025-12-31",
+//            endDate: "2026-01-07",
+//            studyPeriod: "1주",
+//            difficulty: "MEDIUM",
+//            prompt: "ㅋㅋㅋㅋㅋㅋ\n\n\n\n",
+//            fileName: "sample.pdf",
+//            category: nil,
+//            documentId: 133
 //        )
-//        
-//        print("fetchCurrentGoal - Response code: \(response.code)")
-//        print("fetchCurrentGoal - Response data: \(String(describing: response.data))")
-//        
-//        guard response.code == "OK",
-//              let goal = response.data else {
-//            throw APIError.serverError(
-//                code: response.code,
-//                message: response.message,
-//                details: response.details
-//            )
-//        }
-//        
-//        print("Current Goal - ID: \(goal.goalId), Type: \(goal.type)")
-//        if let category = goal.category {
-//            print("CategoryId: \(category.categoryId), Name: \(category.name)")
-//        }
-//        
-//        return goal
+//           
+//           print("⚠️ [MOCK] fetchCurrentGoal - Mock 데이터 반환 중")
+//           print("Current Goal - ID: \(mockGoal.goalId), Type: \(mockGoal.type)")
+//           if let category = mockGoal.category {
+//               print("CategoryId: \(category.categoryId), Name: \(category.name)")
+//           }
+//           
+//           return mockGoal
+        let response: APIResponse<GoalResponse> = try await request(
+            endpoint: "/api/v1/users/goal",
+            method: .get,
+            requiresAuth: true
+        )
+        
+        print("fetchCurrentGoal - Response code: \(response.code)")
+        print("fetchCurrentGoal - Response data: \(String(describing: response.data))")
+        
+        guard response.code == "OK",
+              let goal = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("Current Goal - ID: \(goal.goalId), Type: \(goal.type)")
+        if let category = goal.category {
+            print("CategoryId: \(category.categoryId), Name: \(category.name)")
+        }
+        
+        return goal
     }
     
     /// PDF 문서 등록
@@ -787,6 +787,27 @@ extension APIClient {
         print("Summary fetched: \(data.title) (Date: \(date))")
         return data
     }
+    
+    /// 현재 목표 업데이트 (선택한 목표로 변경)
+        func updateCurrentGoal(goalId: Int) async throws {
+            let response: APIResponse<EmptyData> = try await request(
+                endpoint: "/api/v1/users/goal?goalId=\(goalId)",
+                method: .patch,
+                requiresAuth: true
+            )
+            
+            print("updateCurrentGoal - Response code: \(response.code)")
+            
+            guard response.code == "OK" else {
+                throw APIError.serverError(
+                    code: response.code,
+                    message: response.message,
+                    details: response.details
+                )
+            }
+            
+            print("Current goal updated successfully - goalId: \(goalId)")
+        }
 }
 
 

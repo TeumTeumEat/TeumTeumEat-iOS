@@ -7,12 +7,13 @@
 
 import Foundation
 
-struct HistoryCategoryResponse: Decodable {
+struct HistoryCategoryResponse: Decodable, Equatable, Identifiable {
+    var id: String { categoryName }
     let categoryName: String
     let histories: [HistoryItemResponse]
 }
 
-struct HistoryItemResponse: Decodable, Equatable {
+struct HistoryItemResponse: Decodable, Equatable, Identifiable {
     let id: Int
     let type: String
     let title: String

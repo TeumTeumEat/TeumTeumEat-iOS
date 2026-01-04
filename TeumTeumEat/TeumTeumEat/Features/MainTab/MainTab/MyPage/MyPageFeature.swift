@@ -73,8 +73,8 @@ struct MyPageFeature {
                     // 병렬로 세 API 호출
                     async let goalsTask: Void = {
                         do {
-                            let goals = try await apiClient.fetchGoals()
-                            let selectedSubject = goals.first.map { Subject(from: $0) }
+                            let goal = try await apiClient.fetchCurrentGoal()
+                            let selectedSubject = Subject(from: goal)
                             await send(.selectedSubjectResponse(.success(selectedSubject)))
                         } catch {
                             await send(.selectedSubjectResponse(.failure(error)))
@@ -436,6 +436,7 @@ struct AccountInfoCard: View {
 extension Subject {
     init(from goal: GoalResponse) {
         self.id = "\(goal.goalId)"
+        self.goalId = goal.goalId
         
         // 이름 결정
         if goal.type == "CATEGORY", let category = goal.category {

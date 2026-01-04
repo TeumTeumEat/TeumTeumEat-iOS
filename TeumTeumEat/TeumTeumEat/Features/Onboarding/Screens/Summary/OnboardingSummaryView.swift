@@ -212,50 +212,70 @@ struct ExpandableSummaryRow: View {
             
             // 확장된 항목들 - 달력 셀 스타일
             if isExpanded {
-                VStack(spacing: 12) {
+                VStack(spacing: 8) {
                     ForEach(items) { item in
                         Button(action: {
                             onItemTapped(item)
                         }) {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text(item.dateText)
-                                    .font(.system(size: 16, weight: .bold))
-                                
-                                HStack(spacing: 16) {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundColor(.blue)
-                                        Text("퀴즈 완료")
-                                            .font(.system(size: 14))
-                                            .foregroundColor(.gray)
-                                    }
+                            VStack(alignment: .leading, spacing: 8) {
+                                // 상단: 타이틀 + 날짜
+                                HStack(alignment: .top, spacing: 8) {
+                                    Text(item.title)
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(Color(hex: "333333"))
+                                        .lineLimit(2)
                                     
-                                    if item.isStreak {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "flame.fill")
-                                                .foregroundColor(.orange)
-                                            Text("연속 달성")
-                                                .font(.system(size: 14))
-                                                .foregroundColor(.gray)
-                                        }
-                                    }
+                                    Spacer()
+                                    
+                                    Text(formatDate(item.dateText))
+                                        .font(.system(size: 13, weight: .regular))
+                                        .foregroundColor(Color(hex: "999999"))
                                 }
                                 
-                                Text(item.title)
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.gray)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                // 하단: 요약 스니펫
+                                Text(item.summarySnippet)
+                                    .font(.system(size: 13, weight: .regular))
+                                    .foregroundColor(Color(hex: "666666"))
+                                    .lineLimit(3)
+                                    .multilineTextAlignment(.leading)
                             }
-                            .padding(16)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color(hex: "EAF4FF"))
-                            .cornerRadius(12)
+                            .background(Color(hex: "F8F9FA"))
+                            .cornerRadius(8)
                         }
                     }
                 }
-                .padding(.top, 12)
+                .padding(.horizontal, 4)
+                .padding(.top, 8)
             }
         }
+    }
+    
+    private func formatDate(_ dateString: String) -> String {
+        let inputFormatter = DateFormatter()
+        inputFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"
+        
+        let outputFormatter = DateFormatter()
+        outputFormatter.locale = Locale(identifier: "ko_KR")
+        outputFormatter.dateFormat = "M월 d일"
+        
+        if let date = inputFormatter.date(from: dateString) {
+            return outputFormatter.string(from: date)
+        }
+        
+        // 파싱 실패 시 앞부분만 잘라서 표시
+        if dateString.count >= 10 {
+            let dateOnly = String(dateString.prefix(10)) // "2026-01-04"
+            let fallbackFormatter = DateFormatter()
+            fallbackFormatter.dateFormat = "yyyy-MM-dd"
+            if let date = fallbackFormatter.date(from: dateOnly) {
+                return outputFormatter.string(from: date)
+            }
+        }
+        
+        return dateString
     }
 }
 
@@ -263,5 +283,6 @@ struct QuizHistoryItem: Identifiable {
     let id: String
     let title: String
     let dateText: String
+    let summarySnippet: String
     var isStreak: Bool = false // 연속 달성 여부
 }
