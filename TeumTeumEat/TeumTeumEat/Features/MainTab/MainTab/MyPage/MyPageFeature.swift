@@ -25,6 +25,7 @@ struct MyPageFeature {
         var isLoadingNotificationSetting: Bool = false
         var showNotificationSettingsAlert: Bool = false
         var showLogoutAlert: Bool = false
+        var showWithdrawalAlert: Bool = false
         
         // 계정 정보
         var socialLoginType: SocialLoginType = .apple
@@ -51,11 +52,16 @@ struct MyPageFeature {
         case logoutButtonTapped
         case confirmLogout
         case cancelLogout
+        case withdrawalButtonTapped
+        case confirmWithdrawal
+        case cancelWithdrawal
+        case withdrawalResponse(Result<Void, Error>)
         case delegate(Delegate)
         
         enum Delegate {
             case dismissed
             case logout
+            case withdrawal
         }
     }
     
@@ -295,6 +301,37 @@ struct MyPageFeature {
             case .cancelLogout:
                 print("로그아웃 취소됨")
                 state.showLogoutAlert = false
+                return .none
+                
+            case .withdrawalButtonTapped:
+                print("회원탈퇴 버튼 탭됨 - Alert 표시")
+                state.showWithdrawalAlert = true
+                return .none
+                
+            case .confirmWithdrawal:
+                print("회원탈퇴 확인됨 - API 호출")
+                state.showWithdrawalAlert = false
+                return .run { send in
+                    do {
+                        try await apiClient.withdrawUser()
+                        await send(.withdrawalResponse(.success(())))
+                    } catch {
+                        await send(.withdrawalResponse(.failure(error)))
+                    }
+                }
+                
+            case .cancelWithdrawal:
+                print("회원탈퇴 취소됨")
+                state.showWithdrawalAlert = false
+                return .none
+                
+            case .withdrawalResponse(.success):
+                print("✅ 회원탈퇴 성공")
+                return .send(.delegate(.withdrawal))
+                
+            case .withdrawalResponse(.failure(let error)):
+                print("❌ 회원탈퇴 실패: \(error)")
+                // TODO: 에러 Alert 표시
                 return .none
                 
             case .delegate:

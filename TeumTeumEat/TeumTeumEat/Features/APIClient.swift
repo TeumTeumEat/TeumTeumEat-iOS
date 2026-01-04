@@ -808,6 +808,27 @@ extension APIClient {
             
             print("Current goal updated successfully - goalId: \(goalId)")
         }
+    
+    /// 회원탈퇴
+        func withdrawUser() async throws {
+            let response: APIResponse<EmptyData> = try await request(
+                endpoint: "/api/v1/users/withdrawal",
+                method: .delete,
+                requiresAuth: true
+            )
+            
+            print("withdrawUser - Response code: \(response.code)")
+            
+            guard response.code == "OK" else {
+                throw APIError.serverError(
+                    code: response.code,
+                    message: response.message,
+                    details: response.details
+                )
+            }
+            
+            print("User withdrawal successful")
+        }
 }
 
 

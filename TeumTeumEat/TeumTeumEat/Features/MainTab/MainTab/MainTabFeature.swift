@@ -48,6 +48,7 @@ struct MainTabFeature {
     
     enum Delegate {
         case logout
+        case withdrawal
     }
     
     enum RegisterMenuItem {
@@ -151,6 +152,9 @@ struct MainTabFeature {
                 print("파일 주제 추가 취소 - Sheet 닫힘")
                 state.addSubjectFile = nil
                 return .none
+            case .myPage(.delegate(.withdrawal)):
+                print("MainTabFeature: 회원탈퇴 요청 받음")
+                return .send(.delegate(.withdrawal))
                 
             case .home, .quiz, .register, .addSubject, .addSubjectFile, .quizFlow, .myPage, .delegate:
                 return .none

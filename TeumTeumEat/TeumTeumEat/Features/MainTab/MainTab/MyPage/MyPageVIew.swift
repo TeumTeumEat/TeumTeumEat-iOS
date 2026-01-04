@@ -258,7 +258,7 @@ struct MyPageView: View {
                                 }
                                 
                                 Button {
-                                    print("탈퇴하기 탭")
+                                    store.send(.withdrawalButtonTapped)
                                 } label: {
                                     Text("탈퇴하기")
                                         .bodyRegular14()
@@ -312,6 +312,19 @@ struct MyPageView: View {
             }
         } message: {
             Text("정말 로그아웃 하시겠습니까?")
+        }
+        .alert("회원탈퇴", isPresented: Binding(
+            get: { store.showWithdrawalAlert },
+            set: { if !$0 { store.send(.cancelWithdrawal) } }
+        )) {
+            Button("취소", role: .cancel) {
+                store.send(.cancelWithdrawal)
+            }
+            Button("탈퇴", role: .destructive) {
+                store.send(.confirmWithdrawal)
+            }
+        } message: {
+            Text("탈퇴 시 모든 학습 데이터가 삭제되며 복구할 수 없습니다. 정말 탈퇴하시겠습니까?")
         }
         .navigationDestination(
             isPresented: Binding(
