@@ -286,6 +286,7 @@ struct AddSubjectView: View {
                 }
             }
         }
+        .colorScheme(.light)
     }
 }
 

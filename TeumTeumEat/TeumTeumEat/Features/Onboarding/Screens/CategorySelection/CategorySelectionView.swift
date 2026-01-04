@@ -32,6 +32,7 @@ struct CategorySelectionView: View {
                 }
             }
         }
+        .colorScheme(.light)
         .onAppear {
             store.send(.onAppear)
         }
@@ -165,7 +166,9 @@ struct MainCategoryStepView: View {
                     .scrollDismissesKeyboard(.interactively)
                 }
             }
+            .background(.white)
         }
+        .colorScheme(.light)
     }
 }
 
@@ -247,7 +250,9 @@ struct SubCategoryStepView: View {
                     .scrollDismissesKeyboard(.interactively)
                 }
             }
+            .background(.white)
         }
+        .colorScheme(.light)
     }
 }
 
@@ -318,7 +323,9 @@ struct DetailCategoryStepView: View {
                     .scrollDismissesKeyboard(.interactively)
                 }
             }
+            .background(.white)
         }
+        .colorScheme(.light)
     }
     
     @ViewBuilder
@@ -332,13 +339,14 @@ struct DetailCategoryStepView: View {
                     size: .large,
                     style: .secondary,
                     isEnabled: true,
-                    foregroundColor: isSelected ? .blue : .primary,
+                    foregroundColor: isSelected ? .blue : .black,
                     borderColor: isSelected ? .blue : .gray.opacity(0.3)
                 ) {
                     store.send(.detailCategorySelected(detailCategory))
                 }
             }
         }
+        .background(.white)
     }
 }
 
@@ -351,7 +359,7 @@ struct CategoryChip: View {
         Button(action: action) {
             Text(text)
                 .font(.system(size: 16, weight: .medium))
-                .foregroundColor(isSelected ? .white : .primary)
+                .foregroundColor(isSelected ? .white : .black)
                 .padding(.horizontal, 20)
                 .padding(.vertical, 12)
                 .background(isSelected ? Color.blue : Color.white)
@@ -436,7 +444,7 @@ struct CategoryGridButton: View {
                 
                 Text(title)
                     .titleSemibold20()
-                    .foregroundColor(isSelected ? .blue : .primary)
+                    .foregroundColor(isSelected ? .blue : .black)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }

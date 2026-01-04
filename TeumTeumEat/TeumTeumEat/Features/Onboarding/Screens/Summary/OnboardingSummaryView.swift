@@ -132,6 +132,7 @@ struct OnboardingSummaryView: View {
                 }
             }
         }
+        .colorScheme(.light)
     }
 }
 
@@ -184,7 +185,7 @@ struct ExpandableSummaryRow: View {
                         ForEach(Array(categories.enumerated()), id: \.offset) { index, category in
                             Text(category)
                                 .font(.system(size: 16))
-                                .foregroundColor(.primary)
+                                .foregroundColor(.black)
                             
                             if index < categories.count - 1 {
                                 Image(systemName: "chevron.right")

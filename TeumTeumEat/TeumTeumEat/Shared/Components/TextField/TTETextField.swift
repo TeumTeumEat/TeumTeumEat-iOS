@@ -42,6 +42,7 @@ struct TTETextField: View {
             // TextField - 중앙 정렬
             TextField(placeholder, text: $text)
                 .multilineTextAlignment(.center)
+                .foregroundColor(.black)
                 .onChange(of: text) { oldValue, newValue in
                     var filteredText = newValue
                     

@@ -92,6 +92,7 @@ struct ContentSummaryView: View {
                 }
             }
         }
+        .background(.white)
         .navigationBarHidden(true)
         .onAppear {
             store.send(.onAppear)

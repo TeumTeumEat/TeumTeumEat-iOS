@@ -281,5 +281,7 @@ struct AddSubjectFileView: View {
                 }
             }
         }
+        .colorScheme(.light)
+      
     }
 }

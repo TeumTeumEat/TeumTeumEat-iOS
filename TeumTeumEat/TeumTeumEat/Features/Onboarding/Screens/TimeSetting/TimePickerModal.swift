@@ -23,7 +23,7 @@ struct TimePickerModal: View {
             HStack {
                 Text(title)
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.primary)
+                    .foregroundColor(.black)
                 
                 Spacer()
                 
@@ -50,12 +50,14 @@ struct TimePickerModal: View {
             )
             .datePickerStyle(.wheel)
             .labelsHidden()
+            .foregroundStyle(.black)
             .environment(\.locale, Locale(identifier: "ko_KR"))
             .padding()
             
             Spacer()
         }
         .background(Color.white)
+        .colorScheme(.light) 
         .onAppear {
             if let time = selectedTime {
                 tempTime = time

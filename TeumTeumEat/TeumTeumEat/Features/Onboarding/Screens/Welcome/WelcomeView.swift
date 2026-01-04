@@ -16,9 +16,11 @@ struct WelcomeView: View {
             VStack(spacing: 0) {
                 Text("매일 소모되는 이동 시간,")
                     .titleSemibold18()
+                    .foregroundStyle(.black)
                 
                 Text("틈틈잇과 함께 성장하는 시간으로 바꿔봐요!")
                     .titleSemibold18()
+                    .foregroundStyle(.black)
             }
             .multilineTextAlignment(.center)
             .padding(.top, 70)
@@ -46,5 +48,6 @@ struct WelcomeView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
         }
+        .background(.white)
     }
 }

@@ -29,6 +29,7 @@ struct MyPageView: View {
                     
                     Text("내 정보")
                         .titleSemibold20()
+                        .foregroundStyle(.black)
                     
                     Spacer()
                     

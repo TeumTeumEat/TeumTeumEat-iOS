@@ -44,6 +44,7 @@ struct OnboardingLoadingView: View {
             .padding(.horizontal, 30)
             .padding(.bottom, 60)
         }
+        .colorScheme(.light)
         .alert($store.scope(state: \.errorAlert, action: \.errorAlert))
         .alert($store.scope(state: \.confirmCancelAlert, action: \.confirmCancelAlert))
         .onAppear {
@@ -85,6 +86,7 @@ struct LoadingStepRow: View {
                     .scaleEffect(0.8)
             }
         }
+        .colorScheme(.light)
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
         .background(Color.white)

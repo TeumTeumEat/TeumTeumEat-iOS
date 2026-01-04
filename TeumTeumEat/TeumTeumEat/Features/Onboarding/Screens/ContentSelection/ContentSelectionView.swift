@@ -88,6 +88,8 @@ struct ContentSelectionView: View {
                     .scrollDismissesKeyboard(.interactively)
                 }
             }
+            .background(.white)
         }
+        .colorScheme(.light)
     }
 }

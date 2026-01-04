@@ -904,7 +904,7 @@ extension APIClient {
     /// 디바이스 토큰 등록
         func registerDeviceToken(token: String, deviceType: String) async throws {
             let response: APIResponse<EmptyData> = try await request(
-                endpoint: "/api/v1/users/device-token",
+                endpoint: "/api/v1/notifications/device-token",
                 method: .post,
                 body: RegisterDeviceTokenRequest(
                     token: token,

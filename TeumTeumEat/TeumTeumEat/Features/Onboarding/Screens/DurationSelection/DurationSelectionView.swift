@@ -75,6 +75,8 @@ struct DurationSelectionView: View {
                     .scrollDismissesKeyboard(.interactively)
                 }
             }
+            .background(.white)
         }
+        .colorScheme(.light)
     }
 }

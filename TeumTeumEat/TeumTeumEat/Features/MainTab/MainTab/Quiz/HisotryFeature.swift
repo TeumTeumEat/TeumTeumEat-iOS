@@ -270,6 +270,7 @@ struct HistoryView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .background(Color.white)
             .navigationBarHidden(true)
             .onAppear {
                 store.send(.onAppear)
@@ -437,6 +438,7 @@ struct HistoryCalendarView: View {
             
             Text(monthYearString)
                 .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(.black)
             
             Button(action: {
                 let newMonth = currentMonth == 12 ? 1 : currentMonth + 1

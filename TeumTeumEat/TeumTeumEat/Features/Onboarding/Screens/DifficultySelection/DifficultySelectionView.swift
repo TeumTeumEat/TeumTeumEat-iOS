@@ -173,6 +173,7 @@ struct DifficultySelectionView: View {
                     }
                 }
             }
+            .background(.white)
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
                 if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
                     keyboardHeight = keyboardFrame.height
@@ -182,6 +183,7 @@ struct DifficultySelectionView: View {
                 keyboardHeight = 0
             }
         }
+        .colorScheme(.light)
     }
 }
 

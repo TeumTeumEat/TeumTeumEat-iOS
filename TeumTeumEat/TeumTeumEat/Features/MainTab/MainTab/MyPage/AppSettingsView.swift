@@ -133,6 +133,7 @@ struct AppSettingsView: View {
                 
                 Text("틈틈잇 사용 설정")
                     .titleSemibold20()
+                    .foregroundStyle(.black)
                 
                 Spacer()
                 
@@ -221,7 +222,7 @@ struct AppSettingsView: View {
             Spacer()
             Text(text)
                 .font(.system(size: 16))
-                .foregroundColor(.primary)
+                .foregroundColor(.black)
             Spacer()
         }
         .padding(.horizontal, 20)
