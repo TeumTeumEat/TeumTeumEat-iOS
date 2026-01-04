@@ -322,6 +322,7 @@ struct HomeView: View {
                     }
                 }
             }
+            .background(Color.white)
             .navigationBarHidden(true)
             .onAppear {
                 store.send(.onAppear)
@@ -353,6 +354,12 @@ struct CharacterImageView: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 180, height: 180)
+                    
+                    Text("오늘의 지식을\n다 먹었어요!")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.black)
+                        .multilineTextAlignment(.center)
+                    
                 } else {
                     // 미완료 시 - 햄버거 + 텍스트
                     Image("hamburger")
@@ -362,7 +369,7 @@ struct CharacterImageView: View {
                     
                     Text("오늘의 냠냠지식이\n도착했어요!")
                         .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.primary)
+                        .foregroundColor(.black)
                         .multilineTextAlignment(.center)
                 }
                 
@@ -407,7 +414,7 @@ struct HomeNavigationBar: View {
                 
                 Text("\(fireCount)")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
+                    .foregroundColor(.black)
             }
             
             Spacer()
@@ -421,7 +428,7 @@ struct HomeNavigationBar: View {
                 
                 Text("\(stampCount)")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
+                    .foregroundColor(.black)
             }
             
             Spacer()

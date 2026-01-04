@@ -829,6 +829,102 @@ extension APIClient {
             
             print("User withdrawal successful")
         }
+    
+    
+    /// 유저 이름 조회
+        func fetchUserName() async throws -> String {
+            let response: APIResponse<UserNameData> = try await request(
+                endpoint: "/api/v1/users/name",
+                method: .get,
+                requiresAuth: true
+            )
+            
+            print("fetchUserName - Response code: \(response.code)")
+            
+            guard response.code == "OK",
+                  let data = response.data else {
+                throw APIError.serverError(
+                    code: response.code,
+                    message: response.message,
+                    details: response.details
+                )
+            }
+            
+            print("User name fetched successfully: \(data.name)")
+            return data.name
+        }
+        
+        /// 출퇴근 정보 조회
+        func fetchCommuteInfo() async throws -> CommuteInfoData {
+            let response: APIResponse<CommuteInfoData> = try await request(
+                endpoint: "/api/v1/users/commute-info",
+                method: .get,
+                requiresAuth: true
+            )
+            
+            print("fetchCommuteInfo - Response code: \(response.code)")
+            
+            guard response.code == "OK",
+                  let data = response.data else {
+                throw APIError.serverError(
+                    code: response.code,
+                    message: response.message,
+                    details: response.details
+                )
+            }
+            
+            print("Commute info fetched successfully")
+            print("   Start: \(data.startTime), End: \(data.endTime), Usage: \(data.usageTime)분")
+            return data
+        }
+    
+    /// 온보딩 완료 여부 조회
+        func fetchOnboardingStatus() async throws -> Bool {
+            let response: APIResponse<OnboardingStatusData> = try await request(
+                endpoint: "/api/v1/users/onboarding-completed",
+                method: .get,
+                requiresAuth: true
+            )
+            
+            print("fetchOnboardingStatus - Response code: \(response.code)")
+            
+            guard response.code == "OK",
+                  let data = response.data else {
+                throw APIError.serverError(
+                    code: response.code,
+                    message: response.message,
+                    details: response.details
+                )
+            }
+            
+            print("Onboarding status fetched: \(data.completed)")
+            return data.completed
+        }
+    
+    /// 디바이스 토큰 등록
+        func registerDeviceToken(token: String, deviceType: String) async throws {
+            let response: APIResponse<EmptyData> = try await request(
+                endpoint: "/api/v1/users/device-token",
+                method: .post,
+                body: RegisterDeviceTokenRequest(
+                    token: token,
+                    deviceType: deviceType
+                ),
+                requiresAuth: true
+            )
+            
+            print("registerDeviceToken - Response code: \(response.code)")
+            
+            guard response.code == "OK" else {
+                throw APIError.serverError(
+                    code: response.code,
+                    message: response.message,
+                    details: response.details
+                )
+            }
+            
+            print("Device token registered successfully")
+        }
 }
 
 

@@ -57,16 +57,36 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         let token = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
         print("APNs Token: \(token)")
         
-        // TODO: FCM 설정 시
-        // Messaging.messaging().apnsToken = deviceToken
-        
-        // TODO: 서버로 토큰 전송
+        // 서버로 토큰 전송
+        Task {
+            do {
+                // APIClient 인스턴스 생성 (또는 싱글톤 사용)
+                let apiClient = APIClient.liveValue
+                
+                try await apiClient.registerDeviceToken(
+                    token: token,
+                    deviceType: "IOS"
+                )
+                
+                print("디바이스 토큰 서버 전송 완료")
+                
+                // 플래그 제거
+                UserDefaults.standard.removeObject(forKey: "shouldRegisterDeviceToken")
+                
+            } catch {
+                print("디바이스 토큰 서버 전송 실패: \(error)")
+                // 실패 시 플래그 유지 (나중에 재시도 가능)
+            }
+        }
     }
     
     // MARK: - Remote Notification 등록 실패
     func application(_ application: UIApplication,
                      didFailToRegisterForRemoteNotificationsWithError error: Error) {
-        print("APNs 등록 실패: \(error.localizedDescription)")
+        print("❌ APNs 등록 실패: \(error.localizedDescription)")
+        
+        // 플래그 제거 (실패했으므로)
+        UserDefaults.standard.removeObject(forKey: "shouldRegisterDeviceToken")
     }
     
     // MARK: - 포그라운드에서 알림 받을 때 (앱 실행 중)

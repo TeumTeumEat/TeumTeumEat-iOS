@@ -12,14 +12,38 @@ import ComposableArchitecture
 struct AppSettingsFeature {
     @ObservableState
     struct State: Equatable {
-        var nickname: String = "재현"
-        var leaveTime: Date = Calendar.current.date(from: DateComponents(hour: 9, minute: 0)) ?? Date()
-        var returnTime: Date = Calendar.current.date(from: DateComponents(hour: 18, minute: 0)) ?? Date()
-        var usageMinutes: Int = 5 // 기본값 5분
+        // 현재 값
+        var nickname: String = ""
+        var leaveTime: Date = Date()
+        var returnTime: Date = Date()
+        var usageMinutes: Int = 5
         
+        // 원본 값 (변경 감지용)
+        var originalNickname: String = ""
+        var originalLeaveTime: Date = Date()
+        var originalReturnTime: Date = Date()
+        var originalUsageMinutes: Int = 5
+        
+        // UI 상태
         var isLeaveTimePickerPresented: Bool = false
         var isReturnTimePickerPresented: Bool = false
         var isUsageTimePickerPresented: Bool = false
+        
+        var isLoading: Bool = false
+        var isSaving: Bool = false
+        var errorMessage: String?
+        
+        // Computed Properties
+        var hasChanges: Bool {
+            nickname != originalNickname ||
+            leaveTime != originalLeaveTime ||
+            returnTime != originalReturnTime ||
+            usageMinutes != originalUsageMinutes
+        }
+        
+        var canSave: Bool {
+            hasChanges && !nickname.isEmpty
+        }
         
         var leaveTimeText: String {
             let formatter = DateFormatter()
@@ -37,6 +61,7 @@ struct AppSettingsFeature {
     }
     
     enum Action {
+        case onAppear
         case backTapped
         case nicknameChanged(String)
         case leaveTimeButtonTapped
@@ -48,22 +73,179 @@ struct AppSettingsFeature {
         case leaveTimePickerDismissed
         case returnTimePickerDismissed
         case usageTimePickerDismissed
+        
+        case saveButtonTapped
+        case userNameResponse(Result<String, Error>)
+        case commuteInfoResponse(Result<CommuteInfoData, Error>)
+        case updateNameResponse(Result<Void, Error>)
+        case updateCommuteResponse(Result<Void, Error>)
+        
         case delegate(Delegate)
         
         enum Delegate {
             case dismissed
         }
     }
-    
+    @Dependency(\.apiClient) var apiClient
+
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
+            // MARK: - onAppear (데이터 로드)
+            case .onAppear:
+                state.isLoading = true
+                state.errorMessage = nil
+                
+                return .run { send in
+                    // 병렬로 두 API 호출
+                    async let nameTask: Void = {
+                        do {
+                            let name = try await apiClient.fetchUserName()
+                            await send(.userNameResponse(.success(name)))
+                        } catch {
+                            await send(.userNameResponse(.failure(error)))
+                        }
+                    }()
+                    
+                    async let commuteTask: Void = {
+                        do {
+                            let commuteInfo = try await apiClient.fetchCommuteInfo()
+                            await send(.commuteInfoResponse(.success(commuteInfo)))
+                        } catch {
+                            await send(.commuteInfoResponse(.failure(error)))
+                        }
+                    }()
+                    
+                    await nameTask
+                    await commuteTask
+                }
+                
+            // MARK: - API 응답 처리
+            case .userNameResponse(.success(let name)):
+                state.nickname = name
+                state.originalNickname = name
+                print("✅ 유저 이름 로드: \(name)")
+                return .none
+                
+            case .userNameResponse(.failure(let error)):
+                state.isLoading = false
+                state.errorMessage = "이름을 불러오는데 실패했습니다"
+                print("❌ 유저 이름 로드 실패: \(error)")
+                return .none
+                
+            case .commuteInfoResponse(.success(let commuteInfo)):
+                state.isLoading = false
+                
+                // "08:00:00" -> Date 변환
+                if let leaveDate = commuteInfo.startTime.toTimeDate() {
+                    state.leaveTime = leaveDate
+                    state.originalLeaveTime = leaveDate
+                }
+                
+                if let returnDate = commuteInfo.endTime.toTimeDate() {
+                    state.returnTime = returnDate
+                    state.originalReturnTime = returnDate
+                }
+                
+                state.usageMinutes = commuteInfo.usageTime
+                state.originalUsageMinutes = commuteInfo.usageTime
+                
+                print("✅ 출퇴근 정보 로드 완료")
+                return .none
+                
+            case .commuteInfoResponse(.failure(let error)):
+                state.isLoading = false
+                state.errorMessage = "출퇴근 정보를 불러오는데 실패했습니다"
+                print("❌ 출퇴근 정보 로드 실패: \(error)")
+                return .none
+                
+            // MARK: - 저장하기
+            case .saveButtonTapped:
+                guard state.canSave else { return .none }
+                
+                state.isSaving = true
+                state.errorMessage = nil
+                
+                var effects: [Effect<Action>] = []
+                
+                // 이름 변경됐으면
+                if state.nickname != state.originalNickname {
+                    effects.append(.run { [nickname = state.nickname] send in
+                        await send(.updateNameResponse(
+                            Result { try await apiClient.updateUserName(name: nickname) }
+                        ))
+                    })
+                }
+                
+                // 출퇴근 정보 변경됐으면
+                if state.leaveTime != state.originalLeaveTime ||
+                   state.returnTime != state.originalReturnTime ||
+                   state.usageMinutes != state.originalUsageMinutes {
+                    
+                    let startTime = state.leaveTime.toString(format: "HH:mm:ss")
+                    let endTime = state.returnTime.toString(format: "HH:mm:ss")
+                    let usageTime = state.usageMinutes
+                    
+                    effects.append(.run { send in
+                        await send(.updateCommuteResponse(
+                            Result {
+                                try await apiClient.updateCommuteInfo(
+                                    startTime: startTime,
+                                    endTime: endTime,
+                                    usageTime: usageTime
+                                )
+                            }
+                        ))
+                    })
+                }
+                
+                return .merge(effects)
+                
+            // MARK: - 업데이트 응답
+            case .updateNameResponse(.success):
+                print("✅ 이름 업데이트 성공")
+                state.originalNickname = state.nickname
+                
+                // 출퇴근도 같이 업데이트 중이 아니면 저장 완료
+                if state.leaveTime == state.originalLeaveTime &&
+                   state.returnTime == state.originalReturnTime &&
+                   state.usageMinutes == state.originalUsageMinutes {
+                    state.isSaving = false
+                    return .send(.delegate(.dismissed))
+                }
+                return .none
+                
+            case .updateNameResponse(.failure(let error)):
+                state.isSaving = false
+                state.errorMessage = "이름 변경에 실패했습니다"
+                print("❌ 이름 업데이트 실패: \(error)")
+                return .none
+                
+            case .updateCommuteResponse(.success):
+                print("✅ 출퇴근 정보 업데이트 성공")
+                state.originalLeaveTime = state.leaveTime
+                state.originalReturnTime = state.returnTime
+                state.originalUsageMinutes = state.usageMinutes
+                
+                // 이름도 같이 업데이트 중이 아니면 저장 완료
+                if state.nickname == state.originalNickname {
+                    state.isSaving = false
+                    return .send(.delegate(.dismissed))
+                }
+                return .none
+                
+            case .updateCommuteResponse(.failure(let error)):
+                state.isSaving = false
+                state.errorMessage = "출퇴근 정보 변경에 실패했습니다"
+                print("❌ 출퇴근 정보 업데이트 실패: \(error)")
+                return .none
+                
+            // MARK: - 기존 액션들
             case .backTapped:
                 return .send(.delegate(.dismissed))
                 
             case .nicknameChanged(let nickname):
                 state.nickname = nickname
-                print("닉네임 변경: \(nickname)")
                 return .none
                 
             case .leaveTimeButtonTapped:
@@ -80,17 +262,14 @@ struct AppSettingsFeature {
                 
             case .leaveTimeChanged(let time):
                 state.leaveTime = time
-                print("출근 시간 변경: \(state.leaveTimeText)")
                 return .none
                 
             case .returnTimeChanged(let time):
                 state.returnTime = time
-                print("퇴근 시간 변경: \(state.returnTimeText)")
                 return .none
                 
             case .usageTimeChanged(let minutes):
                 state.usageMinutes = minutes
-                print("사용 시간 변경: \(minutes)분")
                 return .none
                 
             case .leaveTimePickerDismissed:
@@ -109,5 +288,27 @@ struct AppSettingsFeature {
                 return .none
             }
         }
+    }
+}
+
+
+extension String {
+    /// "HH:mm:ss" 형식을 Date로 변환 (오늘 날짜 기준)
+    func toTimeDate() -> Date? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss"
+        formatter.locale = Locale(identifier: "ko_KR")
+        
+        guard let time = formatter.date(from: self) else { return nil }
+        
+        // 오늘 날짜에 해당 시간 적용
+        let calendar = Calendar.current
+        let now = Date()
+        let components = calendar.dateComponents([.hour, .minute, .second], from: time)
+        
+        return calendar.date(bySettingHour: components.hour ?? 0,
+                            minute: components.minute ?? 0,
+                            second: components.second ?? 0,
+                            of: now)
     }
 }
