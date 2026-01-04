@@ -24,6 +24,7 @@ struct AddSubjectFileFeature {
         var fileUpload: FileUploadFeature.State?
         var difficultySelection: DifficultySelectionFeature.State?
         var durationSelection: DurationSelectionFeature.State?
+        var summary: AddSubjectSummaryFeature.State?  // 👈 추가
         var loading: OnboardingLoadingFeature.State?
         var complete: AddSubjectCompleteFeature.State?
         
@@ -31,6 +32,7 @@ struct AddSubjectFileFeature {
             case fileUpload
             case difficulty
             case duration
+            case summary  // 👈 추가
             case loading
             case complete
         }
@@ -45,6 +47,7 @@ struct AddSubjectFileFeature {
         case fileUpload(FileUploadFeature.Action)
         case difficultySelection(DifficultySelectionFeature.Action)
         case durationSelection(DurationSelectionFeature.Action)
+        case summary(AddSubjectSummaryFeature.Action)  // 👈 추가
         case loading(OnboardingLoadingFeature.Action)
         case complete(AddSubjectCompleteFeature.Action)
         case closeSheet
@@ -135,45 +138,70 @@ struct AddSubjectFileFeature {
                 state.difficultySelection = difficultyState
                 return .none
                 
-                // AddSubjectFileFeature.swift
-
-                case .durationSelection(.nextTapped):
-                    // 기간 선택 완료 → 로딩으로
-                    if let weeks = state.durationSelection?.selectedWeeks {
-                        state.selectedWeeks = weeks.rawValue
-                    }
-                    
-                    print("주제 추가 시작 (파일)")
-                    print("파일: \(state.uploadedFileURL?.lastPathComponent ?? "없음")")
-                    print("난이도: \(state.selectedDifficulty ?? "")")
-                    print("프롬프트: \(state.customPrompt)")
-                    print("기간: \(state.selectedWeeks)주")
-                    
-                    // AddSubjectFileFeature 데이터 → OnboardingData 변환
-                    let onboardingData = OnboardingData(
-                        userName: "",           // 주제 추가에서는 사용 안 함
-                        leaveHomeTime: nil,     // 주제 추가에서는 사용 안 함
-                        returnHomeTime: nil,    // 주제 추가에서는 사용 안 함
-                        dailyUsageMinutes: 0,   // 주제 추가에서는 사용 안 함
-                        contentType: .fileUpload,  // 파일 업로드
-                        uploadedFileURL: state.uploadedFileURL,
-                        selectedMainCategory: nil,
-                        selectedSubCategory: nil,
-                        selectedDetailCategory: nil,
-                        difficulty: state.selectedDifficulty,
-                        customPrompt: state.customPrompt,
-                        programWeeks: state.selectedWeeks
-                    )
-                    
-                    // 로딩 화면으로 전환
-                    state.durationSelection = nil
-                    state.currentStep = .loading
-                    state.loading = OnboardingLoadingFeature.State(
-                        onboardingData: onboardingData,
-                        isOnboarding: false  // 주제 추가 모드
-                    )
-                    
-                    return .none
+            case .durationSelection(.nextTapped):
+                // 기간 선택 완료 → Summary로  👈 변경!
+                if let weeks = state.durationSelection?.selectedWeeks {
+                    state.selectedWeeks = weeks.rawValue
+                }
+                
+                state.durationSelection = nil
+                state.currentStep = .summary
+                state.summary = AddSubjectSummaryFeature.State(
+                    contentType: .fileUpload,
+                    fileName: state.uploadedFileURL?.lastPathComponent,
+                    mainCategory: nil,
+                    subCategory: nil,
+                    detailCategory: nil,
+                    difficulty: state.selectedDifficulty,
+                    customPrompt: state.customPrompt,
+                    programWeeks: state.selectedWeeks
+                )
+                return .none
+                
+            // MARK: - Summary  👈 새로 추가
+            case .summary(.delegate(.back)):
+                // Summary에서 뒤로가기 → Duration으로
+                state.summary = nil
+                state.currentStep = .duration
+                
+                var durationState = DurationSelectionFeature.State()
+                if let weeks = DurationSelectionFeature.State.Weeks(rawValue: state.selectedWeeks) {
+                    durationState.selectedWeeks = weeks
+                }
+                state.durationSelection = durationState
+                return .none
+                
+            case .summary(.delegate(.complete)):
+                // Summary 완료 → Loading으로
+                print("주제 추가 시작 (파일)")
+                print("파일: \(state.uploadedFileURL?.lastPathComponent ?? "없음")")
+                print("난이도: \(state.selectedDifficulty ?? "")")
+                print("프롬프트: \(state.customPrompt)")
+                print("기간: \(state.selectedWeeks)주")
+                
+                let onboardingData = OnboardingData(
+                    userName: "",
+                    leaveHomeTime: nil,
+                    returnHomeTime: nil,
+                    dailyUsageMinutes: 0,
+                    contentType: .fileUpload,
+                    uploadedFileURL: state.uploadedFileURL,
+                    selectedMainCategory: nil,
+                    selectedSubCategory: nil,
+                    selectedDetailCategory: nil,
+                    difficulty: state.selectedDifficulty,
+                    customPrompt: state.customPrompt,
+                    programWeeks: state.selectedWeeks
+                )
+                
+                state.summary = nil
+                state.currentStep = .loading
+                state.loading = OnboardingLoadingFeature.State(
+                    onboardingData: onboardingData,
+                    isOnboarding: false
+                )
+                
+                return .none
                 
             // MARK: - Loading & Complete
             case .loading(.loadingCompleted):
@@ -196,7 +224,7 @@ struct AddSubjectFileFeature {
             case .closeSheet:
                 return .send(.delegate(.cancelled))
                 
-            case .fileUpload, .difficultySelection, .durationSelection, .loading, .complete, .delegate:
+            case .fileUpload, .difficultySelection, .durationSelection, .summary, .loading, .complete, .delegate:
                 return .none
             }
         }
@@ -208,6 +236,9 @@ struct AddSubjectFileFeature {
         }
         .ifLet(\.durationSelection, action: \.durationSelection) {
             DurationSelectionFeature()
+        }
+        .ifLet(\.summary, action: \.summary) {  // 👈 추가
+            AddSubjectSummaryFeature()
         }
         .ifLet(\.loading, action: \.loading) {
             OnboardingLoadingFeature()
@@ -235,6 +266,10 @@ struct AddSubjectFileView: View {
             case .duration:
                 if let durationStore = store.scope(state: \.durationSelection, action: \.durationSelection) {
                     DurationSelectionView(store: durationStore)
+                }
+            case .summary:
+                if let summaryStore = store.scope(state: \.summary, action: \.summary) {
+                    AddSubjectSummaryView(store: summaryStore)
                 }
             case .loading:
                 if let loadingStore = store.scope(state: \.loading, action: \.loading) {

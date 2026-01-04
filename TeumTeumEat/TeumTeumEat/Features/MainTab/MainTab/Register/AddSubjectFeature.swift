@@ -26,6 +26,7 @@ struct AddSubjectFeature {
         var categorySelection: CategorySelectionFeature.State?
         var difficultySelection: DifficultySelectionFeature.State?
         var durationSelection: DurationSelectionFeature.State?
+        var summary: AddSubjectSummaryFeature.State?
         var loading: OnboardingLoadingFeature.State?
         var complete: AddSubjectCompleteFeature.State?
         
@@ -33,6 +34,7 @@ struct AddSubjectFeature {
             case category
             case difficulty
             case duration
+            case summary
             case loading
             case complete
         }
@@ -47,6 +49,7 @@ struct AddSubjectFeature {
         case categorySelection(CategorySelectionFeature.Action)
         case difficultySelection(DifficultySelectionFeature.Action)
         case durationSelection(DurationSelectionFeature.Action)
+        case summary(AddSubjectSummaryFeature.Action)
         case loading(OnboardingLoadingFeature.Action)
         case complete(AddSubjectCompleteFeature.Action)
         case closeSheet
@@ -91,11 +94,21 @@ struct AddSubjectFeature {
                 state.difficultySelection = nil
                 state.currentStep = .category
                 
-                // 카테고리 state 복원
+                // 카테고리 state 복원 (detail 단계까지)
                 var categoryState = CategorySelectionFeature.State()
                 categoryState.selectedMainCategory = state.selectedMainCategory
                 categoryState.selectedSubCategory = state.selectedSubCategory
                 categoryState.selectedDetailCategory = state.selectedDetailCategory
+                
+                // 👇 핵심: currentStep을 detailCategory로 설정!
+                if state.selectedDetailCategory != nil {
+                    categoryState.currentStep = .detailCategory
+                } else if state.selectedSubCategory != nil {
+                    categoryState.currentStep = .subCategory
+                } else if state.selectedMainCategory != nil {
+                    categoryState.currentStep = .mainCategory
+                }
+                
                 state.categorySelection = categoryState
                 return .none
                 
@@ -134,24 +147,52 @@ struct AddSubjectFeature {
                 return .none
                 
             case .durationSelection(.nextTapped):
-                // 기간 선택 완료 → 로딩으로
+                // 기간 선택 완료 → Summary로
                 if let weeks = state.durationSelection?.selectedWeeks {
                     state.selectedWeeks = weeks.rawValue
                 }
                 
+                state.durationSelection = nil
+                state.currentStep = .summary
+                state.summary = AddSubjectSummaryFeature.State(
+                    contentType: .category,
+                    fileName: nil,
+                    mainCategory: state.selectedMainCategory,
+                    subCategory: state.selectedSubCategory,
+                    detailCategory: state.selectedDetailCategory?.name,
+                    difficulty: state.selectedDifficulty,
+                    customPrompt: state.customPrompt,
+                    programWeeks: state.selectedWeeks
+                )
+                return .none
+                
+            // MARK: - Summary
+            case .summary(.delegate(.back)):
+                // Summary에서 뒤로가기 → Duration으로
+                state.summary = nil
+                state.currentStep = .duration
+                
+                var durationState = DurationSelectionFeature.State()
+                if let weeks = DurationSelectionFeature.State.Weeks(rawValue: state.selectedWeeks) {
+                    durationState.selectedWeeks = weeks
+                }
+                state.durationSelection = durationState
+                return .none
+                
+            case .summary(.delegate(.complete)):
+                // Summary 완료 → Loading으로
                 print("주제 추가 시작")
                 print("카테고리: \(state.selectedMainCategory ?? "") > \(state.selectedSubCategory ?? "") > \(state.selectedDetailCategory?.name ?? "")")
                 print("난이도: \(state.selectedDifficulty ?? "")")
                 print("프롬프트: \(state.customPrompt)")
                 print("기간: \(state.selectedWeeks)주")
                 
-                // AddSubjectCategoryFeature 데이터 → OnboardingData 변환
                 let onboardingData = OnboardingData(
-                    userName: "",           // 주제 추가에서는 사용 안 함
-                    leaveHomeTime: nil,     // 주제 추가에서는 사용 안 함
-                    returnHomeTime: nil,    // 주제 추가에서는 사용 안 함
-                    dailyUsageMinutes: 0,   // 주제 추가에서는 사용 안 함
-                    contentType: .category,  // 카테고리 선택
+                    userName: "",
+                    leaveHomeTime: nil,
+                    returnHomeTime: nil,
+                    dailyUsageMinutes: 0,
+                    contentType: .category,
                     uploadedFileURL: nil,
                     selectedMainCategory: state.selectedMainCategory,
                     selectedSubCategory: state.selectedSubCategory,
@@ -161,26 +202,25 @@ struct AddSubjectFeature {
                     programWeeks: state.selectedWeeks
                 )
                 
-                state.durationSelection = nil
+                state.summary = nil
                 state.currentStep = .loading
                 state.loading = OnboardingLoadingFeature.State(
                     onboardingData: onboardingData,
-                    isOnboarding: false  // 주제 추가 모드
+                    isOnboarding: false
                 )
                 
                 return .none
                 
+            // MARK: - Loading & Complete
             case .loading(.loadingCompleted):
-                 
-                 // Complete 화면으로
-                 state.loading = nil
-                 state.currentStep = .complete
-                 state.complete = AddSubjectCompleteFeature.State()
-                 
-                 return .none
+                // Complete 화면으로
+                state.loading = nil
+                state.currentStep = .complete
+                state.complete = AddSubjectCompleteFeature.State()
+                
+                return .none
                 
             case .complete(.confirmTapped):
-
                 return .none
                 
             case .complete(.delegate(.completed)):
@@ -190,7 +230,7 @@ struct AddSubjectFeature {
             case .closeSheet:
                 return .send(.delegate(.cancelled))
                 
-            case .categorySelection, .difficultySelection, .durationSelection, .delegate, .loading, .complete:
+            case .categorySelection, .difficultySelection, .durationSelection, .summary, .delegate, .loading, .complete:
                 return .none
             }
         }
@@ -202,6 +242,9 @@ struct AddSubjectFeature {
         }
         .ifLet(\.durationSelection, action: \.durationSelection) {
             DurationSelectionFeature()
+        }
+        .ifLet(\.summary, action: \.summary) {
+            AddSubjectSummaryFeature()
         }
         .ifLet(\.loading, action: \.loading) {
             OnboardingLoadingFeature()
@@ -228,6 +271,10 @@ struct AddSubjectView: View {
             case .duration:
                 if let durationStore = store.scope(state: \.durationSelection, action: \.durationSelection) {
                     DurationSelectionView(store: durationStore)
+                }
+            case .summary:
+                if let summaryStore = store.scope(state: \.summary, action: \.summary) {
+                    AddSubjectSummaryView(store: summaryStore)
                 }
             case .loading:
                 if let loadingStore = store.scope(state: \.loading, action: \.loading) {

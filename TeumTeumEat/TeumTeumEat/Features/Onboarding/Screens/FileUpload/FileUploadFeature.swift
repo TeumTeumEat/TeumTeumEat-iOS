@@ -66,6 +66,16 @@ struct FileUploadFeature {
                     
                     print("선택된 파일: \(url.lastPathComponent)")
                     
+                    // PDF 확장자 검증 추가
+                    let fileExtension = url.pathExtension.lowercased()
+                    if fileExtension != "pdf" {
+                        print("[FileUpload] 잘못된 파일 형식: .\(fileExtension)")
+                        state.errorMessage = "PDF 파일만 업로드 가능합니다\n(선택된 파일: .\(fileExtension))"
+                        state.selectedFileURL = nil
+                        state.selectedFileName = nil
+                        return .none
+                    }
+                    
                     // 로딩 시작
                     state.isLoadingFile = true
                     state.selectedFileURL = nil
