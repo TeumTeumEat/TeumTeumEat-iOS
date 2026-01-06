@@ -37,5 +37,6 @@ struct OnboardingCompleteView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 60)
         }
+        .colorScheme(.light)
     }
 }

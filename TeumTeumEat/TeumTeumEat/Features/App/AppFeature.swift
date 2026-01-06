@@ -26,6 +26,7 @@ struct AppFeature {
         case onboarding(OnboardingFeature.Action)
         case mainTab(MainTabFeature.Action)
         case logout
+        case withdrawal
     }
     
     var body: some ReducerOf<Self> {
@@ -107,6 +108,29 @@ struct AppFeature {
                 print("온보딩 완료 - 메인 화면으로 이동 예정")
                 UserDefaultsManager.isOnboardingCompleted = true
                 state.mainTab = MainTabFeature.State()
+                return .none
+                
+            case .mainTab(.delegate(.withdrawal)):
+                print("AppFeature: 회원탈퇴 요청 받음")
+                return .send(.withdrawal)
+                
+            case .withdrawal:
+                print("회원탈퇴 처리 시작")
+                
+                // 토큰 삭제
+                KeyChainManager.shared.deleteAll()
+                
+                // 모든 상태 초기화
+                state.login = nil
+                state.termsAgreement = nil
+                state.onboarding = nil
+                state.mainTab = nil
+                
+                // 로그인 화면으로
+                state.login = LoginFeature.State()
+                
+                print("✅ 회원탈퇴 완료 - 로그인 화면으로 이동")
+                
                 return .none
                 
             case .splash, .login, .termsAgreement, .onboarding, .mainTab:

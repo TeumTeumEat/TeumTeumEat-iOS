@@ -48,6 +48,7 @@ struct MainTabFeature {
     
     enum Delegate {
         case logout
+        case withdrawal
     }
     
     enum RegisterMenuItem {
@@ -69,16 +70,24 @@ struct MainTabFeature {
         Reduce { state, action in
             switch action {
             case .tabSelected(let tab):
+                let previousTab = state.selectedTab
                 state.selectedTab = tab
                 
                 if tab != .register {
                     state.isRegisterMenuExpanded = false
                 }
-                return .none
                 
-            case .myPage(.delegate(.logout)):
-                           print("MainTab: MyPage에서 로그아웃 요청 받음")
-                           return .send(.delegate(.logout))
+                // ✅ 홈 탭으로 전환될 때 새로고침
+                if tab == .home && previousTab != .home {
+                    return .send(.home(.onAppear))
+                }
+                
+                // ✅ 히스토리 탭으로 전환될 때 새로고침
+                if tab == .quiz && previousTab != .quiz {
+                    return .send(.quiz(.onAppear))
+                }
+                
+                return .none
                 
             case .toggleRegisterMenu:
                 state.isRegisterMenuExpanded.toggle()
@@ -88,39 +97,56 @@ struct MainTabFeature {
                 print("메뉴 아이템 선택: \(item)")
                 state.isRegisterMenuExpanded = false
                 if item == .category {
-                     state.addSubject = AddSubjectFeature.State()
-                 } else if item == .fileUpload {
-                     state.addSubjectFile = AddSubjectFileFeature.State()
-                 }
+                    state.addSubject = AddSubjectFeature.State()
+                } else if item == .fileUpload {
+                    state.addSubjectFile = AddSubjectFileFeature.State()
+                }
                 return .none
                 
             case .home(.delegate(.openMyPageRequested)):
-                        state.myPage = MyPageFeature.State()
-                        print("Home에서 MyPage 열기")
-                        return .none
+                state.myPage = MyPageFeature.State()
+                print("Home에서 MyPage 열기")
+                return .none
                 
-            case .home(.delegate(.startQuizFlow)):
-                state.quizFlow = QuizFlowFeature.State()
-                print("퀴즈 플로우 시작")
+            // Home에서 QuizFlow 시작 (summaryData 포함)
+            case .home(.delegate(.startQuizFlow(let quizzes, let summaryData, let isFirstTime))):
+                state.quizFlow = QuizFlowFeature.State(
+                    quizzes: quizzes,
+                    summaryData: summaryData,
+                    isFirstTime: isFirstTime
+                )
+                print("퀴즈 플로우 시작 - 요약부터 표시")
+                return .none
+                
+            case .quiz(.delegate(.openMyPageRequested)):
+                state.myPage = MyPageFeature.State()
+                print("History에서 MyPage 열기")
                 return .none
                 
             case .myPage(.delegate(.dismissed)):
-                        state.myPage = nil
-                        print("MyPage 닫힘")
-                        return .none
+                state.myPage = nil
+                print("MyPage 닫힘")
+                return .none
                 
-            case .quiz(.delegate(.openMyPageRequested)):
-                        state.myPage = MyPageFeature.State()
-                        print("History에서 MyPage 열기")
-                        return .none
+            case .myPage(.delegate(.logout)):
+                print("MainTab: MyPage에서 로그아웃 요청 받음")
+                return .send(.delegate(.logout))
                 
             case .quizFlow(.delegate(.completed(let destination))):
                 state.quizFlow = nil
                 print("퀴즈 플로우 완료 - 이동: \(destination)")
-                if destination == .history {
+                
+                switch destination {
+                case .home:
+                    state.selectedTab = .home
+                    // ✅ 홈으로 이동하면서 새로고침
+                    return .send(.home(.onAppear))
+                    
+                case .history:
                     state.selectedTab = .quiz
+                    // ✅ 히스토리로 이동하면서 새로고침
+                    return .send(.quiz(.onAppear))
                 }
-                return .none
                 
             case .quizFlow(.delegate(.cancelled)):
                 state.quizFlow = nil
@@ -128,14 +154,14 @@ struct MainTabFeature {
                 return .none
                 
             case .addSubject(.delegate(.completed)):
-                 state.addSubject = nil
-                 print("주제 추가 완료 - Sheet 닫힘")
-                 return .none
+                state.addSubject = nil
+                print("주제 추가 완료 - Sheet 닫힘")
+                return .none
                  
-             case .addSubject(.delegate(.cancelled)):
-                 state.addSubject = nil
-                 print("주제 추가 취소 - Sheet 닫힘")
-                 return .none
+            case .addSubject(.delegate(.cancelled)):
+                state.addSubject = nil
+                print("주제 추가 취소 - Sheet 닫힘")
+                return .none
                 
             case .addSubjectFile(.delegate(.completed)):
                 print("파일 주제 추가 완료 - Sheet 닫힘")
@@ -146,6 +172,10 @@ struct MainTabFeature {
                 print("파일 주제 추가 취소 - Sheet 닫힘")
                 state.addSubjectFile = nil
                 return .none
+                
+            case .myPage(.delegate(.withdrawal)):
+                print("MainTabFeature: 회원탈퇴 요청 받음")
+                return .send(.delegate(.withdrawal))
                 
             case .home, .quiz, .register, .addSubject, .addSubjectFile, .quizFlow, .myPage, .delegate:
                 return .none
@@ -160,7 +190,7 @@ struct MainTabFeature {
         .ifLet(\.quizFlow, action: \.quizFlow) {
             QuizFlowFeature()
         }
-        .ifLet(\.myPage, action: \.myPage) { 
+        .ifLet(\.myPage, action: \.myPage) {
             MyPageFeature()
         }
     }

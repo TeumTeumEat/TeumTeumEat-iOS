@@ -17,24 +17,60 @@ struct AppSettingsView: View {
         VStack(spacing: 0) {
             navigationBar
             
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    nicknameSection
-                    leaveTimeSection
-                    returnTimeSection
-                    usageTimeSection
-                    
-                    Spacer()
-                        .frame(height: 40)
+            if store.isLoading {
+                Spacer()
+                ProgressView()
+                    .scaleEffect(1.5)
+                Spacer()
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        nicknameSection
+                        leaveTimeSection
+                        returnTimeSection
+                        usageTimeSection
+                        
+                        // 에러 메시지
+                        if let errorMessage = store.errorMessage {
+                            HStack(alignment: .top, spacing: 8) {
+                                Image(systemName: "exclamationmark.circle.fill")
+                                    .foregroundColor(.red)
+                                    .font(.system(size: 16))
+                                Text(errorMessage)
+                                    .bodyRegular14()
+                                    .foregroundColor(.red)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 16)
+                        }
+                        
+                        Spacer()
+                            .frame(height: 40)
+                        
+                        // 저장하기 버튼
+                        TTEButton(
+                            title: store.isSaving ? "저장 중..." : "저장하기",
+                            size: .large,
+                            isEnabled: store.canSave && !store.isSaving
+                        ) {
+                            store.send(.saveButtonTapped)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 32)
+                    }
                 }
-            }
-            .background(Color.white)
-            .onTapGesture {
-                isNicknameFocused = false
+                .background(Color.white)
+                .onTapGesture {
+                    isNicknameFocused = false
+                }
             }
         }
         .navigationBarHidden(true)
         .toolbar(.hidden, for: .tabBar)
+        .onAppear {
+                    store.send(.onAppear)
+                }
         .sheet(isPresented: Binding(
             get: { store.isLeaveTimePickerPresented },
             set: { if !$0 { store.send(.leaveTimePickerDismissed) } }
@@ -97,6 +133,7 @@ struct AppSettingsView: View {
                 
                 Text("틈틈잇 사용 설정")
                     .titleSemibold20()
+                    .foregroundStyle(.black)
                 
                 Spacer()
                 
@@ -185,7 +222,7 @@ struct AppSettingsView: View {
             Spacer()
             Text(text)
                 .font(.system(size: 16))
-                .foregroundColor(.primary)
+                .foregroundColor(.black)
             Spacer()
         }
         .padding(.horizontal, 20)

@@ -51,7 +51,11 @@ struct HomeFeature {
     }
     
     enum Delegate {
-        case startQuizFlow
+        case startQuizFlow(
+            quizzes: [UserQuiz],
+            summaryData: ContentSummaryFeature.State,
+            isFirstTime: Bool
+        )
         case openMyPageRequested
     }
     
@@ -98,6 +102,7 @@ struct HomeFeature {
             // Step 2 완료 → Step 3 시작
             case .fetchQuizStatusResponse(.success(let status)):
                 state.quizStatus = status
+                state.isTodayQuizCompleted = status.hasSolvedToday
                 print("Step 2 완료 - hasSolvedToday: \(status.hasSolvedToday)")
                 
                 // Step 3: Goal Type에 따라 요약글 조회
@@ -227,7 +232,53 @@ struct HomeFeature {
                 return .none
                 
             case .characterEatTapped:
-                return .send(.delegate(.startQuizFlow))
+                // ✅ summaryData 생성 후 QuizFlow에 전달
+                
+                if state.isTodayQuizCompleted {
+                    print("⚠️ 오늘 퀴즈를 이미 완료했습니다")
+                    return .none
+                }
+                
+                
+                if let categoryDoc = state.categoryDocument {
+                    let summaryData = ContentSummaryFeature.State(
+                        documentId: categoryDoc.documentId,
+                        summaryText: categoryDoc.content,
+                        hasSolvedToday: categoryDoc.hasSolvedToday,
+                        isFirstTime: categoryDoc.isFirstTime,
+                        documentType: .category,
+                        quizzes: state.quizzes
+                    )
+                    
+                    return .send(.delegate(.startQuizFlow(
+                        quizzes: state.quizzes,
+                        summaryData: summaryData,
+                        isFirstTime: categoryDoc.isFirstTime
+                    )))
+                    
+                } else if let pdfSum = state.pdfSummary {
+                    let summaryData = ContentSummaryFeature.State(
+                        documentId: pdfSum.documentId,
+                        summaryText: pdfSum.summary,
+                        hasSolvedToday: pdfSum.hasSolvedToday,
+                        isFirstTime: pdfSum.isFirstTime,
+                        documentType: .document,
+                        quizzes: state.quizzes
+                    )
+                    
+                    return .send(.delegate(.startQuizFlow(
+                        quizzes: state.quizzes,
+                        summaryData: summaryData,
+                        isFirstTime: pdfSum.isFirstTime
+                    )))
+                    
+                } else {
+                    print("⚠️ 요약 데이터가 아직 없습니다")
+                    return .none
+                }
+                
+            // ContentSummary Delegate 처리
+            
                 
             case .delegate:
                 return .none
@@ -253,13 +304,17 @@ struct HomeView: View {
                 Spacer()
                     .frame(height: store.isTodayQuizCompleted ? 5 : 11)
                 
-                CharacterImageView(
-                    isTodayQuizCompleted: store.isTodayQuizCompleted,
-                    onCharacterTapped: {
-                        print("HomeView: 캐릭터 탭!")
-                        store.send(.characterEatTapped)
-                    }
-                )
+                if store.isLoading {
+                    ProgressView()
+                        .frame(height: 548)
+                } else {
+                    CharacterImageView(
+                        isTodayQuizCompleted: store.isTodayQuizCompleted,
+                        onCharacterTapped: {
+                            store.send(.characterEatTapped)
+                        }
+                    )
+                }
                                 
                 ScrollView {
                     VStack {
@@ -267,10 +322,12 @@ struct HomeView: View {
                     }
                 }
             }
+            .background(Color.white)
             .navigationBarHidden(true)
             .onAppear {
                 store.send(.onAppear)
             }
+
         }
     }
 }
@@ -281,44 +338,50 @@ struct CharacterImageView: View {
     let onCharacterTapped: () -> Void
     
     var body: some View {
-        if isTodayQuizCompleted {
-            Image("character_eat")
-                .resizable()
-                .scaledToFit()
-                .frame(height: 554)
-                .padding(.leading, 30)
-                .padding(.trailing, 8.47)
-        } else {
-            // 퀴즈 미완료 시 - Lottie + 오버레이
-            ZStack(alignment: .center) {
-                // Lottie 배경
-                LottieView(animation: .named("home_dummy"))
-                    .playing(loopMode: .loop)
-                    .frame(height: 548)
+        ZStack(alignment: .center) {
+            // ✅ Lottie 배경 (항상 동일한 위치)
+            LottieView(animation: .named(isTodayQuizCompleted ? "home_v2_dummy" : "home_dummy"))
+                .playing(loopMode: .loop)
+                .frame(height: 548)
+            
+            // ✅ 오버레이 (완료/미완료에 따라 다름)
+            VStack(spacing: 16) {
+                Spacer()
                 
-                VStack(spacing: 16) {
-                    Spacer()
+                if isTodayQuizCompleted {
+                    // 완료 시 - done 이미지
+                    Image("done")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 180, height: 180)
                     
-                    // 햄버거 이미지
+                    Text("오늘의 지식을\n다 먹었어요!")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.black)
+                        .multilineTextAlignment(.center)
+                    
+                } else {
+                    // 미완료 시 - 햄버거 + 텍스트
                     Image("hamburger")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 180, height: 180)
                     
-                    // 안내 텍스트
                     Text("오늘의 냠냠지식이\n도착했어요!")
                         .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.primary)
+                        .foregroundColor(.black)
                         .multilineTextAlignment(.center)
-                    
-                    Spacer()
                 }
+                
+                Spacer()
             }
-            .frame(height: 548)
-            .padding(.leading, 30)
-            .padding(.trailing, 3)
-            .contentShape(Rectangle())
-            .onTapGesture {
+        }
+        .frame(height: 548)
+        .padding(.leading, 30)
+        .padding(.trailing, 3)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if !isTodayQuizCompleted {  // ✅ 미완료일 때만 탭 가능
                 onCharacterTapped()
             }
         }
@@ -351,7 +414,7 @@ struct HomeNavigationBar: View {
                 
                 Text("\(fireCount)")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
+                    .foregroundColor(.black)
             }
             
             Spacer()
@@ -365,7 +428,7 @@ struct HomeNavigationBar: View {
                 
                 Text("\(stampCount)")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
+                    .foregroundColor(.black)
             }
             
             Spacer()

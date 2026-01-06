@@ -122,7 +122,9 @@ struct FileUploadView: View {
                     .scrollDismissesKeyboard(.interactively)
                 }
             }
+            .background(.white)
         }
+        .colorScheme(.light)
         .fileImporter(
             isPresented: Binding(
                 get: { store.isFileImporterPresented },

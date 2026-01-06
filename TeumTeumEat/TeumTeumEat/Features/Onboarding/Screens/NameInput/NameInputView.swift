@@ -22,7 +22,7 @@ struct NameInputView: View {
                     } label: {
                         Image(systemName: "chevron.left")
                             .font(.headline)
-                            .foregroundColor(.primary)
+                            .foregroundColor(.black)
                             .frame(width: 40, height: 40)
                             .contentShape(Rectangle())
                     }
@@ -109,6 +109,7 @@ struct NameInputView: View {
                     }
                 }
             }
+            .background(.white)
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
                 if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
                     keyboardHeight = keyboardFrame.height
@@ -118,6 +119,7 @@ struct NameInputView: View {
                 keyboardHeight = 0
             }
         }
+        .colorScheme(.light)
         .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 }

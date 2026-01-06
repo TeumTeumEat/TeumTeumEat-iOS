@@ -124,7 +124,7 @@ struct TimeSettingView: View {
 
                                     Text("해당 시간에 알림을 받으실건가요?(필수)")
                                         .bodyRegular14()
-                                        .foregroundColor(.primary)
+                                        .foregroundColor(.black)
                                     
                                     Spacer()
                                 }
@@ -151,7 +151,9 @@ struct TimeSettingView: View {
                     .scrollDismissesKeyboard(.interactively)
                 }
             }
+            .background(.white)
         }
+        .colorScheme(.light)
         .alert("알림 권한 필요", isPresented: Binding(
             get: { store.showSettingsAlert },
             set: { if !$0 { store.send(.dismissSettingsAlert) } }

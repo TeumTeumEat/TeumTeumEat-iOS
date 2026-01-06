@@ -262,8 +262,8 @@ extension APIClient {
             requiresAuth: true
         )
         
-        print("🔍 Response code: \(response.code)")
-           print("🔍 Response data: \(String(describing: response.data))")
+        print("Response code: \(response.code)")
+        print("Response data: \(String(describing: response.data))")
         
         guard response.code == "OK",
               let data = response.data else {
@@ -283,6 +283,44 @@ extension APIClient {
     
     /// 현재  목표 목록 조회
     func fetchCurrentGoal() async throws -> GoalResponse {
+//        let mockGoal = GoalResponse(
+//               goalId: 1175,
+//               type: "CATEGORY",
+//               startDate: "2026-01-04",
+//               endDate: "2026-01-18",
+//               studyPeriod: "2주",
+//               difficulty: "MEDIUM",
+//               prompt: nil,
+//               fileName: nil,
+//               category: CategoryInfo(
+//                   categoryId: 104,
+//                   name: "데이터 타입",
+//                   path: "/IT/데이터베이스/Redis/Caching",
+//                   description: ""
+//               ),
+//               documentId: nil
+//           )
+        
+//        let mockGoal = GoalResponse(
+//            goalId: 1174,
+//            type: "DOCUMENT",
+//            startDate: "2025-12-31",
+//            endDate: "2026-01-07",
+//            studyPeriod: "1주",
+//            difficulty: "MEDIUM",
+//            prompt: "ㅋㅋㅋㅋㅋㅋ\n\n\n\n",
+//            fileName: "sample.pdf",
+//            category: nil,
+//            documentId: 133
+//        )
+//           
+//           print("⚠️ [MOCK] fetchCurrentGoal - Mock 데이터 반환 중")
+//           print("Current Goal - ID: \(mockGoal.goalId), Type: \(mockGoal.type)")
+//           if let category = mockGoal.category {
+//               print("CategoryId: \(category.categoryId), Name: \(category.name)")
+//           }
+//           
+//           return mockGoal
         let response: APIResponse<GoalResponse> = try await request(
             endpoint: "/api/v1/users/goal",
             method: .get,
@@ -455,7 +493,7 @@ extension APIClient {
             )
         }
         
-        print("✅ Notification settings fetched - pushEnabled: \(data.pushEnabled)")
+        print("Notification settings fetched - pushEnabled: \(data.pushEnabled)")
         return data
     }
     
@@ -569,18 +607,18 @@ extension APIClient {
     
     /// 유저퀴즈 조회
     func fetchUserQuizzes(documentId: Int, documentType: DocumentType) async throws -> [UserQuiz] {
-        let response: APIResponse<UserQuizData> = try await request(
+        let response: APIResponse<[UserQuiz]> = try await request(
             endpoint: "/api/v1/user-quizzes?documentId=\(documentId)&documentType=\(documentType.rawValue)",
             method: .get,
             requiresAuth: true
         )
         
-        print("fetchUserQuizzes - Response code: \(response.code)")
-        print("fetchUserQuizzes - DocumentId: \(documentId), Type: \(documentType.rawValue)")
-        print("fetchUserQuizzes - Response data: \(String(describing: response.data))")
+        print("🔍 fetchUserQuizzes - Response code: \(response.code)")
+        print("🔍 fetchUserQuizzes - DocumentId: \(documentId), Type: \(documentType.rawValue)")
+        print("🔍 fetchUserQuizzes - Response data: \(String(describing: response.data))")
         
         guard response.code == "OK",
-              let quizData = response.data else {
+              let quizzes = response.data else {
             throw APIError.serverError(
                 code: response.code,
                 message: response.message,
@@ -588,11 +626,305 @@ extension APIClient {
             )
         }
         
-        print("User Quizzes - Count: \(quizData.quizzes.count)")
-        quizData.quizzes.forEach { quiz in
+        print("User Quizzes - Count: \(quizzes.count)")
+        quizzes.forEach { quiz in
             print("   Quiz ID: \(quiz.quizId), Type: \(quiz.type)")
         }
         
-        return quizData.quizzes
+        return quizzes
     }
+    
+    func submitQuizAnswer(quizId: Int, userAnswer: String) async throws -> SubmitQuizAnswerData {
+        let requestBody = SubmitQuizAnswerRequest(
+            quizId: quizId,
+            userAnswer: userAnswer
+        )
+        
+        let response: APIResponse<SubmitQuizAnswerData> = try await request(
+            endpoint: "/api/v1/user-quizzes/submit",
+            method: .post,
+            body: requestBody,
+            requiresAuth: true
+        )
+        
+        print(" submitQuizAnswer - Response code: \(response.code)")
+        print(" submitQuizAnswer - QuizId: \(quizId), Answer: \(userAnswer)")
+        
+        guard response.code == "OK",
+              let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print(" Quiz Answer Submitted - isCorrect: \(data.isCorrect)")
+        print("   Correct Answer: \(data.correctAnswer)")
+        print("   Explanation: \(data.explanation)")
+        
+        return data
+    }
+    
+    /// 주제별 히스토리 내역 확인
+    func fetchHistoryTopics() async throws -> [HistoryCategoryResponse] {
+        let response: APIResponse<[HistoryCategoryResponse]> = try await request(
+            endpoint: "/api/v1/history/topics",
+            method: .get,
+            requiresAuth: true
+        )
+        
+        print("Response code: \(response.code)")
+        
+        guard response.code == "OK",
+              let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("History topics fetched successfully - Category Count: \(data.count)")
+        return data
+    }
+    
+    /// 히스토리 캘린더 조회
+    func fetchCalendarHistory(year: Int, month: Int) async throws -> CalendarHistoryData {
+        let monthString = String(format: "%02d", month)
+        let endpoint = "/api/v1/history/calendar?year=\(year)&month=\(monthString)"
+        
+        let response: APIResponse<CalendarHistoryData> = try await request(
+            endpoint: endpoint,
+            method: .get,
+            requiresAuth: true
+        )
+        
+        guard response.code == "OK",
+              let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print(" Calendar history fetched: \(data.stampedDates.count) stamps found.")
+        return data
+    }
+    
+    /// 날짜별 상세내역 조회
+    func fetchHistoryByDate(_ date: String) async throws -> [HistoryItemResponse] {
+        let endpoint = "/api/v1/history/date/\(date)"
+        
+        let response: APIResponse<[HistoryItemResponse]> = try await request(
+            endpoint: endpoint,
+            method: .get,
+            requiresAuth: true
+        )
+        
+        guard response.code == "OK",
+              let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("History for \(date) fetched: \(data.count) items found.")
+        return data
+    }
+    
+    
+    /// 퀴즈목록 상세보기
+    func fetchQuizHistoryDetails(type: DocumentType, id: Int) async throws -> QuizHistoryDetailData {
+
+        let typePath = type.rawValue.lowercased()
+        let endpoint = "/api/v1/history/details/quizzes/\(typePath)/\(id)"
+        
+        // 2. 공통 request 함수 호출
+        let response: APIResponse<QuizHistoryDetailData> = try await request(
+            endpoint: endpoint,
+            method: .get,
+            requiresAuth: true
+        )
+        
+        // 3. 응답 처리
+        guard response.code == "OK",
+              let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("\(typePath) (ID: \(id)) 퀴즈 내역 조회 성공: \(data.quizzes.count)문항")
+        return data
+    }
+    
+    /// 요약글 상세보기
+    func fetchHistorySummaryDetail(type: DocumentType, id: Int, date: String) async throws -> HistorySummaryDetailData {
+        let typePath = type.rawValue.lowercased()
+        let endpoint = "/api/v1/history/details/summary/\(typePath)/\(id)?date=\(date)"
+        
+        let response: APIResponse<HistorySummaryDetailData> = try await request(
+            endpoint: endpoint,
+            method: .get,
+            requiresAuth: true
+        )
+        
+        guard response.code == "OK",
+              let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("Summary fetched: \(data.title) (Date: \(date))")
+        return data
+    }
+    
+    /// 현재 목표 업데이트 (선택한 목표로 변경)
+        func updateCurrentGoal(goalId: Int) async throws {
+            let response: APIResponse<EmptyData> = try await request(
+                endpoint: "/api/v1/users/goal?goalId=\(goalId)",
+                method: .patch,
+                requiresAuth: true
+            )
+            
+            print("updateCurrentGoal - Response code: \(response.code)")
+            
+            guard response.code == "OK" else {
+                throw APIError.serverError(
+                    code: response.code,
+                    message: response.message,
+                    details: response.details
+                )
+            }
+            
+            print("Current goal updated successfully - goalId: \(goalId)")
+        }
+    
+    /// 회원탈퇴
+        func withdrawUser() async throws {
+            let response: APIResponse<EmptyData> = try await request(
+                endpoint: "/api/v1/users/withdrawal",
+                method: .delete,
+                requiresAuth: true
+            )
+            
+            print("withdrawUser - Response code: \(response.code)")
+            
+            guard response.code == "OK" else {
+                throw APIError.serverError(
+                    code: response.code,
+                    message: response.message,
+                    details: response.details
+                )
+            }
+            
+            print("User withdrawal successful")
+        }
+    
+    
+    /// 유저 이름 조회
+        func fetchUserName() async throws -> String {
+            let response: APIResponse<UserNameData> = try await request(
+                endpoint: "/api/v1/users/name",
+                method: .get,
+                requiresAuth: true
+            )
+            
+            print("fetchUserName - Response code: \(response.code)")
+            
+            guard response.code == "OK",
+                  let data = response.data else {
+                throw APIError.serverError(
+                    code: response.code,
+                    message: response.message,
+                    details: response.details
+                )
+            }
+            
+            print("User name fetched successfully: \(data.name)")
+            return data.name
+        }
+        
+        /// 출퇴근 정보 조회
+        func fetchCommuteInfo() async throws -> CommuteInfoData {
+            let response: APIResponse<CommuteInfoData> = try await request(
+                endpoint: "/api/v1/users/commute-info",
+                method: .get,
+                requiresAuth: true
+            )
+            
+            print("fetchCommuteInfo - Response code: \(response.code)")
+            
+            guard response.code == "OK",
+                  let data = response.data else {
+                throw APIError.serverError(
+                    code: response.code,
+                    message: response.message,
+                    details: response.details
+                )
+            }
+            
+            print("Commute info fetched successfully")
+            print("   Start: \(data.startTime), End: \(data.endTime), Usage: \(data.usageTime)분")
+            return data
+        }
+    
+    /// 온보딩 완료 여부 조회
+        func fetchOnboardingStatus() async throws -> Bool {
+            let response: APIResponse<OnboardingStatusData> = try await request(
+                endpoint: "/api/v1/users/onboarding-completed",
+                method: .get,
+                requiresAuth: true
+            )
+            
+            print("fetchOnboardingStatus - Response code: \(response.code)")
+            
+            guard response.code == "OK",
+                  let data = response.data else {
+                throw APIError.serverError(
+                    code: response.code,
+                    message: response.message,
+                    details: response.details
+                )
+            }
+            
+            print("Onboarding status fetched: \(data.completed)")
+            return data.completed
+        }
+    
+    /// 디바이스 토큰 등록
+        func registerDeviceToken(token: String, deviceType: String) async throws {
+            let response: APIResponse<EmptyData> = try await request(
+                endpoint: "/api/v1/notifications/device-token",
+                method: .post,
+                body: RegisterDeviceTokenRequest(
+                    token: token,
+                    deviceType: deviceType
+                ),
+                requiresAuth: true
+            )
+            
+            print("registerDeviceToken - Response code: \(response.code)")
+            
+            guard response.code == "OK" else {
+                throw APIError.serverError(
+                    code: response.code,
+                    message: response.message,
+                    details: response.details
+                )
+            }
+            
+            print("Device token registered successfully")
+        }
 }
+
+

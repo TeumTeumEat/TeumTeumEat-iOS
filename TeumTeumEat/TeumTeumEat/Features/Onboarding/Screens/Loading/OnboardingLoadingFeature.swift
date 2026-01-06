@@ -282,6 +282,20 @@ struct OnboardingLoadingFeature {
                 
             case .loadingCompleted:
                 print("온보딩 완료! Complete 화면으로 이동")
+                
+                // 👇 디바이스 토큰 전송 체크
+                if UserDefaults.standard.bool(forKey: "shouldRegisterDeviceToken") {
+                    print("디바이스 토큰 등록 요청")
+                    
+                    return .run { send in
+                        // iOS에 디바이스 토큰 요청
+                        await MainActor.run {
+                            UIApplication.shared.registerForRemoteNotifications()
+                        }
+                        // AppDelegate에서 토큰 받으면 서버 전송됨
+                    }
+                }
+                
                 return .none
             }
         }

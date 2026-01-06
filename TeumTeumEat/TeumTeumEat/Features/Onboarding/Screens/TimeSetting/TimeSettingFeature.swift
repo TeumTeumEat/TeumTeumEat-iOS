@@ -129,6 +129,12 @@ struct TimeSettingFeature {
                 return .none
                    case .notificationPermissionResponse(let granted):
                        state.enableAlarm = granted
+                
+                if granted {
+                    // 디바이스 토큰 전송 대기 플래그 저장
+                    UserDefaults.standard.set(true, forKey: "shouldRegisterDeviceToken")
+                    print("알림 권한 허용 - 온보딩 완료 시 토큰 전송 예정")
+                }
                        return .none
                        
                    case .checkNotificationStatus:

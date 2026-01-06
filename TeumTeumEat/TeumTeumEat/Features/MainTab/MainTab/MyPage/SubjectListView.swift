@@ -28,6 +28,7 @@ struct SubjectListView: View {
                     
                     Text("학습주제")
                         .titleSemibold20()
+                        .foregroundStyle(.black)
                     
                     Spacer()
                     

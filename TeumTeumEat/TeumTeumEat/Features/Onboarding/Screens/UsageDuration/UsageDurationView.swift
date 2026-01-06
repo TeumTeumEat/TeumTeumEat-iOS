@@ -93,7 +93,9 @@ struct UsageDurationView: View {
                     .scrollDismissesKeyboard(.interactively)
                 }
             }
+            .background(.white)
         }
+        .colorScheme(.light)
     }
 }
 
@@ -106,7 +108,7 @@ struct DurationSelectButton: View {
         Button(action: action) {
             Text(text)
                 .font(.system(size: 16, weight: .medium))
-                .foregroundColor(isSelected ? .white : .primary)
+                .foregroundColor(isSelected ? .white : .black)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
                 .background(isSelected ? Color.blue : Color.white)
@@ -116,5 +118,6 @@ struct DurationSelectButton: View {
                         .stroke(isSelected ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
                 )
         }
+        .colorScheme(.light)
     }
 }
