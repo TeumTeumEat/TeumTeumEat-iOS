@@ -131,7 +131,9 @@ struct OnboardingSummaryView: View {
                     .background(Color(UIColor.systemBackground))
                 }
             }
+           
         }
+        .background(.white)
         .colorScheme(.light)
     }
 }

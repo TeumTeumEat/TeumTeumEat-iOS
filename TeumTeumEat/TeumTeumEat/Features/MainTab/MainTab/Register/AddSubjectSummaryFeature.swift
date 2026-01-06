@@ -180,6 +180,7 @@ struct AddSubjectSummaryView: View {
                 }
             }
         }
+        .background(.white)
         .colorScheme(.light)
     }
 }

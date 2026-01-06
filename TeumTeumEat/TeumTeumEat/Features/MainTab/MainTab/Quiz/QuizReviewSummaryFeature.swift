@@ -92,6 +92,7 @@ struct QuizReviewSummaryView: View {
                 .background(Color.white)
             }
         }
+        .background(.white)
         .navigationBarHidden(true)
     }
 }

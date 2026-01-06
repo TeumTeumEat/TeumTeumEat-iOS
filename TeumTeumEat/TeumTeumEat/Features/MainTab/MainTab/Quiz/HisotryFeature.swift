@@ -107,6 +107,7 @@ struct HistoryFeature {
              case .calendarDataLoaded(.success(let data)):
                  state.calendarData = data
                  // stampCount를 totalStamps로 업데이트
+                 state.fireCount = data.stampedDates.count
                  state.stampCount = data.totalStamps
                  print("Calendar data loaded: \(data.stampedDates.count) stamped dates, total: \(data.totalStamps)")
                  return .none
