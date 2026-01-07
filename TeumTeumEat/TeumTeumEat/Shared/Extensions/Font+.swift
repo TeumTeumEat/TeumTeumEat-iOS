@@ -23,6 +23,7 @@ extension Font {
         Font.custom("\(family)-\(weight)", size: size)
     }
     
+    //TODO: - 안쓰는 폰트 점진적 삭제
     static let head_bold_26 = custom(FontFamily.main, FontWeight.bold, size: 26)
     static let head_bold_20 = custom(FontFamily.main, FontWeight.bold, size: 20)
        
@@ -38,6 +39,19 @@ extension Font {
     static let body2_regular_14 = custom(FontFamily.main, FontWeight.regular, size: 14)
        
     static let caption_regular_12 = custom(FontFamily.main, FontWeight.regular, size: 12)
+    
+    
+    static let t_bold_24 = custom(FontFamily.main, FontWeight.bold, size: 24)
+    static let t_bold_22 = custom(FontFamily.main, FontWeight.bold, size: 22)
+    static let t_bold_20 = custom(FontFamily.main, FontWeight.bold, size: 20)
+    
+    static let st_semibold_20 = custom(FontFamily.main, FontWeight.semibold, size: 20)
+    static let st_semibold_18 = custom(FontFamily.main, FontWeight.semibold, size: 18)
+    static let st_semibold_16 = custom(FontFamily.main, FontWeight.semibold, size: 16)
+    
+    static let by_semibold_16 = custom(FontFamily.main, FontWeight.semibold, size: 16)
+    
+    
 }
 
 struct TypographyStyle {
@@ -193,6 +207,32 @@ extension Text {
     func captionRegular12() -> some View {
         applyTypography(.captionRegular12)
     }
+    
+    func tBold24() -> some View {
+            self.font(.t_bold_24)
+        }
+    
+    func tBold22() -> some View {
+            self.font(.t_bold_22)
+        }
+    
+    func tBold20() -> some View {
+            self.font(.t_bold_20)
+        }
+    
+    func stSemibold20() -> some View {
+        self.font(.st_semibold_20)
+    }
+    
+    func stSemibold18() -> some View {
+        self.font(.st_semibold_18)
+    }
+    
+    func stSemibold16() -> some View {
+        self.font(.st_semibold_16)
+    }
+    
+    
 }
 
 struct TypographyHelper {
@@ -208,6 +248,17 @@ struct TypographyHelper {
         let UIFont = UIFont.systemFont(ofSize: fontSize, weight: weight)
         let defaultLineHeight = UIFont.lineHeight
         let targetLineHeight = fontSize * (targetLineHeightPercent / 100)
+        let additionalSpacing = targetLineHeight - defaultLineHeight
+        return max(0, additionalSpacing)
+    }
+    
+    static func calculateLineSpacing(
+        fontSize: CGFloat,
+        weight: UIFont.Weight,
+        targetLineHeight: CGFloat
+    ) -> CGFloat {
+        let uiFont = UIFont.systemFont(ofSize: fontSize, weight: weight)
+        let defaultLineHeight = uiFont.lineHeight
         let additionalSpacing = targetLineHeight - defaultLineHeight
         return max(0, additionalSpacing)
     }

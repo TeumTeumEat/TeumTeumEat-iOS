@@ -30,6 +30,8 @@ struct HistoryFeature {
         
         var topicCategories: [HistoryCategoryResponse] = []
         var isLoadingTopics: Bool = false
+        
+        var historyDetailSummary: HistoryDetailSummaryFeature.State?
     }
     
     enum Action {
@@ -42,6 +44,8 @@ struct HistoryFeature {
         case historyItemsLoaded(Result<[HistoryItemResponse], Error>)
         case fetchTopicHistories
         case topicHistoriesLoaded(Result<[HistoryCategoryResponse], Error>)
+        case historyItemTapped(id: Int, type: String, date: String)
+        case historyDetailSummary(HistoryDetailSummaryFeature.Action)  // ✅ 추가
         case delegate(Delegate)
     }
     
@@ -146,11 +150,34 @@ struct HistoryFeature {
                  state.isLoadingTopics = false
                  print("❌ Failed to load topic histories: \(error)")
                  return .none
+                 
+             case .historyItemTapped(let id, let typeString, let date):
+                 // ✅ String -> DocumentType 변환
+                 let documentType: DocumentType = typeString == "CATEGORY" ? .category : .document
+                 
+                 state.historyDetailSummary = HistoryDetailSummaryFeature.State(
+                    historyId: id,
+                    documentType: documentType,
+                    date: date
+                 )
+                 print("✅ History item tapped - ID: \(id), Type: \(documentType), Date: \(date)")
+                 return .none
+                  
+              case .historyDetailSummary(.delegate(.dismissed)):
+                  state.historyDetailSummary = nil
+                  print("✅ History detail dismissed")
+                  return .none
+                  
+              case .historyDetailSummary:
+                  return .none
 
                  
              case .delegate:
                  return .none
              }
+         }
+         .ifLet(\.historyDetailSummary, action: \.historyDetailSummary) {
+             HistoryDetailSummaryFeature()
          }
      }
  }
@@ -222,7 +249,11 @@ struct HistoryView: View {
                                         },
                                         onDateSelected: { dateString in
                                             store.send(.dateSelected(dateString))
+                                        },
+                                        onItemTapped: { id, type, date in  // ✅ 수정
+                                            store.send(.historyItemTapped(id: id, type: type, date: date))
                                         }
+                                        
                                     )
                                     .padding(.top, 5)
                                 }
@@ -273,6 +304,16 @@ struct HistoryView: View {
             }
             .background(Color.white)
             .navigationBarHidden(true)
+            .navigationDestination(
+                isPresented: Binding(
+                    get: { store.historyDetailSummary != nil },
+                    set: { if !$0 { store.send(.historyDetailSummary(.delegate(.dismissed))) } }
+                )
+            ) {
+                if let detailStore = store.scope(state: \.historyDetailSummary, action: \.historyDetailSummary) {
+                    HistoryDetailSummaryView(store: detailStore)
+                }
+            }
             .onAppear {
                 store.send(.onAppear)
             }
@@ -392,6 +433,7 @@ struct HistoryCalendarView: View {
     let historyItems: [HistoryItemResponse] // 선택된 날짜의 히스토리 아이템
     let onMonthChanged: (Int, Int) -> Void
     let onDateSelected: (String?) -> Void // 날짜 선택/해제 콜백
+    let onItemTapped: (Int, String, String) -> Void
     
     let calendar = Calendar.current
     
@@ -539,6 +581,9 @@ struct HistoryCalendarView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color(hex: "EAF4FF"))
                     .cornerRadius(12)
+                    .onTapGesture {  // ✅ 추가
+                        onItemTapped(item.id, item.type, extractDateOnly(item.lastStudiedAt))
+                    }
                 }
             }
         }
@@ -606,6 +651,14 @@ struct HistoryCalendarView: View {
         }
         
         return days
+    }
+    
+    private func extractDateOnly(_ dateString: String) -> String {
+        // "2026-01-04T10:30:00.123456" -> "2026-01-04"
+        if dateString.count >= 10 {
+            return String(dateString.prefix(10))
+        }
+        return dateString
     }
 }
 
