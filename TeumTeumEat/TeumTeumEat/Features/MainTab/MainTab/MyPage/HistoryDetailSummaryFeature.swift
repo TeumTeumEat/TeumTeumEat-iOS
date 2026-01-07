@@ -20,6 +20,7 @@ struct HistoryDetailSummaryFeature {
         var title: String = ""
         var isLoading: Bool = true
         var errorMessage: String?
+        var detailAnswer: HistoryDetailAnswerFeature.State?
         
         init(historyId: Int, documentType: DocumentType, date: String) {
              self.historyId = historyId
@@ -33,6 +34,7 @@ struct HistoryDetailSummaryFeature {
         case fetchDetailResponse(Result<HistorySummaryDetailData, Error>)
         case closeButtonTapped
         case checkQuizButtonTapped
+        case detailAnswer(HistoryDetailAnswerFeature.Action)
         case delegate(Delegate)
     }
     
@@ -78,13 +80,30 @@ struct HistoryDetailSummaryFeature {
                 
             case .closeButtonTapped:
                 return .send(.delegate(.dismissed))
-            case .checkQuizButtonTapped:  // ✅ 추가
-                print("🔍 퀴즈 확인 버튼 클릭 - ID: \(state.historyId), Type: \(state.documentType)")
+                
+            case .checkQuizButtonTapped:
+                state.detailAnswer = HistoryDetailAnswerFeature.State(
+                    historyId: state.historyId,
+                    documentType: state.documentType,
+                    date: state.date  // ✅ date 전달
+                )
+                print("🔍 퀴즈 확인 버튼 클릭 - ID: \(state.historyId), Type: \(state.documentType), Date: \(state.date)")
                 return .none
+                
+            case .detailAnswer(.delegate(.dismissed)):  // ✅ 추가
+                state.detailAnswer = nil
+                print("✅ Quiz detail dismissed")
+                return .none
+                
+            case .detailAnswer:
+                          return .none
                 
             case .delegate:
                 return .none
             }
+        }
+        .ifLet(\.detailAnswer, action: \.detailAnswer) {
+            HistoryDetailAnswerFeature()
         }
     }
 }
@@ -194,6 +213,16 @@ struct HistoryDetailSummaryView: View {
         }
         .background(.white)
         .navigationBarHidden(true)
+        .navigationDestination(
+            isPresented: Binding(
+                get: { store.detailAnswer != nil },
+                set: { if !$0 { store.send(.detailAnswer(.delegate(.dismissed))) } }
+            )
+        ) {
+            if let answerStore = store.scope(state: \.detailAnswer, action: \.detailAnswer) {
+                HistoryDetailAnswerView(store: answerStore)
+            }
+        }
         .onAppear {
             store.send(.onAppear)
         }
