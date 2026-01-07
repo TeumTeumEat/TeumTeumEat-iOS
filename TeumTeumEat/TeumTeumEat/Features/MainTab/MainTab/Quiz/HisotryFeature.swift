@@ -111,9 +111,9 @@ struct HistoryFeature {
              case .calendarDataLoaded(.success(let data)):
                  state.calendarData = data
                  // stampCount를 totalStamps로 업데이트
-                 state.fireCount = data.stampedDates.count
+                 state.fireCount = data.currentStreak
                  state.stampCount = data.totalStamps
-                 print("Calendar data loaded: \(data.stampedDates.count) stamped dates, total: \(data.totalStamps)")
+                 print("Calendar data loaded: \(data.currentStreak) stamped dates, total: \(data.totalStamps)")
                  return .none
                  
              case .calendarDataLoaded(.failure(let error)):
@@ -216,9 +216,7 @@ struct HistoryView: View {
                                 // 날짜별
                                 VStack(spacing: 16) {
                                     HistoryDateCard(
-                                        fireCount: store.fireCount,
-                                        dateText: "얼른 시작 틈틈잇",
-                                        characterImage: "Frame 7407"
+                                        fireCount: store.fireCount
                                     )
                                     
                                     // 스탬프 카운트 HStack
@@ -339,13 +337,40 @@ struct HistoryView: View {
 
 struct HistoryDateCard: View {
     let fireCount: Int
-    let dateText: String
-    let characterImage: String
+    
+    private var streakText: String {
+        switch fireCount {
+        case 0:
+            return "얼른 시작 틈틈잇"
+        case 1...6:
+            return "시작이 반이다"
+        case 7...29:
+            return "일주일 연속 틈틈잇!"
+        case 30...:
+            return "한 달 연속 틈틈잇!"
+        default:
+            return "얼른 시작 틈틈잇"
+        }
+    }
+    
+    private var streakImage: String {
+        switch fireCount {
+        case 0:
+            return "Frame 7407"
+        case 1...6:
+            return "Frame 7408"
+        case 7...29:
+            return "Frame 7409"
+        case 30...:
+            return "Frame 7410"
+        default:
+            return "Frame 7407"
+        }
+    }
     
     var body: some View {
         GeometryReader { geometry in
             HStack(spacing: 8) {
-                // 왼쪽 영역 - 남은 공간 차지
                 VStack(alignment: .trailing, spacing: 0) {
                     HStack(spacing: 8) {
                         Image("fire")
@@ -353,7 +378,6 @@ struct HistoryDateCard: View {
                             .renderingMode(.template)
                             .foregroundStyle(.orange)
                             .frame(width: 50, height: 50)
-                       
                         
                         Text("\(fireCount)")
                             .font(.system(size: 40, weight: .regular))
@@ -362,7 +386,7 @@ struct HistoryDateCard: View {
                     .frame(height: 66)
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     
-                    Text(dateText)
+                    Text(streakText)
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.gray)
                         .frame(height: 42)
@@ -371,8 +395,7 @@ struct HistoryDateCard: View {
                 .frame(maxWidth: .infinity)
                 .background(Color(hex: "EAF4FF"))
                 
-                // 오른쪽 영역 - 카드 절반 크기
-                Image(characterImage)
+                Image(streakImage)
                     .resizable()
                     .scaledToFill()
                     .frame(width: geometry.size.width / 2)
