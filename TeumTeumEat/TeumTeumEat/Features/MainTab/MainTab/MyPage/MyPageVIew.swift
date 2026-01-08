@@ -203,7 +203,7 @@ struct MyPageView: View {
                             }
                             
                             // 고객센터
-                            Link(destination: URL(string: "https://your-support-url.com")!) {
+                            Link(destination: URL(string: "https://forms.gle/jmrRbST7XwLsfhoE7")!) {
                                 HStack {
                                     Text("고객센터")
                                         .bodyRegular16()
