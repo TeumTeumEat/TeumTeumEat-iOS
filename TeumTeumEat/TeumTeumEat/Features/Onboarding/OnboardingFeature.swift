@@ -354,7 +354,8 @@ struct OnboardingFeature {
             state.summary = nil
             state.loading = OnboardingLoadingFeature.State(
                 onboardingData: onboardingData,
-                isOnboarding: true  // 온보딩 모드
+                isOnboarding: true,
+                isFileUpload: onboardingData.contentType == .fileUpload // 온보딩 모드
             )
             return .none
         // Loading
