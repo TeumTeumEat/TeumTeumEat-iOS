@@ -17,7 +17,7 @@ struct ContentSummaryFeature {
         var hasSolvedToday: Bool
         var isFirstTime: Bool
         var documentType: DocumentType
-        var quizzes: [UserQuiz]  // ✅ 추가
+        var quizzes: [UserQuiz]
         var isLoading: Bool = false
         
         init(
@@ -26,14 +26,14 @@ struct ContentSummaryFeature {
             hasSolvedToday: Bool,
             isFirstTime: Bool,
             documentType: DocumentType,
-            quizzes: [UserQuiz]  // ✅ 추가
+            quizzes: [UserQuiz]
         ) {
             self.documentId = documentId
             self.summaryText = summaryText
             self.hasSolvedToday = hasSolvedToday
             self.isFirstTime = isFirstTime
             self.documentType = documentType
-            self.quizzes = quizzes  // ✅ 추가
+            self.quizzes = quizzes
         }
     }
     
@@ -45,7 +45,7 @@ struct ContentSummaryFeature {
     }
     
     enum Delegate {
-        case startQuiz(quizzes: [UserQuiz], isFirstTime: Bool)  // ✅ 수정
+        case startQuiz(quizzes: [UserQuiz], isFirstTime: Bool)
         case cancelled
     }
     
@@ -56,7 +56,7 @@ struct ContentSummaryFeature {
                 return .none
                 
             case .startQuizButtonTapped:
-                // ✅ quizzes와 isFirstTime 전달
+                // quizzes와 isFirstTime 전달
                 return .send(.delegate(.startQuiz(
                     quizzes: state.quizzes,
                     isFirstTime: state.isFirstTime

@@ -50,7 +50,7 @@ struct QuizReviewSummaryView: View {
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
-                // ✅ Custom Navigation Bar
+                // Custom Navigation Bar
                 VStack(spacing: 0) {
                     HStack {
                         Button {
@@ -80,7 +80,7 @@ struct QuizReviewSummaryView: View {
                 }
                 .background(Color.white)
                 
-                // ✅ Markdown 콘텐츠
+                // Markdown 콘텐츠
                 ScrollView {
                     Markdown(store.summaryText)
                         .markdownTheme(.gitHub)
@@ -141,7 +141,7 @@ struct QuizCompleteView: View {
         VStack(spacing: 0) {
             Spacer()
             
-            // ✅ 완료 메시지
+            // 완료 메시지
             VStack(spacing: 20) {
                 // 아이콘 또는 이미지 (선택사항)
                 Image(systemName: "checkmark.circle.fill")
@@ -158,7 +158,7 @@ struct QuizCompleteView: View {
             
             Spacer()
             
-            // ✅ 하단 버튼
+            // 하단 버튼
             VStack(spacing: 12) {
                 Button {
                     store.send(.homeButtonTapped)

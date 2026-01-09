@@ -129,7 +129,7 @@ struct AppFeature {
                 // 로그인 화면으로
                 state.login = LoginFeature.State()
                 
-                print("✅ 회원탈퇴 완료 - 로그인 화면으로 이동")
+                print("회원탈퇴 완료 - 로그인 화면으로 이동")
                 
                 return .none
                 

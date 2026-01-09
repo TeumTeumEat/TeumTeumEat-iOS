@@ -21,8 +21,8 @@ struct QuizFlowFeature {
         var quiz: QuizFeature.State?
         var result: QuizResultFeature.State?
         var detailResult: QuizDetailResultFeature.State?
-        var reviewSummary: QuizReviewSummaryFeature.State?  // ✅ 추가
-        var complete: QuizCompleteFeature.State?  // ✅ 추가
+        var reviewSummary: QuizReviewSummaryFeature.State?
+        var complete: QuizCompleteFeature.State?
         
         enum Step {
             case summary
@@ -30,8 +30,8 @@ struct QuizFlowFeature {
             case quiz
             case result
             case detailResult
-            case reviewSummary  // ✅ 추가
-            case complete  // ✅ 추가
+            case reviewSummary
+            case complete
         }
         
         init(
@@ -52,8 +52,8 @@ struct QuizFlowFeature {
         case quiz(QuizFeature.Action)
         case result(QuizResultFeature.Action)
         case detailResult(QuizDetailResultFeature.Action)
-        case reviewSummary(QuizReviewSummaryFeature.Action)  // ✅ 추가
-        case complete(QuizCompleteFeature.Action)  // ✅ 추가
+        case reviewSummary(QuizReviewSummaryFeature.Action)
+        case complete(QuizCompleteFeature.Action)
         case delegate(Delegate)
     }
     
@@ -129,7 +129,7 @@ struct QuizFlowFeature {
                 print("QuizFlow: 히스토리로 이동")
                 return .send(.delegate(.completed(destination: .history)))
                 
-            // ✅ DetailResult → ReviewSummary (글 보기)
+            // DetailResult → ReviewSummary (글 보기)
             case .detailResult(.delegate(.showReviewSummary)):
                 state.currentStep = .reviewSummary
                 state.reviewSummary = QuizReviewSummaryFeature.State(
@@ -138,25 +138,25 @@ struct QuizFlowFeature {
                 print("QuizFlow: 요약본 다시 보기로 이동")
                 return .none
                 
-            // ✅ DetailResult → Complete (다음으로)
+            // DetailResult → Complete (다음으로)
             case .detailResult(.delegate(.showComplete)):
                 state.currentStep = .complete
                 state.complete = QuizCompleteFeature.State()
                 print("QuizFlow: 완료 화면으로 이동")
                 return .none
                 
-            // ✅ ReviewSummary → 뒤로가기 (DetailResult로)
+            // ReviewSummary → 뒤로가기 (DetailResult로)
             case .reviewSummary(.delegate(.back)):
                 state.currentStep = .detailResult
                 print("QuizFlow: 상세 결과로 복귀")
                 return .none
                 
-            // ✅ Complete → 홈으로
+            // Complete → 홈으로
             case .complete(.delegate(.navigateToHome)):
                 print("QuizFlow: 홈으로 이동")
                 return .send(.delegate(.completed(destination: .home)))
                 
-            // ✅ Complete → 히스토리로
+            // Complete → 히스토리로
             case .complete(.delegate(.navigateToHistory)):
                 print("QuizFlow: 히스토리로 이동")
                 return .send(.delegate(.completed(destination: .history)))
@@ -177,10 +177,10 @@ struct QuizFlowFeature {
         .ifLet(\.detailResult, action: \.detailResult) {
             QuizDetailResultFeature()
         }
-        .ifLet(\.reviewSummary, action: \.reviewSummary) {  // ✅ 추가
+        .ifLet(\.reviewSummary, action: \.reviewSummary) {
             QuizReviewSummaryFeature()
         }
-        .ifLet(\.complete, action: \.complete) {  // ✅ 추가
+        .ifLet(\.complete, action: \.complete) {
             QuizCompleteFeature()
         }
     }
@@ -221,12 +221,12 @@ struct QuizFlowView: View {
                     QuizDetailResultView(store: detailResultStore)
                 }
                 
-            case .reviewSummary:  // ✅ 추가
+            case .reviewSummary:
                 if let reviewSummaryStore = store.scope(state: \.reviewSummary, action: \.reviewSummary) {
                     QuizReviewSummaryView(store: reviewSummaryStore)
                 }
                 
-            case .complete:  // ✅ 추가
+            case .complete: 
                 if let completeStore = store.scope(state: \.complete, action: \.complete) {
                     QuizCompleteView(store: completeStore)
                 }

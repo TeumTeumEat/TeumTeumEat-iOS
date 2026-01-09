@@ -14,12 +14,12 @@ struct HistoryDetailAnswerFeature {
     struct State: Equatable {
         var historyId: Int
         var documentType: DocumentType
-        var date: String  // ✅ date 추가
+        var date: String
         var quizzes: [QuizDetailItem] = []
         var isLoading: Bool = true
         var errorMessage: String?
         
-        init(historyId: Int, documentType: DocumentType, date: String) {  // ✅ date 파라미터 추가
+        init(historyId: Int, documentType: DocumentType, date: String) {
             self.historyId = historyId
             self.documentType = documentType
             self.date = date
@@ -46,7 +46,6 @@ struct HistoryDetailAnswerFeature {
                 state.isLoading = true
                 state.errorMessage = nil
                 
-                // ✅ date 추가
                 return .run { [type = state.documentType, id = state.historyId, date = state.date] send in
                     do {
                         let detail = try await apiClient.fetchQuizHistoryDetails(
@@ -62,13 +61,13 @@ struct HistoryDetailAnswerFeature {
             case .fetchQuizDetailsResponse(.success(let detail)):
                 state.isLoading = false
                 state.quizzes = detail.quizzes
-                print("✅ Quiz history loaded: \(detail.quizzes.count) quizzes")
+                print("Quiz history loaded: \(detail.quizzes.count) quizzes")
                 return .none
                 
             case .fetchQuizDetailsResponse(.failure(let error)):
                 state.isLoading = false
                 state.errorMessage = "퀴즈 정보를 불러오는데 실패했습니다."
-                print("❌ Failed to load quiz history: \(error)")
+                print("Failed to load quiz history: \(error)")
                 return .none
                 
             case .closeButtonTapped:
@@ -173,9 +172,9 @@ struct HistoryDetailAnswerView: View {
         TTEAnswerCard(
             questionNumber: index + 1,
             question: quiz.question,
-            correctAnswer: quiz.answer,  // ✅ answer 필드 사용
+            correctAnswer: quiz.answer,
             explanation: quiz.explanation,
-            status: quiz.isCorrect ? .correct : .wrong  // ✅ isCorrect 필드 사용
+            status: quiz.isCorrect ? .correct : .wrong 
         )
     }
 }   
