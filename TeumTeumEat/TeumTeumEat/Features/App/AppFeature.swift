@@ -13,7 +13,6 @@ struct AppFeature {
     struct State: Equatable {
         var splash: SplashFeature.State = .init()
         var login: LoginFeature.State?
-        var termsAgreement: TermsAgreementFeature.State?
         var onboarding: OnboardingFeature.State?
         var mainTab: MainTabFeature.State?
         var isShowingSplash = true
@@ -22,7 +21,6 @@ struct AppFeature {
     enum Action {
         case splash(SplashFeature.Action)
         case login(LoginFeature.Action)
-        case termsAgreement(TermsAgreementFeature.Action)
         case onboarding(OnboardingFeature.Action)
         case mainTab(MainTabFeature.Action)
         case logout
@@ -46,7 +44,6 @@ struct AppFeature {
                 KeyChainManager.shared.deleteAll()
                 
                 state.login = nil
-                state.termsAgreement = nil
                 state.onboarding = nil
                 state.mainTab = nil
                 
@@ -94,13 +91,6 @@ struct AppFeature {
                 }
                 return .none
                 
-            // TermsAgreement Delegate
-            case .termsAgreement(.delegate(.signUpSuccess)):
-                // 약관 동의 & 회원가입 성공 → 온보딩 화면
-                state.termsAgreement = nil
-                state.onboarding = OnboardingFeature.State()
-                return .none
-                
             // Onboarding Delegate
             case .onboarding(.complete(.startButtonTapped)):
                 // 온보딩 완료 → TODO: 메인 화면 (나중에 구현)
@@ -122,7 +112,6 @@ struct AppFeature {
                 
                 // 모든 상태 초기화
                 state.login = nil
-                state.termsAgreement = nil
                 state.onboarding = nil
                 state.mainTab = nil
                 
@@ -133,15 +122,12 @@ struct AppFeature {
                 
                 return .none
                 
-            case .splash, .login, .termsAgreement, .onboarding, .mainTab:
+            case .splash, .login, .onboarding, .mainTab:
                 return .none
             }
         }
         .ifLet(\.login, action: \.login) {
             LoginFeature()
-        }
-        .ifLet(\.termsAgreement, action: \.termsAgreement) {
-            TermsAgreementFeature()
         }
         .ifLet(\.onboarding, action: \.onboarding) {
             OnboardingFeature()

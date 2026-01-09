@@ -98,7 +98,7 @@ struct HomeFeature {
                     }
                 )
                 
-            // ✅ 캘린더 조회 완료 (독립적 처리)
+            // 캘린더 조회 완료 (독립적 처리)
             case .fetchCalendarHistoryResponse(.success(let calendarData)):
                 state.calendarData = calendarData
                 state.fireCount = calendarData.currentStreak
@@ -107,7 +107,7 @@ struct HomeFeature {
                 return .none
                 
             case .fetchCalendarHistoryResponse(.failure(let error)):
-                print("❌ 캘린더 조회 실패: \(error)")
+                print("캘린더 조회 실패: \(error)")
                 // 실패해도 다른 API에 영향 없음
                 return .none
                 
