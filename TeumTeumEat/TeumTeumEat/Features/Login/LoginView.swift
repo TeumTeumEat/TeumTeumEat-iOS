@@ -16,13 +16,11 @@ struct LoginView: View {
         VStack(spacing: 20) {
             Spacer()
             
-            Text("TeumTeumEat")
-                .font(.largeTitle)
-                .fontWeight(.bold)
+            Text("개인 맞춤형 퀴즈 기반 학습 서비스")
+                .font(.st_semibold_18)
+                .foregroundStyle(.black)
             
-            Text("간편하게 로그인하고 시작하세요")
-                .font(.subheadline)
-                .foregroundColor(.gray)
+            Image("logo_login")
             
             Spacer()
             
@@ -37,7 +35,7 @@ struct LoginView: View {
                             .fontWeight(.semibold)
                     }
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
+                    .frame(height: 44)
                     .background(Color.black)
                     .foregroundColor(.white)
                     .cornerRadius(10)
@@ -61,7 +59,7 @@ struct LoginView: View {
                             .fontWeight(.semibold)
                     }
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
+                    .frame(height: 44)
                     .background(Color.yellow)
                     .foregroundColor(.black)
                     .cornerRadius(10)
@@ -73,6 +71,7 @@ struct LoginView: View {
                 )
             }
             .padding(.horizontal, 20)
+            .padding(.bottom, 50)
             
             if let errorMessage = store.errorMessage {
                 Text(errorMessage)
@@ -80,10 +79,9 @@ struct LoginView: View {
                     .foregroundColor(.red)
                     .padding(.top, 8)
             }
-            
-            Spacer()
         }
         .padding()
+        .background(.white)
         .sheet(isPresented: .init(
             get: { store.showTermsSheet },
             set: { _ in store.send(.dismissTermsSheet) }
@@ -131,9 +129,10 @@ struct LoginView: View {
         )
         .frame(maxWidth: .infinity)
         .frame(height: 50)
-        .blendMode(.hue)  
+        .blendMode(.hue)
     }
 }
+
 struct TermsAgreementBottomSheet: View {
     let onAgree: () -> Void
     let onDismiss: () -> Void
