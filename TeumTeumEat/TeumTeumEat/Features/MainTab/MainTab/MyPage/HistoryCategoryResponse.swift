@@ -32,7 +32,7 @@ struct QuizHistoryDetailData: Decodable {
     let quizzes: [QuizDetailItem]
 }
 
-struct QuizDetailItem: Decodable {
+struct QuizDetailItem: Decodable, Equatable {
     let quizId: Int
     let question: String
     let options: [String]

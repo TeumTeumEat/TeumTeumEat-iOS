@@ -738,10 +738,10 @@ extension APIClient {
     
     
     /// 퀴즈목록 상세보기
-    func fetchQuizHistoryDetails(type: DocumentType, id: Int) async throws -> QuizHistoryDetailData {
+    func fetchQuizHistoryDetails(type: DocumentType, id: Int, date: String)  async throws -> QuizHistoryDetailData {
 
-        let typePath = type.rawValue.lowercased()
-        let endpoint = "/api/v1/history/details/quizzes/\(typePath)/\(id)"
+        let typePath = type.rawValue
+        let endpoint = "/api/v1/history/details/quizzes/\(typePath)/\(id)?date=\(date)"
         
         // 2. 공통 request 함수 호출
         let response: APIResponse<QuizHistoryDetailData> = try await request(
@@ -766,7 +766,7 @@ extension APIClient {
     
     /// 요약글 상세보기
     func fetchHistorySummaryDetail(type: DocumentType, id: Int, date: String) async throws -> HistorySummaryDetailData {
-        let typePath = type.rawValue.lowercased()
+        let typePath = type.rawValue
         let endpoint = "/api/v1/history/details/summary/\(typePath)/\(id)?date=\(date)"
         
         let response: APIResponse<HistorySummaryDetailData> = try await request(

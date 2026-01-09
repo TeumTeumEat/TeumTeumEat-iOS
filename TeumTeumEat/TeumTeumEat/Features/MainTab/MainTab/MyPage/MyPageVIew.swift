@@ -188,9 +188,7 @@ struct MyPageView: View {
                         
                         VStack(spacing: 20) {
                             // 이용약관
-                            Button {
-                                print("이용약관 탭")
-                            } label: {
+                            Link(destination: URL(string: "https://resolute-flier-02d.notion.site/2d8151abb62e80cbaefde6ddcef603cc")!) {
                                 HStack {
                                     Text("이용약관")
                                         .bodyRegular16()
@@ -205,9 +203,7 @@ struct MyPageView: View {
                             }
                             
                             // 고객센터
-                            Button {
-                                print("고객센터 탭")
-                            } label: {
+                            Link(destination: URL(string: "https://forms.gle/jmrRbST7XwLsfhoE7")!) {
                                 HStack {
                                     Text("고객센터")
                                         .bodyRegular16()
@@ -222,20 +218,16 @@ struct MyPageView: View {
                             }
                             
                             // 버전정보
-                            Button {
-                                print("버전정보 탭")
-                            } label: {
-                                HStack {
-                                    Text("버전정보")
-                                        .bodyRegular16()
-                                        .foregroundColor(.black)
-                                    
-                                    Spacer()
-                                    
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.gray)
-                                }
+                            HStack {
+                                Text("버전정보")
+                                    .bodyRegular16()
+                                    .foregroundColor(.black)
+                                
+                                Spacer()
+                                
+                                Text("v 1.0.0")
+                                    .bodyRegular14()
+                                    .foregroundColor(.gray)
                             }
                         }
                         .padding(.horizontal, 20)
@@ -251,7 +243,7 @@ struct MyPageView: View {
                                 Spacer()
                                 
                                 Button {
-                                 store.send(.logoutButtonTapped)
+                                    store.send(.logoutButtonTapped)
                                 } label: {
                                     Text("로그아웃")
                                         .bodyRegular14()

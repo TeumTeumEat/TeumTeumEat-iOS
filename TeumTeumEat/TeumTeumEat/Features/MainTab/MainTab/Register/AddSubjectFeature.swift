@@ -206,7 +206,8 @@ struct AddSubjectFeature {
                 state.currentStep = .loading
                 state.loading = OnboardingLoadingFeature.State(
                     onboardingData: onboardingData,
-                    isOnboarding: false
+                    isOnboarding: false,
+                    isFileUpload: false
                 )
                 
                 return .none

@@ -23,6 +23,7 @@ struct HomeFeature {
         var categoryDocument: CategoryDocumentData?
         var pdfSummary: PDFSummaryData?
         var quizzes: [UserQuiz] = []
+        var calendarData: CalendarHistoryData?
         
         var isLoading: Bool = false
         var errorMessage: String?
@@ -30,6 +31,8 @@ struct HomeFeature {
     
     enum Action {
         case onAppear
+        
+        case fetchCalendarHistoryResponse(Result<CalendarHistoryData, Error>)
         
         // Step 1: 현재 목표 조회
         case fetchCurrentGoalResponse(Result<GoalResponse, Error>)
@@ -68,15 +71,46 @@ struct HomeFeature {
                 state.isLoading = true
                 state.errorMessage = nil
                 
-                // Step 1: 현재 목표 조회
-                return .run { send in
-                    do {
-                        let goal = try await apiClient.fetchCurrentGoal()
-                        await send(.fetchCurrentGoalResponse(.success(goal)))
-                    } catch {
-                        await send(.fetchCurrentGoalResponse(.failure(error)))
+                // ✅ 병렬 처리: 캘린더 조회 + 목표 조회
+                let now = Date()
+                let calendar = Calendar.current
+                let year = calendar.component(.year, from: now)
+                let month = calendar.component(.month, from: now)
+                
+                return .merge(
+                    // 캘린더 조회 (독립적)
+                    .run { send in
+                        do {
+                            let calendarData = try await apiClient.fetchCalendarHistory(year: year, month: month)
+                            await send(.fetchCalendarHistoryResponse(.success(calendarData)))
+                        } catch {
+                            await send(.fetchCalendarHistoryResponse(.failure(error)))
+                        }
+                    },
+                    // 목표 조회 (Step 1 시작)
+                    .run { send in
+                        do {
+                            let goal = try await apiClient.fetchCurrentGoal()
+                            await send(.fetchCurrentGoalResponse(.success(goal)))
+                        } catch {
+                            await send(.fetchCurrentGoalResponse(.failure(error)))
+                        }
                     }
-                }
+                )
+                
+            // ✅ 캘린더 조회 완료 (독립적 처리)
+            case .fetchCalendarHistoryResponse(.success(let calendarData)):
+                state.calendarData = calendarData
+                state.fireCount = calendarData.currentStreak
+                state.stampCount = calendarData.totalStamps
+                print("✅ 캘린더 조회 완료 - Fire: \(calendarData.currentStreak), Stamp: \(calendarData.totalStamps)")
+                return .none
+                
+            case .fetchCalendarHistoryResponse(.failure(let error)):
+                print("❌ 캘린더 조회 실패: \(error)")
+                // 실패해도 다른 API에 영향 없음
+                return .none
+                
                 
             // Step 1 완료 → Step 2 시작
             case .fetchCurrentGoalResponse(.success(let goal)):

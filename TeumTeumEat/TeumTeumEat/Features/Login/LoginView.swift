@@ -142,7 +142,6 @@ struct TermsAgreementBottomSheet: View {
     @State private var serviceTermsAgreed = false
     @State private var privacyPolicyAgreed = false
     @State private var ageConfirmationAgreed = false
-    @State private var marketingAgreed = false
     
     private var canProceed: Bool {
         serviceTermsAgreed && privacyPolicyAgreed && ageConfirmationAgreed
@@ -152,33 +151,60 @@ struct TermsAgreementBottomSheet: View {
         VStack(spacing: 0) {
             // 헤더
             HStack {
-                Text("서비스 이용 약관")
-                    .font(.title2)
-                    .fontWeight(.bold)
+                Text("이용 약관")
+                    .font(.system(size: 18, weight: .semibold))
                 
                 Spacer()
                 
                 Button {
-                    onDismiss()
+                    if canProceed {
+                        onAgree()
+                    }
                 } label: {
-                    Image(systemName: "xmark")
-                        .foregroundColor(.gray)
+                    Text("완료")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+                        .background(canProceed ? Color.blue : Color.gray)
+                        .clipShape(Capsule())
                 }
+                .disabled(!canProceed)
             }
             .padding()
             
-            Divider()
-            
             ScrollView {
                 VStack(spacing: 20) {
-                    // 전체 동의
-                    HStack {
+                    // 개별 약관 (순서 변경)
+                    VStack(spacing: 16) {
+                        TermRow(
+                            isAgreed: $ageConfirmationAgreed,
+                            title: "만 14세 이상 가입 동의 (필수)",
+                            link: nil
+                        )
+                        
+                        TermRow(
+                            isAgreed: $serviceTermsAgreed,
+                            title: "이용약관 (필수)",
+                            link: "https://resolute-flier-02d.notion.site/2d8151abb62e80cbaefde6ddcef603cc"
+                        )
+                        
+                        TermRow(
+                            isAgreed: $privacyPolicyAgreed,
+                            title: "개인정보처리방침 (필수)",
+                            link: "https://resolute-flier-02d.notion.site/2d8151abb62e8099bfd6d881256a6b4a"
+                        )
+                    }
+                    .onChange(of: ageConfirmationAgreed) { _, _ in updateAllAgreed() }
+                    .onChange(of: serviceTermsAgreed) { _, _ in updateAllAgreed() }
+                    .onChange(of: privacyPolicyAgreed) { _, _ in updateAllAgreed() }
+                    
+                    HStack(spacing: 12) {
                         Button {
                             allAgreed.toggle()
                             serviceTermsAgreed = allAgreed
                             privacyPolicyAgreed = allAgreed
                             ageConfirmationAgreed = allAgreed
-                            marketingAgreed = allAgreed
                         } label: {
                             HStack(spacing: 12) {
                                 Image(systemName: allAgreed ? "checkmark.circle.fill" : "circle")
@@ -187,76 +213,55 @@ struct TermsAgreementBottomSheet: View {
                                 
                                 Text("전체 동의")
                                     .font(.headline)
+                                    .foregroundColor(.primary)
                             }
                         }
                         Spacer()
                     }
-                    .padding()
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(12)
-                    
-                    // 개별 약관
-                    VStack(spacing: 16) {
-                        TermRow(
-                            isAgreed: $serviceTermsAgreed,
-                            title: "(필수) 서비스 이용약관"
-                        )
-                        
-                        TermRow(
-                            isAgreed: $privacyPolicyAgreed,
-                            title: "(필수) 개인정보 처리방침"
-                        )
-                        
-                        TermRow(
-                            isAgreed: $ageConfirmationAgreed,
-                            title: "(필수) 만 14세 이상입니다"
-                        )
-                        
-                        TermRow(
-                            isAgreed: $marketingAgreed,
-                            title: "(선택) 마케팅 정보 수신 동의"
-                        )
-                    }
+                    .padding(.leading, 4)
                 }
                 .padding()
             }
-            
-            // 동의 버튼
-            Button {
-                onAgree()
-            } label: {
-                Text("동의하고 시작하기")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(canProceed ? Color.blue : Color.gray)
-                    .cornerRadius(12)
-            }
-            .disabled(!canProceed)
-            .padding()
         }
+    }
+    
+    private func updateAllAgreed() {
+        allAgreed = ageConfirmationAgreed && serviceTermsAgreed && privacyPolicyAgreed
     }
 }
 
 struct TermRow: View {
     @Binding var isAgreed: Bool
     let title: String
+    let link: String?
     
     var body: some View {
-        Button {
-            isAgreed.toggle()
-        } label: {
-            HStack(spacing: 12) {
+        HStack(spacing: 12) {
+            // 체크박스
+            Button {
+                isAgreed.toggle()
+            } label: {
                 Image(systemName: isAgreed ? "checkmark.circle.fill" : "circle")
+                    .font(.title2)
                     .foregroundColor(isAgreed ? .blue : .gray)
-                
-                Text(title)
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
-                
-                Spacer()
             }
+            
+            // 텍스트 (링크가 있으면 Link, 없으면 일반 Text)
+            if let urlString = link, let url = URL(string: urlString) {
+                Link(destination: url) {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundColor(.blue)
+                        .underline()
+                }
+            } else {
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+            }
+            
+            Spacer()
         }
+        .padding(.leading, 4)
     }
 }

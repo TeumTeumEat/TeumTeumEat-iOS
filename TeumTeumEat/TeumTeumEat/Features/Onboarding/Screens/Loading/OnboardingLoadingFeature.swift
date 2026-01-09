@@ -24,6 +24,7 @@ struct OnboardingLoadingFeature {
         var isOnboarding: Bool = true
         var animationCompleted: Bool = false
         var apiCompleted: Bool = false
+        var isFileUpload: Bool = false
         var apiError: APIError?
         
         @Presents var errorAlert: AlertState<Action.ErrorAlert>?
@@ -32,6 +33,10 @@ struct OnboardingLoadingFeature {
         // 완료 여부
         var canProceed: Bool {
             animationCompleted && apiCompleted && apiError == nil
+        }
+        
+        var animationDelay: TimeInterval {
+            isFileUpload ? 10.0 : 1.0  // 파일이면 단계당 10초, 아니면 1초
         }
         
         struct LoadingStep: Equatable, Identifiable {
@@ -100,8 +105,10 @@ struct OnboardingLoadingFeature {
                 state.loadingSteps[state.currentStepIndex].isCompleted = true
                 state.currentStepIndex += 1
                 
+                let delay = state.animationDelay
+                
                 return .run { send in
-                    try await Task.sleep(for: .seconds(1))
+                    try await Task.sleep(for: .seconds(delay))
                     await send(.updateProgress)
                 }
                 

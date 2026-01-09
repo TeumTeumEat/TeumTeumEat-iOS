@@ -33,6 +33,45 @@ struct AppSettingsFeature {
         var isSaving: Bool = false
         var errorMessage: String?
         
+        // 닉네임 검증 로직 추가
+        var nicknameValidationError: String? {
+            let trimmedName = nickname.trimmingCharacters(in: .whitespaces)
+            
+            // 입력이 없으면 에러 메시지 표시 안 함
+            if nickname.isEmpty {
+                return nil
+            }
+            
+            // 길이 체크
+            if trimmedName.count > 10 {
+                return "닉네임은 10글자 이하로 입력해주세요"
+            }
+            
+            // 완성된 한글, 영문, 숫자만 허용
+            let allowedPattern = "^[a-zA-Z0-9가-힣]+$"
+            let predicate = NSPredicate(format: "SELF MATCHES %@", allowedPattern)
+            
+            if !predicate.evaluate(with: trimmedName) {
+                return "한글, 영문, 숫자만 사용 가능해요"
+            }
+            
+            return nil
+        }
+        
+        // 닉네임 유효성 체크
+        var isNicknameValid: Bool {
+            let trimmedName = nickname.trimmingCharacters(in: .whitespaces)
+            
+            guard !trimmedName.isEmpty else { return false }
+            guard trimmedName.count >= 1 && trimmedName.count <= 10 else { return false }
+            guard !nickname.contains(" ") else { return false }
+            
+            let allowedPattern = "^[a-zA-Z0-9가-힣]+$"
+            let predicate = NSPredicate(format: "SELF MATCHES %@", allowedPattern)
+            
+            return predicate.evaluate(with: trimmedName)
+        }
+        
         // Computed Properties
         var hasChanges: Bool {
             nickname != originalNickname ||
@@ -41,8 +80,9 @@ struct AppSettingsFeature {
             usageMinutes != originalUsageMinutes
         }
         
+        // canSave 수정 - 닉네임 유효성 체크 추가
         var canSave: Bool {
-            hasChanges && !nickname.isEmpty
+            hasChanges && isNicknameValid 
         }
         
         var leaveTimeText: String {

@@ -30,6 +30,8 @@ struct HistoryFeature {
         
         var topicCategories: [HistoryCategoryResponse] = []
         var isLoadingTopics: Bool = false
+        
+        var historyDetailSummary: HistoryDetailSummaryFeature.State?
     }
     
     enum Action {
@@ -42,6 +44,8 @@ struct HistoryFeature {
         case historyItemsLoaded(Result<[HistoryItemResponse], Error>)
         case fetchTopicHistories
         case topicHistoriesLoaded(Result<[HistoryCategoryResponse], Error>)
+        case historyItemTapped(id: Int, type: String, date: String)
+        case historyDetailSummary(HistoryDetailSummaryFeature.Action)  // ✅ 추가
         case delegate(Delegate)
     }
     
@@ -107,9 +111,9 @@ struct HistoryFeature {
              case .calendarDataLoaded(.success(let data)):
                  state.calendarData = data
                  // stampCount를 totalStamps로 업데이트
-                 state.fireCount = data.stampedDates.count
+                 state.fireCount = data.currentStreak
                  state.stampCount = data.totalStamps
-                 print("Calendar data loaded: \(data.stampedDates.count) stamped dates, total: \(data.totalStamps)")
+                 print("Calendar data loaded: \(data.currentStreak) stamped dates, total: \(data.totalStamps)")
                  return .none
                  
              case .calendarDataLoaded(.failure(let error)):
@@ -146,11 +150,34 @@ struct HistoryFeature {
                  state.isLoadingTopics = false
                  print("❌ Failed to load topic histories: \(error)")
                  return .none
+                 
+             case .historyItemTapped(let id, let typeString, let date):
+                 // ✅ String -> DocumentType 변환
+                 let documentType: DocumentType = typeString == "CATEGORY" ? .category : .document
+                 
+                 state.historyDetailSummary = HistoryDetailSummaryFeature.State(
+                    historyId: id,
+                    documentType: documentType,
+                    date: date
+                 )
+                 print("✅ History item tapped - ID: \(id), Type: \(documentType), Date: \(date)")
+                 return .none
+                  
+              case .historyDetailSummary(.delegate(.dismissed)):
+                  state.historyDetailSummary = nil
+                  print("✅ History detail dismissed")
+                  return .none
+                  
+              case .historyDetailSummary:
+                  return .none
 
                  
              case .delegate:
                  return .none
              }
+         }
+         .ifLet(\.historyDetailSummary, action: \.historyDetailSummary) {
+             HistoryDetailSummaryFeature()
          }
      }
  }
@@ -189,9 +216,7 @@ struct HistoryView: View {
                                 // 날짜별
                                 VStack(spacing: 16) {
                                     HistoryDateCard(
-                                        fireCount: store.fireCount,
-                                        dateText: "얼른 시작 틈틈잇",
-                                        characterImage: "Frame 7407"
+                                        fireCount: store.fireCount
                                     )
                                     
                                     // 스탬프 카운트 HStack
@@ -222,7 +247,11 @@ struct HistoryView: View {
                                         },
                                         onDateSelected: { dateString in
                                             store.send(.dateSelected(dateString))
+                                        },
+                                        onItemTapped: { id, type, date in  // ✅ 수정
+                                            store.send(.historyItemTapped(id: id, type: type, date: date))
                                         }
+                                        
                                     )
                                     .padding(.top, 5)
                                 }
@@ -273,6 +302,16 @@ struct HistoryView: View {
             }
             .background(Color.white)
             .navigationBarHidden(true)
+            .navigationDestination(
+                isPresented: Binding(
+                    get: { store.historyDetailSummary != nil },
+                    set: { if !$0 { store.send(.historyDetailSummary(.delegate(.dismissed))) } }
+                )
+            ) {
+                if let detailStore = store.scope(state: \.historyDetailSummary, action: \.historyDetailSummary) {
+                    HistoryDetailSummaryView(store: detailStore)
+                }
+            }
             .onAppear {
                 store.send(.onAppear)
             }
@@ -298,13 +337,40 @@ struct HistoryView: View {
 
 struct HistoryDateCard: View {
     let fireCount: Int
-    let dateText: String
-    let characterImage: String
+    
+    private var streakText: String {
+        switch fireCount {
+        case 0:
+            return "얼른 시작 틈틈잇"
+        case 1...6:
+            return "시작이 반이다"
+        case 7...29:
+            return "일주일 연속 틈틈잇!"
+        case 30...:
+            return "한 달 연속 틈틈잇!"
+        default:
+            return "얼른 시작 틈틈잇"
+        }
+    }
+    
+    private var streakImage: String {
+        switch fireCount {
+        case 0:
+            return "Frame 7407"
+        case 1...6:
+            return "Frame 7408"
+        case 7...29:
+            return "Frame 7409"
+        case 30...:
+            return "Frame 7410"
+        default:
+            return "Frame 7407"
+        }
+    }
     
     var body: some View {
         GeometryReader { geometry in
             HStack(spacing: 8) {
-                // 왼쪽 영역 - 남은 공간 차지
                 VStack(alignment: .trailing, spacing: 0) {
                     HStack(spacing: 8) {
                         Image("fire")
@@ -312,7 +378,6 @@ struct HistoryDateCard: View {
                             .renderingMode(.template)
                             .foregroundStyle(.orange)
                             .frame(width: 50, height: 50)
-                       
                         
                         Text("\(fireCount)")
                             .font(.system(size: 40, weight: .regular))
@@ -321,7 +386,7 @@ struct HistoryDateCard: View {
                     .frame(height: 66)
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     
-                    Text(dateText)
+                    Text(streakText)
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.gray)
                         .frame(height: 42)
@@ -330,8 +395,7 @@ struct HistoryDateCard: View {
                 .frame(maxWidth: .infinity)
                 .background(Color(hex: "EAF4FF"))
                 
-                // 오른쪽 영역 - 카드 절반 크기
-                Image(characterImage)
+                Image(streakImage)
                     .resizable()
                     .scaledToFill()
                     .frame(width: geometry.size.width / 2)
@@ -392,6 +456,7 @@ struct HistoryCalendarView: View {
     let historyItems: [HistoryItemResponse] // 선택된 날짜의 히스토리 아이템
     let onMonthChanged: (Int, Int) -> Void
     let onDateSelected: (String?) -> Void // 날짜 선택/해제 콜백
+    let onItemTapped: (Int, String, String) -> Void
     
     let calendar = Calendar.current
     
@@ -539,6 +604,9 @@ struct HistoryCalendarView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color(hex: "EAF4FF"))
                     .cornerRadius(12)
+                    .onTapGesture {  // ✅ 추가
+                        onItemTapped(item.id, item.type, extractDateOnly(item.lastStudiedAt))
+                    }
                 }
             }
         }
@@ -606,6 +674,14 @@ struct HistoryCalendarView: View {
         }
         
         return days
+    }
+    
+    private func extractDateOnly(_ dateString: String) -> String {
+        // "2026-01-04T10:30:00.123456" -> "2026-01-04"
+        if dateString.count >= 10 {
+            return String(dateString.prefix(10))
+        }
+        return dateString
     }
 }
 
