@@ -307,7 +307,7 @@ struct HomeFeature {
                     )))
                     
                 } else {
-                    print("⚠️ 요약 데이터가 아직 없습니다")
+                    print("요약 데이터가 아직 없습니다")
                     return .none
                 }
                 

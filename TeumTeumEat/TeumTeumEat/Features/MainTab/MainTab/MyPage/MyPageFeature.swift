@@ -118,7 +118,7 @@ struct MyPageFeature {
                 
             case .selectedSubjectResponse(.failure(let error)):
                 state.isLoadingSubject = false
-                print("❌ Failed to load selected subject: \(error)")
+                print("Failed to load selected subject: \(error)")
                 return .none
                 
             case .accountInfoResponse(.success(let accountInfo)):
@@ -217,7 +217,7 @@ struct MyPageFeature {
                 }
                 
             case .updateNotificationSettingResponse(.failure(let error)):
-                print("❌ Failed to update notification setting: \(error)")
+                print("Failed to update notification setting: \(error)")
                 return .none
                 
             case .scenePhaseChanged(let phase):
@@ -238,7 +238,7 @@ struct MyPageFeature {
             case .systemNotificationStatusChecked(let status):
                 // 케이스 2 감지: Toggle ON + 시스템 OFF
                 if state.isNotificationEnabled && status != .authorized {
-                    print("⚠️ 케이스 2 감지: Toggle ON이지만 시스템 권한 OFF → 서버 동기화")
+                    print("케이스 2 감지: Toggle ON이지만 시스템 권한 OFF → 서버 동기화")
                     return .run { send in
                         do {
                             try await apiClient.updateNotificationSetting(pushEnabled: false)

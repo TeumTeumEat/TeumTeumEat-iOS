@@ -69,7 +69,7 @@ struct SubjectListView: View {
                     VStack(spacing: 16) {
                         ForEach(store.subjects) { subject in
                             Button {
-                                print("🔍 Subject tapped: \(subject.name)")
+                                print("Subject tapped: \(subject.name)")
                                 store.send(.subjectTapped(subject))
                             } label: {
                                 SelectedSubjectCard(subject: subject)
@@ -86,7 +86,7 @@ struct SubjectListView: View {
         .navigationBarHidden(true)
         .toolbar(.hidden, for: .tabBar)
         .onAppear {
-            print("🔍 SubjectListView appeared - calling API")
+            print("SubjectListView appeared - calling API")
             store.send(.onAppear)
         }
     }

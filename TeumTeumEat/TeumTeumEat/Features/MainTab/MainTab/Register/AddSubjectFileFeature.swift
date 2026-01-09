@@ -24,7 +24,7 @@ struct AddSubjectFileFeature {
         var fileUpload: FileUploadFeature.State?
         var difficultySelection: DifficultySelectionFeature.State?
         var durationSelection: DurationSelectionFeature.State?
-        var summary: AddSubjectSummaryFeature.State?  // 👈 추가
+        var summary: AddSubjectSummaryFeature.State?
         var loading: OnboardingLoadingFeature.State?
         var complete: AddSubjectCompleteFeature.State?
         
@@ -32,7 +32,7 @@ struct AddSubjectFileFeature {
             case fileUpload
             case difficulty
             case duration
-            case summary  // 👈 추가
+            case summary
             case loading
             case complete
         }
@@ -47,7 +47,7 @@ struct AddSubjectFileFeature {
         case fileUpload(FileUploadFeature.Action)
         case difficultySelection(DifficultySelectionFeature.Action)
         case durationSelection(DurationSelectionFeature.Action)
-        case summary(AddSubjectSummaryFeature.Action)  // 👈 추가
+        case summary(AddSubjectSummaryFeature.Action)
         case loading(OnboardingLoadingFeature.Action)
         case complete(AddSubjectCompleteFeature.Action)
         case closeSheet
@@ -139,7 +139,7 @@ struct AddSubjectFileFeature {
                 return .none
                 
             case .durationSelection(.nextTapped):
-                // 기간 선택 완료 → Summary로  👈 변경!
+                // 기간 선택 완료 → Summary
                 if let weeks = state.durationSelection?.selectedWeeks {
                     state.selectedWeeks = weeks.rawValue
                 }
@@ -158,7 +158,7 @@ struct AddSubjectFileFeature {
                 )
                 return .none
                 
-            // MARK: - Summary  👈 새로 추가
+            // MARK: - Summary
             case .summary(.delegate(.back)):
                 // Summary에서 뒤로가기 → Duration으로
                 state.summary = nil
@@ -238,7 +238,7 @@ struct AddSubjectFileFeature {
         .ifLet(\.durationSelection, action: \.durationSelection) {
             DurationSelectionFeature()
         }
-        .ifLet(\.summary, action: \.summary) {  // 👈 추가
+        .ifLet(\.summary, action: \.summary) {  
             AddSubjectSummaryFeature()
         }
         .ifLet(\.loading, action: \.loading) {

@@ -15,7 +15,7 @@ struct SubjectListFeature {
         var subjects: [Subject] = []
         var isLoading: Bool = false
         var errorMessage: String?
-        var isUpdating: Bool = false  // 👈 추가 (업데이트 중 상태)
+        var isUpdating: Bool = false
     }
     
     enum Action {
@@ -23,7 +23,7 @@ struct SubjectListFeature {
         case goalsResponse(Result<[GoalResponse], Error>)
         case backTapped
         case subjectTapped(Subject)
-        case updateGoalResponse(Result<Void, Error>)  // 👈 추가
+        case updateGoalResponse(Result<Void, Error>) 
         case delegate(Delegate)
         
         enum Delegate {

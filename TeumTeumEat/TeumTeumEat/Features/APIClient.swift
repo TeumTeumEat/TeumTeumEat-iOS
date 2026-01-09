@@ -283,44 +283,6 @@ extension APIClient {
     
     /// 현재  목표 목록 조회
     func fetchCurrentGoal() async throws -> GoalResponse {
-//        let mockGoal = GoalResponse(
-//               goalId: 1175,
-//               type: "CATEGORY",
-//               startDate: "2026-01-04",
-//               endDate: "2026-01-18",
-//               studyPeriod: "2주",
-//               difficulty: "MEDIUM",
-//               prompt: nil,
-//               fileName: nil,
-//               category: CategoryInfo(
-//                   categoryId: 104,
-//                   name: "데이터 타입",
-//                   path: "/IT/데이터베이스/Redis/Caching",
-//                   description: ""
-//               ),
-//               documentId: nil
-//           )
-        
-//        let mockGoal = GoalResponse(
-//            goalId: 1174,
-//            type: "DOCUMENT",
-//            startDate: "2025-12-31",
-//            endDate: "2026-01-07",
-//            studyPeriod: "1주",
-//            difficulty: "MEDIUM",
-//            prompt: "ㅋㅋㅋㅋㅋㅋ\n\n\n\n",
-//            fileName: "sample.pdf",
-//            category: nil,
-//            documentId: 133
-//        )
-//           
-//           print("⚠️ [MOCK] fetchCurrentGoal - Mock 데이터 반환 중")
-//           print("Current Goal - ID: \(mockGoal.goalId), Type: \(mockGoal.type)")
-//           if let category = mockGoal.category {
-//               print("CategoryId: \(category.categoryId), Name: \(category.name)")
-//           }
-//           
-//           return mockGoal
         let response: APIResponse<GoalResponse> = try await request(
             endpoint: "/api/v1/users/goal",
             method: .get,
@@ -613,9 +575,9 @@ extension APIClient {
             requiresAuth: true
         )
         
-        print("🔍 fetchUserQuizzes - Response code: \(response.code)")
-        print("🔍 fetchUserQuizzes - DocumentId: \(documentId), Type: \(documentType.rawValue)")
-        print("🔍 fetchUserQuizzes - Response data: \(String(describing: response.data))")
+        print("fetchUserQuizzes - Response code: \(response.code)")
+        print("fetchUserQuizzes - DocumentId: \(documentId), Type: \(documentType.rawValue)")
+        print("fetchUserQuizzes - Response data: \(String(describing: response.data))")
         
         guard response.code == "OK",
               let quizzes = response.data else {

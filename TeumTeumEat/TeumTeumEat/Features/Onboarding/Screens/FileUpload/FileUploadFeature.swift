@@ -94,7 +94,7 @@ struct FileUploadFeature {
                     
                     print("[FileUpload] 파일 검증 시작...")
                     
-                    // ⭐️ 1. 권한 획득 및 파일 검증
+                    // 1. 권한 획득 및 파일 검증
                     return .run { send in
                         // 보안 범위 접근 시작
                         guard url.startAccessingSecurityScopedResource() else {
@@ -105,7 +105,7 @@ struct FileUploadFeature {
                         
                         print("[FileUpload] 권한 획득 성공")
                         
-                        // ⭐️ 2. standardizedFileURL 사용
+                        // 2. standardizedFileURL 사용
                         let standardizedURL = url.standardizedFileURL
                         print("[FileUpload] Standardized URL: \(standardizedURL.path)")
                         
@@ -128,7 +128,7 @@ struct FileUploadFeature {
                                 let sizeMB = Double(fileSize) / 1_000_000
                                 print("[FileUpload] 검증 성공 - 크기: \(String(format: "%.2f", sizeMB))MB")
                                 
-                                // ⭐️ standardizedURL 전달 (권한은 유지)
+                                // standardizedURL 전달 (권한은 유지)
                                 await send(.fileValidationCompleted(standardizedURL, fileSize))
                             }
                         } catch {
@@ -156,7 +156,7 @@ struct FileUploadFeature {
                 state.selectedFileURL = url  // standardizedURL 저장
                 state.selectedFileSize = fileSize
                 state.errorMessage = nil
-                state.isAccessingSecurityScope = true  // ⭐️ 권한 활성 상태
+                state.isAccessingSecurityScope = true  // 권한 활성 상태
                 print("[FileUpload] 권한 유지 중 (업로드 대기)")
                 return .none
                 
@@ -197,7 +197,7 @@ struct FileUploadFeature {
                 
             case .uploadCompleted:
                 print("[FileUpload] 업로드 완료 처리")
-                // ⭐️ 3. 업로드 완료 후 권한 종료
+                // 3. 업로드 완료 후 권한 종료
                 return .run { send in
                     await send(.stopSecurityAccess)
                 }

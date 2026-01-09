@@ -277,7 +277,7 @@ struct AppSettingsFeature {
             case .updateCommuteResponse(.failure(let error)):
                 state.isSaving = false
                 state.errorMessage = "출퇴근 정보 변경에 실패했습니다"
-                print("❌ 출퇴근 정보 업데이트 실패: \(error)")
+                print("출퇴근 정보 업데이트 실패: \(error)")
                 return .none
                 
             // MARK: - 기존 액션들

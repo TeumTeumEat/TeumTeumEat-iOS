@@ -290,7 +290,7 @@ struct OnboardingLoadingFeature {
             case .loadingCompleted:
                 print("온보딩 완료! Complete 화면으로 이동")
                 
-                // 👇 디바이스 토큰 전송 체크
+                // 디바이스 토큰 전송 체크
                 if UserDefaults.standard.bool(forKey: "shouldRegisterDeviceToken") {
                     print("디바이스 토큰 등록 요청")
                     

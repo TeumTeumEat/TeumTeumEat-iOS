@@ -100,7 +100,7 @@ struct AddSubjectFeature {
                 categoryState.selectedSubCategory = state.selectedSubCategory
                 categoryState.selectedDetailCategory = state.selectedDetailCategory
                 
-                // 👇 핵심: currentStep을 detailCategory로 설정!
+                // currentStep을 detailCategory로 설정
                 if state.selectedDetailCategory != nil {
                     categoryState.currentStep = .detailCategory
                 } else if state.selectedSubCategory != nil {
