@@ -51,7 +51,7 @@ struct HistoryDetailSummaryFeature {
                 state.isLoading = true
                 state.errorMessage = nil
                 
-                // ✅ type, id, date 모두 전달
+                // type, id, date 모두 전달
                 return .run { [type = state.documentType, id = state.historyId, date = state.date] send in
                     do {
                         let detail = try await apiClient.fetchHistorySummaryDetail(
@@ -69,13 +69,13 @@ struct HistoryDetailSummaryFeature {
                 state.isLoading = false
                 state.title = detail.title
                 state.summaryText = detail.summary
-                print("✅ History detail loaded: \(detail.title)")
+                print("History detail loaded: \(detail.title)")
                 return .none
                 
             case .fetchDetailResponse(.failure(let error)):
                 state.isLoading = false
                 state.errorMessage = "상세 정보를 불러오는데 실패했습니다."
-                print("❌ Failed to load history detail: \(error)")
+                print("Failed to load history detail: \(error)")
                 return .none
                 
             case .closeButtonTapped:
@@ -85,14 +85,14 @@ struct HistoryDetailSummaryFeature {
                 state.detailAnswer = HistoryDetailAnswerFeature.State(
                     historyId: state.historyId,
                     documentType: state.documentType,
-                    date: state.date  // ✅ date 전달
+                    date: state.date
                 )
                 print("🔍 퀴즈 확인 버튼 클릭 - ID: \(state.historyId), Type: \(state.documentType), Date: \(state.date)")
                 return .none
                 
-            case .detailAnswer(.delegate(.dismissed)):  // ✅ 추가
+            case .detailAnswer(.delegate(.dismissed)):
                 state.detailAnswer = nil
-                print("✅ Quiz detail dismissed")
+                print("Quiz detail dismissed")
                 return .none
                 
             case .detailAnswer:
@@ -193,9 +193,9 @@ struct HistoryDetailSummaryView: View {
                         // 버튼 영역
                         VStack(spacing: 0) {
                             Button(action: {
-                                store.send(.checkQuizButtonTapped)  // ✅ 수정
+                                store.send(.checkQuizButtonTapped)
                             }) {
-                                Text("퀴즈 확인")  // ✅ 수정
+                                Text("퀴즈 확인")  
                                     .font(.system(size: 18, weight: .semibold))
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)

@@ -48,7 +48,7 @@ import Foundation
 
 extension URL {
     func fileSize() throws -> Int64 {
-        // ❌ 여기서 startAccessing 하지 않음
+        // 여기서 startAccessing 하지 않음
         // 파일 크기만 확인
         let resourceValues = try resourceValues(forKeys: [.fileSizeKey])
         guard let fileSize = resourceValues.fileSize else {

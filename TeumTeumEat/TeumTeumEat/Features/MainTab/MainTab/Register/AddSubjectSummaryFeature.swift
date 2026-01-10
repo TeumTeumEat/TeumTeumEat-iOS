@@ -46,7 +46,7 @@ struct AddSubjectSummaryFeature {
     enum Action {
         case backTapped
         case completeTapped
-        case delegate(Delegate)  // 👈 추가
+        case delegate(Delegate)
         
         enum Delegate {
             case back
@@ -58,10 +58,10 @@ struct AddSubjectSummaryFeature {
         Reduce { state, action in
             switch action {
             case .backTapped:
-                return .send(.delegate(.back))  // 👈 변경
+                return .send(.delegate(.back))
                 
             case .completeTapped:
-                return .send(.delegate(.complete))  // 👈 변경
+                return .send(.delegate(.complete)) 
                 
             case .delegate:
                 return .none

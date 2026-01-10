@@ -77,12 +77,12 @@ struct MainTabFeature {
                         state.isRegisterMenuExpanded = false
                     }
                     
-                    // ✅ 홈 탭으로 전환될 때 새로고침
+                    // 홈 탭으로 전환될 때 새로고침
                     if tab == .home && previousTab != .home {
                         return .send(.home(.onAppear))
                     }
                     
-                    // ✅ 히스토리 탭으로 전환될 때 새로고침
+                    // 히스토리 탭으로 전환될 때 새로고침
                     if tab == .quiz && previousTab != .quiz {
                         return .send(.quiz(.onAppear))
                     }
@@ -139,12 +139,12 @@ struct MainTabFeature {
                     switch destination {
                     case .home:
                         state.selectedTab = .home
-                        // ✅ 홈으로 이동하면서 새로고침
+                        // 홈으로 이동하면서 새로고침
                         return .send(.home(.onAppear))
                         
                     case .history:
                         state.selectedTab = .quiz
-                        // ✅ 히스토리로 이동하면서 새로고침
+                        // 히스토리로 이동하면서 새로고침
                         return .send(.quiz(.onAppear))
                     }
                     

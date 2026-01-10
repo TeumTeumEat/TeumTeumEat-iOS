@@ -45,7 +45,7 @@ struct HistoryFeature {
         case fetchTopicHistories
         case topicHistoriesLoaded(Result<[HistoryCategoryResponse], Error>)
         case historyItemTapped(id: Int, type: String, date: String)
-        case historyDetailSummary(HistoryDetailSummaryFeature.Action)  // ✅ 추가
+        case historyDetailSummary(HistoryDetailSummaryFeature.Action)
         case delegate(Delegate)
     }
     
@@ -122,11 +122,11 @@ struct HistoryFeature {
                  
              case .historyItemsLoaded(.success(let items)):
                   state.selectedDateHistoryItems = items
-                  print("✅ History items loaded: \(items.count) items")
+                  print("History items loaded: \(items.count) items")
                   return .none
                   
               case .historyItemsLoaded(.failure(let error)):
-                  print("❌ Failed to load history items: \(error)")
+                  print("Failed to load history items: \(error)")
                   state.selectedDateHistoryItems = []
                   return .none
                  
@@ -143,16 +143,16 @@ struct HistoryFeature {
              case .topicHistoriesLoaded(.success(let categories)):
                  state.isLoadingTopics = false
                  state.topicCategories = categories
-                 print("✅ Topic histories loaded: \(categories.count) categories")
+                 print("Topic histories loaded: \(categories.count) categories")
                  return .none
                  
              case .topicHistoriesLoaded(.failure(let error)):
                  state.isLoadingTopics = false
-                 print("❌ Failed to load topic histories: \(error)")
+                 print("Failed to load topic histories: \(error)")
                  return .none
                  
              case .historyItemTapped(let id, let typeString, let date):
-                 // ✅ String -> DocumentType 변환
+                 // String -> DocumentType 변환
                  let documentType: DocumentType = typeString == "CATEGORY" ? .category : .document
                  
                  state.historyDetailSummary = HistoryDetailSummaryFeature.State(
@@ -160,12 +160,12 @@ struct HistoryFeature {
                     documentType: documentType,
                     date: date
                  )
-                 print("✅ History item tapped - ID: \(id), Type: \(documentType), Date: \(date)")
+                 print("History item tapped - ID: \(id), Type: \(documentType), Date: \(date)")
                  return .none
                   
               case .historyDetailSummary(.delegate(.dismissed)):
                   state.historyDetailSummary = nil
-                  print("✅ History detail dismissed")
+                  print("History detail dismissed")
                   return .none
                   
               case .historyDetailSummary:
@@ -248,7 +248,7 @@ struct HistoryView: View {
                                         onDateSelected: { dateString in
                                             store.send(.dateSelected(dateString))
                                         },
-                                        onItemTapped: { id, type, date in  // ✅ 수정
+                                        onItemTapped: { id, type, date in
                                             store.send(.historyItemTapped(id: id, type: type, date: date))
                                         }
                                         
@@ -604,7 +604,7 @@ struct HistoryCalendarView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color(hex: "EAF4FF"))
                     .cornerRadius(12)
-                    .onTapGesture {  // ✅ 추가
+                    .onTapGesture {  
                         onItemTapped(item.id, item.type, extractDateOnly(item.lastStudiedAt))
                     }
                 }

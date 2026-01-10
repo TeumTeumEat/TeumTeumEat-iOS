@@ -164,13 +164,13 @@ struct AppSettingsFeature {
             case .userNameResponse(.success(let name)):
                 state.nickname = name
                 state.originalNickname = name
-                print("✅ 유저 이름 로드: \(name)")
+                print("유저 이름 로드: \(name)")
                 return .none
                 
             case .userNameResponse(.failure(let error)):
                 state.isLoading = false
                 state.errorMessage = "이름을 불러오는데 실패했습니다"
-                print("❌ 유저 이름 로드 실패: \(error)")
+                print("유저 이름 로드 실패: \(error)")
                 return .none
                 
             case .commuteInfoResponse(.success(let commuteInfo)):
@@ -190,13 +190,13 @@ struct AppSettingsFeature {
                 state.usageMinutes = commuteInfo.usageTime
                 state.originalUsageMinutes = commuteInfo.usageTime
                 
-                print("✅ 출퇴근 정보 로드 완료")
+                print("출퇴근 정보 로드 완료")
                 return .none
                 
             case .commuteInfoResponse(.failure(let error)):
                 state.isLoading = false
                 state.errorMessage = "출퇴근 정보를 불러오는데 실패했습니다"
-                print("❌ 출퇴근 정보 로드 실패: \(error)")
+                print("출퇴근 정보 로드 실패: \(error)")
                 return .none
                 
             // MARK: - 저장하기
@@ -243,7 +243,7 @@ struct AppSettingsFeature {
                 
             // MARK: - 업데이트 응답
             case .updateNameResponse(.success):
-                print("✅ 이름 업데이트 성공")
+                print("이름 업데이트 성공")
                 state.originalNickname = state.nickname
                 
                 // 출퇴근도 같이 업데이트 중이 아니면 저장 완료
@@ -258,11 +258,11 @@ struct AppSettingsFeature {
             case .updateNameResponse(.failure(let error)):
                 state.isSaving = false
                 state.errorMessage = "이름 변경에 실패했습니다"
-                print("❌ 이름 업데이트 실패: \(error)")
+                print("이름 업데이트 실패: \(error)")
                 return .none
                 
             case .updateCommuteResponse(.success):
-                print("✅ 출퇴근 정보 업데이트 성공")
+                print("출퇴근 정보 업데이트 성공")
                 state.originalLeaveTime = state.leaveTime
                 state.originalReturnTime = state.returnTime
                 state.originalUsageMinutes = state.usageMinutes
@@ -277,7 +277,7 @@ struct AppSettingsFeature {
             case .updateCommuteResponse(.failure(let error)):
                 state.isSaving = false
                 state.errorMessage = "출퇴근 정보 변경에 실패했습니다"
-                print("❌ 출퇴근 정보 업데이트 실패: \(error)")
+                print("출퇴근 정보 업데이트 실패: \(error)")
                 return .none
                 
             // MARK: - 기존 액션들

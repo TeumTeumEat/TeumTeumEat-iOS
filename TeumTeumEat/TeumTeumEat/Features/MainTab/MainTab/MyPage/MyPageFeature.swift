@@ -118,7 +118,7 @@ struct MyPageFeature {
                 
             case .selectedSubjectResponse(.failure(let error)):
                 state.isLoadingSubject = false
-                print("❌ Failed to load selected subject: \(error)")
+                print("Failed to load selected subject: \(error)")
                 return .none
                 
             case .accountInfoResponse(.success(let accountInfo)):
@@ -127,26 +127,26 @@ struct MyPageFeature {
                 
                 if let loginType = SocialLoginType(from: accountInfo.socialProvider) {
                     state.socialLoginType = loginType
-                    print("✅ Account info loaded - Type: \(loginType.rawValue), Email: \(accountInfo.email)")
+                    print("Account info loaded - Type: \(loginType.rawValue), Email: \(accountInfo.email)")
                 } else {
-                    print("⚠️ Unknown social provider: \(accountInfo.socialProvider)")
+                    print("Unknown social provider: \(accountInfo.socialProvider)")
                 }
                 return .none
                 
             case .accountInfoResponse(.failure(let error)):
                 state.isLoadingAccountInfo = false
-                print("❌ Failed to load account info: \(error)")
+                print("Failed to load account info: \(error)")
                 return .none
                 
             case .notificationSettingsResponse(.success(let settings)):
                 state.isLoadingNotificationSetting = false
                 state.isNotificationEnabled = settings.pushEnabled
-                print("✅ Notification settings loaded - pushEnabled: \(settings.pushEnabled)")
+                print("Notification settings loaded - pushEnabled: \(settings.pushEnabled)")
                 return .none
                 
             case .notificationSettingsResponse(.failure(let error)):
                 state.isLoadingNotificationSetting = false
-                print("❌ Failed to load notification settings: \(error)")
+                print("Failed to load notification settings: \(error)")
                 return .none
                 
             case .notificationToggled(let shouldEnable):
@@ -217,7 +217,7 @@ struct MyPageFeature {
                 }
                 
             case .updateNotificationSettingResponse(.failure(let error)):
-                print("❌ Failed to update notification setting: \(error)")
+                print("Failed to update notification setting: \(error)")
                 return .none
                 
             case .scenePhaseChanged(let phase):
@@ -238,7 +238,7 @@ struct MyPageFeature {
             case .systemNotificationStatusChecked(let status):
                 // 케이스 2 감지: Toggle ON + 시스템 OFF
                 if state.isNotificationEnabled && status != .authorized {
-                    print("⚠️ 케이스 2 감지: Toggle ON이지만 시스템 권한 OFF → 서버 동기화")
+                    print("케이스 2 감지: Toggle ON이지만 시스템 권한 OFF → 서버 동기화")
                     return .run { send in
                         do {
                             try await apiClient.updateNotificationSetting(pushEnabled: false)
@@ -326,11 +326,11 @@ struct MyPageFeature {
                 return .none
                 
             case .withdrawalResponse(.success):
-                print("✅ 회원탈퇴 성공")
+                print("회원탈퇴 성공")
                 return .send(.delegate(.withdrawal))
                 
             case .withdrawalResponse(.failure(let error)):
-                print("❌ 회원탈퇴 실패: \(error)")
+                print("회원탈퇴 실패: \(error)")
                 // TODO: 에러 Alert 표시
                 return .none
                 

@@ -83,7 +83,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     // MARK: - Remote Notification 등록 실패
     func application(_ application: UIApplication,
                      didFailToRegisterForRemoteNotificationsWithError error: Error) {
-        print("❌ APNs 등록 실패: \(error.localizedDescription)")
+        print("APNs 등록 실패: \(error.localizedDescription)")
         
         // 플래그 제거 (실패했으므로)
         UserDefaults.standard.removeObject(forKey: "shouldRegisterDeviceToken")

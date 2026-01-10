@@ -71,7 +71,7 @@ struct HomeFeature {
                 state.isLoading = true
                 state.errorMessage = nil
                 
-                // ✅ 병렬 처리: 캘린더 조회 + 목표 조회
+                // 병렬 처리: 캘린더 조회 + 목표 조회
                 let now = Date()
                 let calendar = Calendar.current
                 let year = calendar.component(.year, from: now)
@@ -98,16 +98,16 @@ struct HomeFeature {
                     }
                 )
                 
-            // ✅ 캘린더 조회 완료 (독립적 처리)
+            // 캘린더 조회 완료 (독립적 처리)
             case .fetchCalendarHistoryResponse(.success(let calendarData)):
                 state.calendarData = calendarData
                 state.fireCount = calendarData.currentStreak
                 state.stampCount = calendarData.totalStamps
-                print("✅ 캘린더 조회 완료 - Fire: \(calendarData.currentStreak), Stamp: \(calendarData.totalStamps)")
+                print("캘린더 조회 완료 - Fire: \(calendarData.currentStreak), Stamp: \(calendarData.totalStamps)")
                 return .none
                 
             case .fetchCalendarHistoryResponse(.failure(let error)):
-                print("❌ 캘린더 조회 실패: \(error)")
+                print("캘린더 조회 실패: \(error)")
                 // 실패해도 다른 API에 영향 없음
                 return .none
                 
@@ -266,10 +266,10 @@ struct HomeFeature {
                 return .none
                 
             case .characterEatTapped:
-                // ✅ summaryData 생성 후 QuizFlow에 전달
+                // summaryData 생성 후 QuizFlow에 전달
                 
                 if state.isTodayQuizCompleted {
-                    print("⚠️ 오늘 퀴즈를 이미 완료했습니다")
+                    print("오늘 퀴즈를 이미 완료했습니다")
                     return .none
                 }
                 
@@ -307,7 +307,7 @@ struct HomeFeature {
                     )))
                     
                 } else {
-                    print("⚠️ 요약 데이터가 아직 없습니다")
+                    print("요약 데이터가 아직 없습니다")
                     return .none
                 }
                 
@@ -373,12 +373,12 @@ struct CharacterImageView: View {
     
     var body: some View {
         ZStack(alignment: .center) {
-            // ✅ Lottie 배경 (항상 동일한 위치)
+            // Lottie 배경 (항상 동일한 위치)
             LottieView(animation: .named(isTodayQuizCompleted ? "home_v2_dummy" : "home_dummy"))
                 .playing(loopMode: .loop)
                 .frame(height: 548)
             
-            // ✅ 오버레이 (완료/미완료에 따라 다름)
+            // 오버레이 (완료/미완료에 따라 다름)
             VStack(spacing: 16) {
                 Spacer()
                 
@@ -415,7 +415,7 @@ struct CharacterImageView: View {
         .padding(.trailing, 3)
         .contentShape(Rectangle())
         .onTapGesture {
-            if !isTodayQuizCompleted {  // ✅ 미완료일 때만 탭 가능
+            if !isTodayQuizCompleted {
                 onCharacterTapped()
             }
         }
