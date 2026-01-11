@@ -54,7 +54,7 @@ struct ContentSelectionView: View {
                                 }
                                 
                                 TTECategoryButton(
-                                    icon: Image("files"),
+                                    icon: Image("category"),
                                     title: "카테고리 선택",
                                     subtitle: "공부하고 싶은걸\n골라볼게요",
                                     isSelected: store.selectedType == .category
@@ -68,18 +68,13 @@ struct ContentSelectionView: View {
                             Spacer()
                                 .frame(minHeight: 30)
                             
-                            Button {
+                            TTEButton(
+                                title: "다음으로",
+                                size: .large,
+                                isEnabled: store.canProceed
+                            ) {
                                 store.send(.nextTapped)
-                            } label: {
-                                Text("다음")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 60)
-                                    .background(store.canProceed ? Color.blue : Color.gray)
-                                    .cornerRadius(12)
                             }
-                            .disabled(!store.canProceed)
                             .padding(.horizontal, 20)
                             .padding(.bottom, 32)
                         }

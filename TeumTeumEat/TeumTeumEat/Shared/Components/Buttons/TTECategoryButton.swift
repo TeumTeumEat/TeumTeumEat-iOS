@@ -29,8 +29,8 @@ struct TTECategoryButton: View {
         isSelected: Bool = false,
         width: CGFloat? = nil,
         height: CGFloat = 200,
-        iconTint: Color? = ._7_A_7_A_7_A,
-        borderColor: Color? = .C_8_C_8_C_8,
+        iconTint: Color? = nil,
+        borderColor: Color? = nil,
         selectedBorderColor: Color? = nil,
         action: @escaping () -> Void
     ) {
@@ -46,23 +46,23 @@ struct TTECategoryButton: View {
         self.action = action
     }
     
-    private var contentColor: Color {
+    private var iconColor: Color {
         if isSelected {
-            let selectedColor: Color = customSelectedBorderColor ?? ._2_B_8_FFF
-            return selectedColor
+            return customIconTint ?? .blue500
         } else {
-            let normalColor: Color = customIconTint ?? ._7_A_7_A_7_A
-            return normalColor
+            return customIconTint ?? .gray300
         }
+    }
+    
+    private var textColor: Color {
+        isSelected ? .blue500 : .gray600
     }
     
     private var borderColor: Color {
         if isSelected {
-            let selectedColor: Color = customSelectedBorderColor ?? ._2_B_8_FFF
-            return selectedColor
+            return customSelectedBorderColor ?? .blue500
         } else {
-            let normalColor: Color = customBorderColor ?? .C_8_C_8_C_8
-            return normalColor
+            return customBorderColor ?? .gray300
         }
     }
     
@@ -73,20 +73,20 @@ struct TTECategoryButton: View {
                 icon
                     .resizable()
                     .renderingMode(.template)
-                    .foregroundColor(contentColor)
+                    .foregroundColor(iconColor)
                     .frame(width: 60, height: 60)
                 
                 VStack(spacing: 0) {
                     // 타이틀
                     Text(title)
-                        .titleSemibold20()
-                        .foregroundColor(contentColor)
+                        .stSemibold20()
+                        .foregroundColor(textColor)
                         .padding(.bottom, 4)
                     
                     // 서브타이틀
                     Text(subtitle)
-                        .bodyMedium14()
-                        .foregroundColor(contentColor)
+                        .bdMedium14()
+                        .foregroundColor(textColor)
                         .multilineTextAlignment(.center)
                 }
             }
