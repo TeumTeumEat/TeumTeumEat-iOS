@@ -78,3 +78,15 @@ struct NameInputFeature {
         }
     }
 }
+
+extension NameInputFeature.State {
+    var textFieldState: TextFieldState {
+        if let error = validationError {
+            return .error(error)
+        } else if !name.isEmpty && canProceed {
+            return .valid
+        } else {
+            return .default
+        }
+    }
+}

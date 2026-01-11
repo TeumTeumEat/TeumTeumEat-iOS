@@ -15,12 +15,12 @@ struct WelcomeView: View {
         VStack(spacing: 0) {
             VStack(spacing: 0) {
                 Text("매일 소모되는 이동 시간,")
-                    .titleSemibold18()
-                    .foregroundStyle(.black)
+                    .btSemiBold18_24()
+                    .foregroundStyle(.gray800)
                 
                 Text("틈틈잇과 함께 성장하는 시간으로 바꿔봐요!")
-                    .titleSemibold18()
-                    .foregroundStyle(.black)
+                    .btSemiBold18_24()
+                    .foregroundStyle(.gray800)
             }
             .multilineTextAlignment(.center)
             .padding(.top, 70)
@@ -28,8 +28,6 @@ struct WelcomeView: View {
             
             Image("logo_login")
                 .resizable()
-                .renderingMode(.template)
-                .foregroundStyle(.black)
                 .frame(width: 177,height: 54)
                 .padding(.top, 21)
 

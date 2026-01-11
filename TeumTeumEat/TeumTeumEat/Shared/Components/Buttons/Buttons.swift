@@ -32,6 +32,19 @@ enum ButtonSize {
         }
     }
     
+    func applyTypography(to text: Text) -> some View {
+            switch self {
+            case .large:
+                return AnyView(text.btBold20_24())
+            case .medium, .regular:
+                return AnyView(text.stSemibold18())
+            case .small:
+                return AnyView(text.bdMedium16())
+            case .grid:
+                return AnyView(text.stSemibold20())
+            }
+        }
+    
     var typography: TypographyStyle {
         switch self {
         case .large:
@@ -51,32 +64,32 @@ enum ButtonStyle {
     case secondary
     
     // 텍스트 색상
-    var foregroundColor: Color {
+    func foregroundColor(isEnabled: Bool) -> Color {
         switch self {
         case .primary:
-            return .white                    // 배경 있을 때 흰색
+            return .white
         case .secondary:
-            return ._2_B_8_FFF               // 테두리만 있을 때 파란색
+            return isEnabled ? .blue500 : .gray600
         }
     }
     
     // 배경 색상
-    var backgroundColor: Color {
+    func backgroundColor(isEnabled: Bool) -> Color {
         switch self {
         case .primary:
-            return ._2_B_8_FFF              // 파란색 배경
+            return isEnabled ? .blue500 : .gray600
         case .secondary:
-            return .clear                   // 투명 배경
+            return .clear
         }
     }
     
     // 테두리 색상
-    var borderColor: Color {
+    func borderColor(isEnabled: Bool) -> Color {
         switch self {
         case .primary:
-            return .clear                     // 테두리 없음
+            return .clear
         case .secondary:
-            return ._2_B_8_FFF                // 파란색 테두리
+            return isEnabled ? .blue500 : .gray600
         }
     }
     

@@ -40,18 +40,31 @@ extension Font {
        
     static let caption_regular_12 = custom(FontFamily.main, FontWeight.regular, size: 12)
     
-    
+    // title
     static let t_bold_24 = custom(FontFamily.main, FontWeight.bold, size: 24)
     static let t_bold_22 = custom(FontFamily.main, FontWeight.bold, size: 22)
     static let t_bold_20 = custom(FontFamily.main, FontWeight.bold, size: 20)
     
+    // subtitle
     static let st_semibold_20 = custom(FontFamily.main, FontWeight.semibold, size: 20)
     static let st_semibold_18 = custom(FontFamily.main, FontWeight.semibold, size: 18)
     static let st_semibold_16 = custom(FontFamily.main, FontWeight.semibold, size: 16)
+
+    // body
+    static let bd_medium_16 = custom(FontFamily.main, FontWeight.medium, size: 16)
+    static let bd_medium_14 = custom(FontFamily.main, FontWeight.medium, size: 14)
     
-    static let by_semibold_16 = custom(FontFamily.main, FontWeight.semibold, size: 16)
+    // caption
+    static let c_regular_14 = custom(FontFamily.main, FontWeight.regular, size: 14)
+    static let c_regular_12 = custom(FontFamily.main, FontWeight.regular, size: 12)
     
-    
+    // button
+    static let bt_bold_20 = custom(FontFamily.main, FontWeight.bold, size: 20)
+    static let bt_semibold_20 = custom(FontFamily.main, FontWeight.semibold, size: 20)
+    static let bt_medium_20 = custom(FontFamily.main, FontWeight.medium, size: 20)
+    static let bt_bold_18 = custom(FontFamily.main, FontWeight.bold, size: 18)
+    static let bt_semibold_18 = custom(FontFamily.main, FontWeight.semibold, size: 18)
+    static let bt_medium_18 = custom(FontFamily.main, FontWeight.medium, size: 18)
 }
 
 struct TypographyStyle {
@@ -231,6 +244,141 @@ extension Text {
     func stSemibold16() -> some View {
         self.font(.st_semibold_16)
     }
+    
+    func bdMedium16() -> some View {
+        self.font(.bd_medium_16)
+    }
+    
+    func bdMedium16_22() -> some View {
+        self.font(.bd_medium_16)
+            .lineSpacing(TypographyHelper.calculateLineSpacing(
+                fontSize: 16,
+                weight: .medium,
+                targetLineHeight: 22)
+            )
+    }
+    
+    func bdMedium14() -> some View {
+        self.font(.bd_medium_14)
+    }
+    
+    func bdMedium14_20() -> some View {
+        self.font(.bd_medium_14)
+            .lineSpacing(TypographyHelper.calculateLineSpacing(
+                fontSize: 14,
+                weight: .medium,
+                targetLineHeight: 20)
+            )
+    }
+    
+    func cRegular14() -> some View {
+        self.font(.c_regular_14)
+    }
+    
+    func cRegular12() -> some View {
+        self.font(.c_regular_12)
+    }
+    
+    func btBold20() -> some View {
+        self.font(.bt_bold_20)
+    }
+    
+    func btBold20_24() -> some View {
+        self.font(.bt_bold_20)
+            .lineSpacing(TypographyHelper.calculateLineSpacing(
+                fontSize: 20,
+                weight: .bold,
+                targetLineHeight: 24)
+            )
+    }
+    
+    func btSemiBold20() -> some View {
+        self.font(.bt_semibold_20)
+    }
+    
+    func btSemiBold20_24() -> some View {
+        self.font(.bt_semibold_20)
+            .lineSpacing(TypographyHelper.calculateLineSpacing(
+                fontSize: 20,
+                weight: .semibold,
+                targetLineHeight: 24)
+            )
+    }
+    
+    func btMedium20_24() -> some View {
+        self.font(.bt_medium_20)
+            .lineSpacing(TypographyHelper.calculateLineSpacing(
+                fontSize: 20,
+                weight: .medium,
+                targetLineHeight: 24)
+            )
+    }
+    
+    func btMedium20_20() -> some View {
+        self.font(.bt_medium_20)
+            .lineSpacing(TypographyHelper.calculateLineSpacing(
+                fontSize: 20,
+                weight: .medium,
+                targetLineHeight: 20)
+            )
+    }
+    
+    func btBold18_24() -> some View {
+        self.font(.bt_bold_18)
+            .lineSpacing(TypographyHelper.calculateLineSpacing(
+                fontSize: 18,
+                weight: .bold,
+                targetLineHeight: 24)
+            )
+    }
+    
+    func btBold18_20() -> some View {
+        self.font(.bt_bold_18)
+            .lineSpacing(TypographyHelper.calculateLineSpacing(
+                fontSize: 18,
+                weight: .bold,
+                targetLineHeight: 20)
+            )
+    }
+    
+    func btSemiBold18_24() -> some View {
+        self.font(.bt_semibold_20)
+            .lineSpacing(TypographyHelper.calculateLineSpacing(
+                fontSize: 18,
+                weight: .semibold,
+                targetLineHeight: 24)
+            )
+    }
+    
+    func btSemiBold18_20() -> some View {
+        self.font(.bt_semibold_18)
+            .lineSpacing(TypographyHelper.calculateLineSpacing(
+                fontSize: 18,
+                weight: .semibold,
+                targetLineHeight: 20)
+            )
+    }
+    
+    
+    func btMedium18_24() -> some View {
+        self.font(.bt_medium_18)
+            .lineSpacing(TypographyHelper.calculateLineSpacing(
+                fontSize: 18,
+                weight: .medium,
+                targetLineHeight: 24)
+            )
+    }
+    
+    
+    func btMedium18_20() -> some View {
+        self.font(.bt_medium_18)
+            .lineSpacing(TypographyHelper.calculateLineSpacing(
+                fontSize: 18,
+                weight: .medium,
+                targetLineHeight: 20)
+            )
+    }
+    
     
     
 }

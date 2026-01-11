@@ -79,7 +79,7 @@ struct UsageDurationView: View {
                                 .frame(minHeight: 30)
                             
                             TTEButton(
-                                title: "다음",
+                                title: "다음으로",
                                 size: .large,
                                 isEnabled: store.canProceed
                             ) {
@@ -107,15 +107,15 @@ struct DurationSelectButton: View {
     var body: some View {
         Button(action: action) {
             Text(text)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(isSelected ? .white : .black)
+                .btSemiBold18_24()
+                .foregroundColor(isSelected ? .blue500 : .gray600)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .background(isSelected ? Color.blue : Color.white)
+                .background(Color.white)
                 .cornerRadius(12)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(isSelected ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
+                        .stroke(isSelected ? Color.blue500 : Color.gray300, lineWidth: 2)
                 )
         }
         .colorScheme(.light)

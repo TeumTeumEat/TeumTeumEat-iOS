@@ -352,3 +352,15 @@ extension String {
                             of: now)
     }
 }
+
+extension AppSettingsFeature.State {
+    var textFieldState: TextFieldState {
+        if let error = nicknameValidationError {
+            return .error(error)
+        } else if !nickname.isEmpty && isNicknameValid {
+            return .valid
+        } else {
+            return .default
+        }
+    }
+}

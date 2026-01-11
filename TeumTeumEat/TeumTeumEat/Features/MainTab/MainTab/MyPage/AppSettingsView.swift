@@ -161,20 +161,21 @@ struct AppSettingsView: View {
                     set: { store.send(.nicknameChanged($0)) }
                 ),
                 placeholder: "닉네임을 입력하세요",
+                state: store.textFieldState,
                 allowSpaces: false
             )
             .focused($isNicknameFocused)
             
             // 닉네임 검증 에러 메시지 추가
-            if let nicknameError = store.nicknameValidationError {
-                HStack {
-                    Text(nicknameError)
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundColor(.red)
-                    Spacer()
-                }
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
+//            if let nicknameError = store.nicknameValidationError {
+//                HStack {
+//                    Text(nicknameError)
+//                        .font(.system(size: 12, weight: .regular))
+//                        .foregroundColor(.red)
+//                    Spacer()
+//                }
+//                .transition(.opacity.combined(with: .move(edge: .top)))
+//            }
         }
         .padding(.horizontal, 20)
         .padding(.top, 20)

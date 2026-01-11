@@ -79,42 +79,39 @@ struct TTEButton: View {
                             .frame(width: iconSize ?? 30, height: iconSize ?? 30)
                     }
                     
-                    Text(title)
-                        .font(size.typography.font)
-                        .foregroundColor(customForegroundColor ?? style.foregroundColor)
+                    size.applyTypography(to: Text(title))
+                        .foregroundColor(customForegroundColor ?? style.foregroundColor(isEnabled: isEnabled))
                     
                     Spacer()
                 }
                 .padding(.leading, iconLeadingPadding ?? 22.5)
                 .frame(width: size.width, height: size.height)
-                .background(customBackgroundColor ?? style.backgroundColor)
+                .background(customBackgroundColor ?? style.backgroundColor(isEnabled: isEnabled))
                 .cornerRadius(16)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
                         .stroke(
-                            customBorderColor ?? style.borderColor,
+                            customBorderColor ?? style.borderColor(isEnabled: isEnabled),
                             lineWidth: customBorderWidth ?? style.borderWidth
                         )
                 )
             } else {
                 // 아이콘이 없을 때 (기존 버튼)
-                Text(title)
-                    .font(size.typography.font)
-                    .foregroundColor(customForegroundColor ?? style.foregroundColor)
+                size.applyTypography(to: Text(title))
+                    .foregroundColor(customForegroundColor ?? style.foregroundColor(isEnabled: isEnabled))
                     .frame(width: size.width, height: size.height)
-                    .background(customBackgroundColor ?? style.backgroundColor)
+                    .background(customBackgroundColor ?? style.backgroundColor(isEnabled: isEnabled))
                     .cornerRadius(16)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
                             .stroke(
-                                customBorderColor ?? style.borderColor,
+                                customBorderColor ?? style.borderColor(isEnabled: isEnabled),
                                 lineWidth: customBorderWidth ?? style.borderWidth
                             )
                     )
             }
         }
         .disabled(!isEnabled)
-        .opacity(isEnabled ? 1.0 : 0.5)
     }
 }
 

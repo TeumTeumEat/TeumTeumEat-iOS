@@ -62,7 +62,7 @@ struct FileUploadView: View {
                                     ? "잠시만 기다려주세요"
                                     : (store.selectedFileURL != nil
                                         ? "파일이 선택되었어요\n(\(store.fileSizeText ?? ""))"
-                                        : "PDF 파일을\n업로드해요\n(최대 50MB)"),
+                                        : "50MB 이하 파일만 업로드 가능"),
                                 isSelected: store.selectedFileURL != nil,
                                 width: nil,
                                 height: 200
@@ -108,7 +108,7 @@ struct FileUploadView: View {
                                 .frame(minHeight: 30)
                             
                             TTEButton(
-                                title: store.isLoadingFile ? "파일 확인 중..." : "다음",
+                                title: store.isLoadingFile ? "파일 확인 중..." : "다음으로",
                                 size: .large,
                                 isEnabled: store.canProceed
                             ) {
