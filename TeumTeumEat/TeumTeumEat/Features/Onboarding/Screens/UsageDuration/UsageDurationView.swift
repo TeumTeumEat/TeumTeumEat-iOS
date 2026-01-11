@@ -108,14 +108,14 @@ struct DurationSelectButton: View {
         Button(action: action) {
             Text(text)
                 .font(.system(size: 16, weight: .medium))
-                .foregroundColor(isSelected ? .white : .black)
+                .foregroundColor(isSelected ? .blue500 : .gray600)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .background(isSelected ? Color.blue : Color.white)
+                .background(Color.white)
                 .cornerRadius(12)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(isSelected ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
+                        .stroke(isSelected ? Color.blue500 : Color.gray300, lineWidth: isSelected ? 2 : 1)
                 )
         }
         .colorScheme(.light)
