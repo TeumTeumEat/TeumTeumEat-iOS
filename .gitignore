@@ -7,8 +7,13 @@
 **/._.DS_Store
 *.xcconfig
 
+# Firebase
 GoogleService-Info.plist
+google-services.json
+
+# Firebase Crashlytics
 **/GoogleService-Info.plist
+**/google-services.json
 
 ### Carthage ###
 # Carthage
