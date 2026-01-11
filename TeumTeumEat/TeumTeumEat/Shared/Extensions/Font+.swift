@@ -54,6 +54,10 @@ extension Font {
     static let bd_medium_16 = custom(FontFamily.main, FontWeight.medium, size: 16)
     static let bd_medium_14 = custom(FontFamily.main, FontWeight.medium, size: 14)
     
+    // caption
+    static let c_regular_14 = custom(FontFamily.main, FontWeight.regular, size: 14)
+    static let c_regular_12 = custom(FontFamily.main, FontWeight.regular, size: 12)
+    
 }
 
 struct TypographyStyle {
@@ -258,6 +262,14 @@ extension Text {
                 weight: .medium,
                 targetLineHeight: 20)
             )
+    }
+    
+    func cRegular14() -> some View {
+        self.font(.c_regular_14)
+    }
+    
+    func cRegular12() -> some View {
+        self.font(.c_regular_12)
     }
 }
 
