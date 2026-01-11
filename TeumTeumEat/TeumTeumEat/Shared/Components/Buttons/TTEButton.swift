@@ -79,8 +79,7 @@ struct TTEButton: View {
                             .frame(width: iconSize ?? 30, height: iconSize ?? 30)
                     }
                     
-                    Text(title)
-                        .font(size.typography.font)
+                    size.applyTypography(to: Text(title))
                         .foregroundColor(customForegroundColor ?? style.foregroundColor)
                     
                     Spacer()
@@ -98,8 +97,7 @@ struct TTEButton: View {
                 )
             } else {
                 // 아이콘이 없을 때 (기존 버튼)
-                Text(title)
-                    .font(size.typography.font)
+                size.applyTypography(to: Text(title))
                     .foregroundColor(customForegroundColor ?? style.foregroundColor)
                     .frame(width: size.width, height: size.height)
                     .background(customBackgroundColor ?? style.backgroundColor)

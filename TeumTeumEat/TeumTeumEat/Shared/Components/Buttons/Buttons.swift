@@ -32,6 +32,19 @@ enum ButtonSize {
         }
     }
     
+    func applyTypography(to text: Text) -> some View {
+            switch self {
+            case .large:
+                return AnyView(text.btBold20_24())
+            case .medium, .regular:
+                return AnyView(text.stSemibold18())
+            case .small:
+                return AnyView(text.bdMedium16())
+            case .grid:
+                return AnyView(text.stSemibold20())
+            }
+        }
+    
     var typography: TypographyStyle {
         switch self {
         case .large:
