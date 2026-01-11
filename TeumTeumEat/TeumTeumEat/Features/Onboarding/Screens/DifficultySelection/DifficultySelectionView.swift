@@ -196,17 +196,15 @@ struct DifficultyButton: View {
         Button(action: action) {
             Text(title)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(isSelected ? .white : ._7_A_7_A_7_A)
+                .foregroundColor(isSelected ? .blue500 : .gray600)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .background(isSelected ? Color.blue : Color.white)
+                .background(Color.white)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(isSelected ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
+                        .stroke(isSelected ? Color.blue500 : Color.gray300, lineWidth: isSelected ? 2 : 1)
                 )
                 .cornerRadius(12)
         }
     }
 }
-
-
