@@ -12,6 +12,7 @@
 		46C6475C2F06B813009F030A /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 46C6475B2F06B813009F030A /* MarkdownUI */; };
 		46C647632F06D960009F030A /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 46C647622F06D960009F030A /* Lottie */; };
 		46C65A642F13E1FA009F030A /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 46C65A632F13E1FA009F030A /* FirebaseCore */; };
+		46C65A6C2F13EB11009F030A /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 46C65A6B2F13EB11009F030A /* FirebaseMessaging */; };
 		46FE6B842EEACE0B009E626A /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 46FE6B832EEACE0B009E626A /* ComposableArchitecture */; };
 /* End PBXBuildFile section */
 
@@ -76,6 +77,7 @@
 			files = (
 				46C647632F06D960009F030A /* Lottie in Frameworks */,
 				46FE6B842EEACE0B009E626A /* ComposableArchitecture in Frameworks */,
+				46C65A6C2F13EB11009F030A /* FirebaseMessaging in Frameworks */,
 				46AE2AA12F0125BD0061B2EE /* KakaoSDK in Frameworks */,
 				46AE2AA32F0125BD0061B2EE /* KakaoSDKAuth in Frameworks */,
 				46C65A642F13E1FA009F030A /* FirebaseCore in Frameworks */,
@@ -146,6 +148,7 @@
 				46C6475B2F06B813009F030A /* MarkdownUI */,
 				46C647622F06D960009F030A /* Lottie */,
 				46C65A632F13E1FA009F030A /* FirebaseCore */,
+				46C65A6B2F13EB11009F030A /* FirebaseMessaging */,
 			);
 			productName = TeumTeumEat;
 			productReference = 46FE666E2EE1770E009E626A /* TeumTeumEat.app */;
@@ -690,6 +693,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 46C65A622F13E1FA009F030A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCore;
+		};
+		46C65A6B2F13EB11009F030A /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 46C65A622F13E1FA009F030A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
 		};
 		46FE6B832EEACE0B009E626A /* ComposableArchitecture */ = {
 			isa = XCSwiftPackageProductDependency;
