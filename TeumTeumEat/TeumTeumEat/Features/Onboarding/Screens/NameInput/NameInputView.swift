@@ -52,7 +52,8 @@ struct NameInputView: View {
                                             get: { store.name },
                                             set: { store.send(.nameChanged($0)) }
                                         ),
-                                        placeholder: "이름을 입력하세요",
+                                        placeholder: "입력해주세요",
+                                        state: store.textFieldState,
                                         allowSpaces: false
                                     )
                                     .focused($isNameFieldFocused)
@@ -62,16 +63,16 @@ struct NameInputView: View {
                                     }
                                     .padding(.horizontal, 30)
                                     
-                                    if let errorMessage = store.validationError {
-                                        HStack {
-                                            Text(errorMessage)
-                                                .font(.system(size: 12, weight: .regular))
-                                                .foregroundColor(.red)
-                                            Spacer()
-                                        }
-                                        .padding(.horizontal, 30)
-                                        .transition(.opacity.combined(with: .move(edge: .top)))
-                                    }
+//                                    if let errorMessage = store.validationError {
+//                                        HStack {
+//                                            Text(errorMessage)
+//                                                .font(.system(size: 12, weight: .regular))
+//                                                .foregroundColor(.red)
+//                                            Spacer()
+//                                        }
+//                                        .padding(.horizontal, 30)
+//                                        .transition(.opacity.combined(with: .move(edge: .top)))
+//                                    }
                                 }
                                 .padding(.top, 56.33)
                                 .padding(.bottom, isNameFieldFocused ? keyboardHeight - 90 : 0)
