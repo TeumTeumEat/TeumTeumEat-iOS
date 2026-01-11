@@ -40,17 +40,19 @@ extension Font {
        
     static let caption_regular_12 = custom(FontFamily.main, FontWeight.regular, size: 12)
     
-    
+    // title
     static let t_bold_24 = custom(FontFamily.main, FontWeight.bold, size: 24)
     static let t_bold_22 = custom(FontFamily.main, FontWeight.bold, size: 22)
     static let t_bold_20 = custom(FontFamily.main, FontWeight.bold, size: 20)
     
+    // subtitle
     static let st_semibold_20 = custom(FontFamily.main, FontWeight.semibold, size: 20)
     static let st_semibold_18 = custom(FontFamily.main, FontWeight.semibold, size: 18)
     static let st_semibold_16 = custom(FontFamily.main, FontWeight.semibold, size: 16)
-    
-    static let by_semibold_16 = custom(FontFamily.main, FontWeight.semibold, size: 16)
-    
+
+    // body
+    static let bd_medium_16 = custom(FontFamily.main, FontWeight.medium, size: 16)
+    static let bd_medium_14 = custom(FontFamily.main, FontWeight.medium, size: 14)
     
 }
 
@@ -232,7 +234,31 @@ extension Text {
         self.font(.st_semibold_16)
     }
     
+    func bdMedium16() -> some View {
+        self.font(.bd_medium_16)
+    }
     
+    func bdMedium16_22() -> some View {
+        self.font(.bd_medium_16)
+            .lineSpacing(TypographyHelper.calculateLineSpacing(
+                fontSize: 16,
+                weight: .medium,
+                targetLineHeight: 22)
+            )
+    }
+    
+    func bdMedium14() -> some View {
+        self.font(.bd_medium_14)
+    }
+    
+    func bdMedium14_20() -> some View {
+        self.font(.bd_medium_14)
+            .lineSpacing(TypographyHelper.calculateLineSpacing(
+                fontSize: 14,
+                weight: .medium,
+                targetLineHeight: 20)
+            )
+    }
 }
 
 struct TypographyHelper {
