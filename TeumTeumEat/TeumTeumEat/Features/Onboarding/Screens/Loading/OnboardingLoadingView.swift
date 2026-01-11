@@ -55,6 +55,7 @@ struct OnboardingLoadingView: View {
             .padding(.horizontal, 30)
             .padding(.bottom, 60)
         }
+        .background(.white)
         .colorScheme(.light)
         .alert($store.scope(state: \.errorAlert, action: \.errorAlert))
         .alert($store.scope(state: \.confirmCancelAlert, action: \.confirmCancelAlert))

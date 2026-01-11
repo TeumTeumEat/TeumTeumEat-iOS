@@ -26,6 +26,7 @@ struct TermsAgreementBottomSheet: View {
             HStack {
                 Text("이용 약관")
                     .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.black)
                 
                 Spacer()
                 
@@ -86,7 +87,7 @@ struct TermsAgreementBottomSheet: View {
                                 
                                 Text("전체 동의")
                                     .font(.headline)
-                                    .foregroundColor(.primary)
+                                    .foregroundColor(.black)
                             }
                         }
                         Spacer()
@@ -96,6 +97,7 @@ struct TermsAgreementBottomSheet: View {
                 .padding()
             }
         }
+        .background(.white)
     }
     
     private func updateAllAgreed() {

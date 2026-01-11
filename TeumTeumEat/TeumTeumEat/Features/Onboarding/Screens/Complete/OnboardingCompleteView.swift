@@ -22,7 +22,7 @@ struct OnboardingCompleteView: View {
             
             Text("'\(store.userName)'님 환영합니다")
                 .titleSemibold18()
-                .foregroundColor(.primary)
+                .foregroundColor(.gray900)
                 .padding(.top, 20)
             
             Spacer()
@@ -37,6 +37,9 @@ struct OnboardingCompleteView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 60)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.white)
+        .ignoresSafeArea()
         .colorScheme(.light)
     }
 }

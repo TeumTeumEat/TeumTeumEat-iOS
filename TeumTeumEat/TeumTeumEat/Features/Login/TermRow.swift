@@ -34,7 +34,7 @@ struct TermRow: View {
             } else {
                 Text(title)
                     .font(.headline)
-                    .foregroundColor(.primary)
+                    .foregroundColor(.black)
             }
             
             Spacer()
