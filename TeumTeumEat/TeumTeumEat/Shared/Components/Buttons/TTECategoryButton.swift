@@ -96,8 +96,8 @@ struct TTECategoryButton: View {
             .cornerRadius(16)
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(borderColor, lineWidth: 2)
+                    .strokeBorder(borderColor, lineWidth: 2)
             )
-        }
+        }   
     }
 }

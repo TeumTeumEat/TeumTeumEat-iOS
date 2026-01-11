@@ -91,17 +91,17 @@ struct DifficultySelectionView: View {
                                             if store.customPrompt.isEmpty {
                                                 VStack(alignment: .leading, spacing: 4) {
                                                     Text("상황설정 예시가 필요합니다.")
-                                                        .font(.system(size: 14))
-                                                        .foregroundColor(.gray)
+                                                        .bdMedium14_20()
+                                                        .foregroundColor(.gray600)
                                                     Text("어떤 식으로 할지 어떤 상황인지 입력해주세요.")
-                                                        .font(.system(size: 14))
-                                                        .foregroundColor(.gray)
+                                                        .bdMedium14_20()
+                                                        .foregroundColor(.gray600)
                                                     Text("ex) IT 트렌드나 프로그래밍 관련 퀴즈를")
-                                                        .font(.system(size: 14))
-                                                        .foregroundColor(.gray)
+                                                        .bdMedium14_20()
+                                                        .foregroundColor(.gray600)
                                                     Text("풀고 싶어요")
-                                                        .font(.system(size: 14))
-                                                        .foregroundColor(.gray)
+                                                        .bdMedium14_20()
+                                                        .foregroundColor(.gray600)
                                                 }
                                                 .padding(.horizontal, 16)
                                                 .padding(.top, 12)
@@ -132,7 +132,7 @@ struct DifficultySelectionView: View {
                                     .background(Color.white)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
-                                            .stroke(isTextEditorFocused ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
+                                            .strokeBorder(isTextEditorFocused ? Color.blue500 : Color.gray300, lineWidth: 2) 
                                     )
                                     .cornerRadius(12)
                                 }
@@ -201,10 +201,12 @@ struct DifficultyButton: View {
                 .frame(height: 50)
                 .background(Color.white)
                 .overlay(
+                    // stroke 대신 strokeBorder를 사용하세요
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(isSelected ? Color.blue500 : Color.gray300, lineWidth: isSelected ? 2 : 1)
+                        .strokeBorder(isSelected ? Color.blue500 : Color.gray300, lineWidth: 2)
                 )
-                .cornerRadius(12)
+                // .cornerRadius(12)는 overlay 안의 RoundedRectangle과
+                // background가 이미 12라면 굳이 중복해서 쓸 필요 없습니다. (필요시 위치 조정)
         }
     }
 }

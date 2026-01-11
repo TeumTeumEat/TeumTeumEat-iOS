@@ -32,6 +32,7 @@ struct CategorySelectionView: View {
                 }
             }
         }
+        .background(.white)
         .colorScheme(.light)
         .onAppear {
             store.send(.onAppear)
@@ -75,11 +76,15 @@ struct LoadingView: View {
         VStack(spacing: 20) {
             ProgressView()
                 .scaleEffect(1.5)
+                .tint(.gray900)
             
             Text("카테고리를 불러오는 중...")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(.gray600)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.white)
+        .colorScheme(.light)
     }
 }
 
@@ -366,7 +371,7 @@ struct CategoryChip: View {
                 .cornerRadius(16)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(isSelected ? Color.blue500 : Color.gray300, lineWidth: isSelected ? 2 : 1)
+                        .stroke(isSelected ? Color.blue500 : Color.gray300, lineWidth: 2)
                 )
         }
         .animation(.easeInOut(duration: 0.2), value: isSelected)

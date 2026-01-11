@@ -25,7 +25,7 @@ struct TTETextField: View {
         maxLength: Int = 10,
         height: CGFloat = 50,
         borderColor: Color = .gray300,
-        borderWidth: CGFloat = 1,
+        borderWidth: CGFloat = 2,
         cornerRadius: CGFloat = 16,
         allowSpaces: Bool = true
     ) {

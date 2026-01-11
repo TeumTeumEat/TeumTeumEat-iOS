@@ -47,8 +47,8 @@ struct TimeSettingView: View {
                             // 집을 나오는 시간
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("집에서 나오는 시간")
-                                    .titleSemibold16()
-                                    .foregroundColor(.black)
+                                    .stSemibold16()
+                                    .foregroundColor(.gray900)
                                 
                                 Button(action: {
                                     store.send(.leaveTimeButtonTapped)
@@ -56,8 +56,8 @@ struct TimeSettingView: View {
                                     HStack {
                                         Spacer()
                                         Text(store.leaveTimeText)
-                                            .font(.system(size: 16))
-                                            .foregroundColor(store.leaveTime != nil ? .primary : .gray)
+                                            .btMedium18_24()
+                                            .foregroundColor(store.leaveTime != nil ? .gray900 : .gray600)
                                         Spacer()
                                     }
                                     .padding(.horizontal, 20)
@@ -65,7 +65,7 @@ struct TimeSettingView: View {
                                     .background(Color.white)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
-                                            .stroke(store.leaveTime != nil ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
+                                            .strokeBorder(store.leaveTime != nil ? Color.blue500 : Color.gray300, lineWidth: 2)
                                     )
                                     .cornerRadius(12)
                                 }
@@ -76,8 +76,8 @@ struct TimeSettingView: View {
                             // 집에 돌아오는 시간
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("집에 돌아오는 시간")
-                                    .titleSemibold16()
-                                    .foregroundColor(.black)
+                                    .stSemibold16()
+                                    .foregroundColor(.gray900)
                                 
                                 Button(action: {
                                     store.send(.returnTimeButtonTapped)
@@ -85,8 +85,8 @@ struct TimeSettingView: View {
                                     HStack {
                                         Spacer()
                                         Text(store.returnTimeText)
-                                            .font(.system(size: 16))
-                                            .foregroundColor(store.returnTime != nil ? .primary : .gray)
+                                            .btMedium18_24()
+                                            .foregroundColor(store.returnTime != nil ? .gray900 : .gray600)
                                         Spacer()
                                     }
                                     .padding(.horizontal, 20)
@@ -94,7 +94,7 @@ struct TimeSettingView: View {
                                     .background(Color.white)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
-                                            .stroke(store.returnTime != nil ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
+                                            .strokeBorder(store.returnTime != nil ? Color.blue500 : Color.gray300, lineWidth: 2)
                                     )
                                     .cornerRadius(12)
                                 }
@@ -122,7 +122,7 @@ struct TimeSettingView: View {
                                         }
                                     }
 
-                                    Text("해당 시간에 알림을 받으실건가요?(필수)")
+                                    Text("해당 시간에 알림을 받으실건가요? (필수)")
                                         .bodyRegular14()
                                         .foregroundColor(.black)
                                     

@@ -145,14 +145,14 @@ struct SummaryRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .bodyMedium18()
-                .foregroundColor(.black)
+                .stSemibold16()
+                .foregroundColor(.gray900)
             
             HStack {
                 Spacer()
                 Text(value)
-                    .font(.system(size: 16))
-                    .foregroundColor(.primary)
+                    .btMedium18_24()
+                    .foregroundColor(.gray900)
                 Spacer()
             }
             .padding(.horizontal, 20)
@@ -160,7 +160,7 @@ struct SummaryRow: View {
             .background(Color.white)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.blue, lineWidth: 1)
+                    .stroke(Color.gray300, lineWidth: 2)
             )
             .cornerRadius(12)
         }

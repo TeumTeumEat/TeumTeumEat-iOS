@@ -107,7 +107,7 @@ struct DurationSelectButton: View {
     var body: some View {
         Button(action: action) {
             Text(text)
-                .font(.system(size: 16, weight: .medium))
+                .btSemiBold18_24()
                 .foregroundColor(isSelected ? .blue500 : .gray600)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
@@ -115,7 +115,7 @@ struct DurationSelectButton: View {
                 .cornerRadius(12)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(isSelected ? Color.blue500 : Color.gray300, lineWidth: isSelected ? 2 : 1)
+                        .stroke(isSelected ? Color.blue500 : Color.gray300, lineWidth: 2)
                 )
         }
         .colorScheme(.light)
