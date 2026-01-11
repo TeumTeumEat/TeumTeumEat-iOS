@@ -113,11 +113,11 @@ struct QuizGuideView: View {
                         // 체크박스
                         HStack(spacing: 8) {
                             Button(action: {
-                              //  store.send(.checkboxToggled)
+                                store.send(.checkboxToggled)
                             }) {
-                                Image(systemName:  "circle")
+                                Image(systemName: store.isCheckboxSelected ? "checkmark.circle.fill" : "circle")
                                     .font(.system(size: 20))
-                                    .foregroundColor(.black)
+                                    .foregroundColor(store.isCheckboxSelected ? .blue : .black)
                             }
                             
                             Text("안내 다시 보지 않기")
@@ -126,7 +126,7 @@ struct QuizGuideView: View {
                             
                             Spacer()
                         }
-                        .padding(.horizontal,16)
+                        .padding(.horizontal, 16)
                         .padding(.top, 16)
                         
                         
@@ -134,15 +134,23 @@ struct QuizGuideView: View {
                         Button(action: {
                             store.send(.startQuizButtonTapped)
                         }) {
-                            Text("퀴즈 풀러가기")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 52)
-                                .background(Color(red: 0.2, green: 0.4, blue: 0.8))
-                                .cornerRadius(12)
+                            HStack {
+                                if store.isSubmitting {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .scaleEffect(0.8)
+                                }
+                                Text(store.isSubmitting ? "저장 중..." : "퀴즈 풀러가기")
+                                    .font(.system(size: 16, weight: .semibold))
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(Color(red: 0.2, green: 0.4, blue: 0.8))
+                            .cornerRadius(12)
                         }
-                        .padding(.horizontal,16)
+                        .disabled(store.isSubmitting)  // API 호출 중에는 비활성화
+                        .padding(.horizontal, 16)
                     }
                     .background(
                         RoundedRectangle(cornerRadius: 12)
