@@ -10,14 +10,25 @@ import ComposableArchitecture
 
 struct OnboardingLoadingView: View {
     @Bindable var store: StoreOf<OnboardingLoadingFeature>
+    @State private var progress: CGFloat = 0.0
     
     var body: some View {
-        VStack(spacing: 0) {            
-            Image("Group 213")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 280, height: 280)
-                .padding(.top, 117)
+        VStack(spacing: 0) {
+            ZStack {
+                // 원형 프로그레스바
+                CircularProgressView(progress: progress)
+                
+                // 중앙에 캐릭터 이미지
+                Image("character")
+                    .resizable()
+                    .scaledToFit()
+                    .padding(40)
+            }
+            .frame(width: 280, height: 280)
+            .padding(.top, 117)
+            .onAppear {
+                startAnimation()
+            }
             
             VStack(spacing: 0) {
                 Text("틈틈잇을 생성하는 중")
@@ -49,6 +60,41 @@ struct OnboardingLoadingView: View {
         .alert($store.scope(state: \.confirmCancelAlert, action: \.confirmCancelAlert))
         .onAppear {
             store.send(.onAppear)
+        }
+    }
+    
+    private func startAnimation() {
+        withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
+            progress = 1.0
+        }
+    }
+}
+
+struct CircularProgressView: View {
+    let progress: CGFloat
+    let lineWidth: CGFloat = 12
+    
+    var body: some View {
+        ZStack {
+            // 배경 원 (회색)
+            Circle()
+                .stroke(
+                    Color.gray.opacity(0.2),
+                    lineWidth: lineWidth
+                )
+            
+            // 진행 원
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(
+                    Color.blue500,
+                    style: StrokeStyle(
+                        lineWidth: lineWidth,
+                        lineCap: .round
+                    )
+                )
+                .rotationEffect(.degrees(-90))  // 12시 방향부터 시작
+                .animation(.linear(duration: 2.0).repeatForever(autoreverses: false), value: progress)
         }
     }
 }
