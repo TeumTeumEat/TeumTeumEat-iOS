@@ -7,13 +7,13 @@
 **/._.DS_Store
 *.xcconfig
 
-# Firebase
-GoogleService-Info.plist
-google-services.json
-
-# Firebase Crashlytics
+# Firebase Configuration Files
 **/GoogleService-Info.plist
 **/google-services.json
+
+# Firebase Crashlytics
+crashlytics-build.properties
+fabric.properties
 
 ### Carthage ###
 # Carthage
