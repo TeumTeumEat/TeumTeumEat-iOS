@@ -47,7 +47,7 @@ struct ContentSelectionView: View {
                                 TTECategoryButton(
                                     icon: Image("files"),
                                     title: "파일 업로드",
-                                    subtitle: "PDF 파일을\n업로드해요",
+                                    subtitle: "공부하고 싶은\n내용이 있어요",
                                     isSelected: store.selectedType == .fileUpload
                                 ) {
                                     store.send(.contentTypeSelected(.fileUpload))

@@ -152,7 +152,7 @@ struct MainCategoryStepView: View {
                                 .frame(minHeight: 30)
                             
                             TTEButton(
-                                title: "다음",
+                                title: "다음으로",
                                 size: .large,
                                 isEnabled: store.canProceed
                             ) {
@@ -236,7 +236,7 @@ struct SubCategoryStepView: View {
                                 .frame(minHeight: 30)
                             
                             TTEButton(
-                                title: "다음",
+                                title: "다음으로",
                                 size: .large,
                                 isEnabled: store.canProceed
                             ) {
@@ -339,8 +339,8 @@ struct DetailCategoryStepView: View {
                     size: .large,
                     style: .secondary,
                     isEnabled: true,
-                    foregroundColor: isSelected ? .blue : .black,
-                    borderColor: isSelected ? .blue : .gray.opacity(0.3)
+                    foregroundColor: isSelected ? .blue500 : .gray600,
+                    borderColor: isSelected ? .blue500 : .gray300
                 ) {
                     store.send(.detailCategorySelected(detailCategory))
                 }
@@ -358,15 +358,15 @@ struct CategoryChip: View {
     var body: some View {
         Button(action: action) {
             Text(text)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(isSelected ? .white : .black)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(isSelected ? Color.blue : Color.white)
-                .cornerRadius(20)
+                .btSemiBold20_24()
+                .foregroundColor(isSelected ? .blue500 : .gray600)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 16)
+                .background(Color.white)
+                .cornerRadius(16)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(isSelected ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1.5)
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(isSelected ? Color.blue500 : Color.gray300, lineWidth: isSelected ? 2 : 1)
                 )
         }
         .animation(.easeInOut(duration: 0.2), value: isSelected)
@@ -443,8 +443,8 @@ struct CategoryGridButton: View {
                     .frame(width: 24, height: 24)
                 
                 Text(title)
-                    .titleSemibold20()
-                    .foregroundColor(isSelected ? .blue : .black)
+                    .btSemiBold20_24()
+                    .foregroundColor(isSelected ? .blue500 : .gray600)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
@@ -454,7 +454,7 @@ struct CategoryGridButton: View {
             .cornerRadius(16)
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(isSelected ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1.5)
+                    .stroke(isSelected ? Color.blue500 : Color.gray300, lineWidth: 2)
             )
         }
     }
