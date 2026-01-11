@@ -10,6 +10,7 @@ import SwiftUI
 import KakaoSDKAuth
 import KakaoSDKCommon
 import UserNotifications
+import FirebaseCore
 
 @main
 struct TeumTeumEatApp: App {

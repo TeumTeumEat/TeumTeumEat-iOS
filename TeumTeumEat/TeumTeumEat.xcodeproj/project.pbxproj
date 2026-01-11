@@ -11,7 +11,7 @@
 		46AE2AA32F0125BD0061B2EE /* KakaoSDKAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 46AE2AA22F0125BD0061B2EE /* KakaoSDKAuth */; };
 		46C6475C2F06B813009F030A /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 46C6475B2F06B813009F030A /* MarkdownUI */; };
 		46C647632F06D960009F030A /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 46C647622F06D960009F030A /* Lottie */; };
-		46C6485D2F07F240009F030A /* FSCalendar in Frameworks */ = {isa = PBXBuildFile; productRef = 46C6485C2F07F240009F030A /* FSCalendar */; };
+		46C65A642F13E1FA009F030A /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 46C65A632F13E1FA009F030A /* FirebaseCore */; };
 		46FE6B842EEACE0B009E626A /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 46FE6B832EEACE0B009E626A /* ComposableArchitecture */; };
 /* End PBXBuildFile section */
 
@@ -75,10 +75,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				46C647632F06D960009F030A /* Lottie in Frameworks */,
-				46C6485D2F07F240009F030A /* FSCalendar in Frameworks */,
 				46FE6B842EEACE0B009E626A /* ComposableArchitecture in Frameworks */,
 				46AE2AA12F0125BD0061B2EE /* KakaoSDK in Frameworks */,
 				46AE2AA32F0125BD0061B2EE /* KakaoSDKAuth in Frameworks */,
+				46C65A642F13E1FA009F030A /* FirebaseCore in Frameworks */,
 				46C6475C2F06B813009F030A /* MarkdownUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -145,7 +145,7 @@
 				46AE2AA22F0125BD0061B2EE /* KakaoSDKAuth */,
 				46C6475B2F06B813009F030A /* MarkdownUI */,
 				46C647622F06D960009F030A /* Lottie */,
-				46C6485C2F07F240009F030A /* FSCalendar */,
+				46C65A632F13E1FA009F030A /* FirebaseCore */,
 			);
 			productName = TeumTeumEat;
 			productReference = 46FE666E2EE1770E009E626A /* TeumTeumEat.app */;
@@ -234,7 +234,7 @@
 				46AE2A9F2F0125BD0061B2EE /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */,
 				46C6475A2F06B813009F030A /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
 				46C647612F06D960009F030A /* XCRemoteSwiftPackageReference "lottie-ios" */,
-				46C6485B2F07F240009F030A /* XCRemoteSwiftPackageReference "FSCalendar" */,
+				46C65A622F13E1FA009F030A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 46FE666F2EE1770E009E626A /* Products */;
@@ -647,12 +647,12 @@
 				minimumVersion = 4.5.2;
 			};
 		};
-		46C6485B2F07F240009F030A /* XCRemoteSwiftPackageReference "FSCalendar" */ = {
+		46C65A622F13E1FA009F030A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/WenchaoD/FSCalendar.git";
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 2.8.4;
+				minimumVersion = 12.7.0;
 			};
 		};
 		46FE6B822EEACE0B009E626A /* XCRemoteSwiftPackageReference "swift-composable-architecture" */ = {
@@ -686,10 +686,10 @@
 			package = 46C647612F06D960009F030A /* XCRemoteSwiftPackageReference "lottie-ios" */;
 			productName = Lottie;
 		};
-		46C6485C2F07F240009F030A /* FSCalendar */ = {
+		46C65A632F13E1FA009F030A /* FirebaseCore */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 46C6485B2F07F240009F030A /* XCRemoteSwiftPackageReference "FSCalendar" */;
-			productName = FSCalendar;
+			package = 46C65A622F13E1FA009F030A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
 		};
 		46FE6B832EEACE0B009E626A /* ComposableArchitecture */ = {
 			isa = XCSwiftPackageProductDependency;
