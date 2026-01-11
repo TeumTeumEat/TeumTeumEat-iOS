@@ -137,7 +137,7 @@ struct TimeSettingView: View {
                                 .frame(minHeight: 20)
                             
                             TTEButton(
-                                title: "다음",
+                                title: "다음으로",
                                 size: .large,
                                 isEnabled: store.canProceed
                             ) {
