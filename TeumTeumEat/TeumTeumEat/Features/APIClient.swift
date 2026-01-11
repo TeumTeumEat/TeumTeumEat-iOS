@@ -890,3 +890,26 @@ extension APIClient {
 }
 
 
+extension APIClient {
+    /// 퀴즈 가이드 본 것으로 표시
+    func updateQuizGuideSeen() async throws {
+        let response: APIResponse<QuizGuideSeenData> = try await request(
+            endpoint: "/api/v1/user-quizzes/guide",
+            method: .post,
+            requiresAuth: true
+        )
+        
+        print("updateQuizGuideSeen - Response code: \(response.code)")
+        
+        guard response.code == "OK",
+              let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        
+        print("Quiz guide seen status updated: \(data.isQuizGuideSeen)")
+    }
+}
