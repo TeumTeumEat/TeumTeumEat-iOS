@@ -118,7 +118,7 @@ struct QuizGuideView: View {
                             }) {
                                 Image(systemName: store.isCheckboxSelected ? "checkmark.circle.fill" : "circle")
                                     .font(.system(size: 20))
-                                    .foregroundColor(store.isCheckboxSelected ? .blue : .black)
+                                    .foregroundColor(store.isCheckboxSelected ? .blue : .gray300)
                             }
                             
                             Text("안내 다시 보지 않기")
