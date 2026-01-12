@@ -31,6 +31,7 @@ struct ContentSummaryView: View {
                             
                             Text("콘텐츠 요약")
                                 .titleSemibold20()
+                                .foregroundStyle(.black)
                             
                             Spacer()
                             
@@ -50,6 +51,7 @@ struct ContentSummaryView: View {
                         Markdown(store.summaryText)
 //                            .markdownTheme(.custom)
                             .markdownTheme(.gitHub)
+                            .colorScheme(.light)
                             .padding(.horizontal, 20)
                             .padding(.top, 24)
                             .padding(.bottom, 180)
@@ -57,6 +59,7 @@ struct ContentSummaryView: View {
                     .scrollDismissesKeyboard(.interactively)
                     .background(Color.white)
                 }
+                .background(Color.white)
                 
                 // 그라디언트 + 버튼 영역
                 VStack(spacing: 0) {
@@ -91,6 +94,7 @@ struct ContentSummaryView: View {
                     .background(Color.white)
                 }
             }
+            .background(Color.white)
         }
         .background(.white)
         .navigationBarHidden(true)
