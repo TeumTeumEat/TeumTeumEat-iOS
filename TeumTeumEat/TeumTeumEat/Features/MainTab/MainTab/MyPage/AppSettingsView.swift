@@ -46,31 +46,33 @@ struct AppSettingsView: View {
                         }
                         
                         Spacer()
-                            .frame(height: 40)
-                        
-                        // 저장하기 버튼
-                        TTEButton(
-                            title: store.isSaving ? "저장 중..." : "저장하기",
-                            size: .large,
-                            isEnabled: store.canSave && !store.isSaving
-                        ) {
-                            store.send(.saveButtonTapped)
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 32)
+                            .frame(height: 80)
                     }
                 }
                 .background(Color.white)
                 .onTapGesture {
                     isNicknameFocused = false
                 }
+                
+                // 저장하기 버튼 - ScrollView 밖으로 분리
+                TTEButton(
+                    title: store.isSaving ? "저장 중..." : "저장하기",
+                    size: .large,
+                    isEnabled: store.canSave && !store.isSaving
+                ) {
+                    store.send(.saveButtonTapped)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 32)
+                .background(Color.white)
             }
         }
         .navigationBarHidden(true)
         .toolbar(.hidden, for: .tabBar)
         .onAppear {
-                    store.send(.onAppear)
-                }
+            store.send(.onAppear)
+        }
         .sheet(isPresented: Binding(
             get: { store.isLeaveTimePickerPresented },
             set: { if !$0 { store.send(.leaveTimePickerDismissed) } }
@@ -165,17 +167,6 @@ struct AppSettingsView: View {
                 allowSpaces: false
             )
             .focused($isNicknameFocused)
-            
-            // 닉네임 검증 에러 메시지 추가
-//            if let nicknameError = store.nicknameValidationError {
-//                HStack {
-//                    Text(nicknameError)
-//                        .font(.system(size: 12, weight: .regular))
-//                        .foregroundColor(.red)
-//                    Spacer()
-//                }
-//                .transition(.opacity.combined(with: .move(edge: .top)))
-//            }
         }
         .padding(.horizontal, 20)
         .padding(.top, 20)
@@ -241,9 +232,9 @@ struct AppSettingsView: View {
         .padding(.vertical, 16)
         .background(Color.white)
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.blue, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(.blue500, lineWidth: 2)
         )
-        .cornerRadius(12)
+        .cornerRadius(16)
     }
 }

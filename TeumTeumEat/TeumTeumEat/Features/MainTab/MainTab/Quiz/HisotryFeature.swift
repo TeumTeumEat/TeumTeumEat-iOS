@@ -255,7 +255,7 @@ struct HistoryView: View {
                                     )
                                     .padding(.top, 5)
                                 }
-                                .padding(.horizontal, 18)
+                                .padding(.horizontal, 20)
                                 .padding(.top, 20)
                                 .padding(.bottom, 120)
                                 
@@ -371,24 +371,24 @@ struct HistoryDateCard: View {
     var body: some View {
         GeometryReader { geometry in
             HStack(spacing: 8) {
-                VStack(alignment: .trailing, spacing: 0) {
+                VStack(alignment: .trailing, spacing: 12) {
                     HStack(spacing: 8) {
                         Image("fire")
                             .resizable()
                             .renderingMode(.template)
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(fireCount == 0 ? .gray900 : .red400)
                             .frame(width: 50, height: 50)
                         
                         Text("\(fireCount)")
-                            .font(.system(size: 40, weight: .regular))
-                            .foregroundColor(.black)
+                            .font(.system(size: 40, weight: .bold))
+                            .foregroundColor(fireCount == 0 ? .gray900 : .red400)
                     }
                     .frame(height: 66)
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     
                     Text(streakText)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.gray)
+                        .stSemibold16()
+                        .foregroundColor(.gray900)
                         .frame(height: 42)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
@@ -426,17 +426,19 @@ struct StampCountCapsule: View {
     var body: some View {
         HStack(spacing: 8) {
             Text(title)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.black)
+                .bdMedium14_20()
+                .foregroundColor(.blue500)
             
             Image(iconName)
+                .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 24, height: 24)
+                .foregroundStyle(.blue500)
             
             Text("\(count)")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundColor(.black)
+                .tBold20()
+                .foregroundColor(.blue500)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -498,13 +500,13 @@ struct HistoryCalendarView: View {
                 onMonthChanged(newYear, newMonth)
             }) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.black)
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundColor(.gray800)
             }
             
             Text(monthYearString)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(.black)
+                .stSemibold18()
+                .foregroundStyle(.gray900)
             
             Button(action: {
                 let newMonth = currentMonth == 12 ? 1 : currentMonth + 1
@@ -512,8 +514,8 @@ struct HistoryCalendarView: View {
                 onMonthChanged(newYear, newMonth)
             }) {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.black)
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundColor(.gray800)
             }
         }
         .frame(maxWidth: .infinity)
@@ -695,24 +697,17 @@ struct DayCell: View {
     
     var body: some View {
         ZStack {
-            // 배경 (선택 시)
-            if isSelected {
+            // 퀴즈 완료 날짜 배경 (채워진 원)
+            if hasQuiz {
                 Circle()
-                    .fill(Color.blue.opacity(0.2))
+                    .fill(isSelected ? Color.blue500 : Color.blue300)
                     .frame(width: 40, height: 40)
             }
             
             // 날짜 텍스트
             Text("\(calendar.component(.day, from: date))")
                 .font(.system(size: 14, weight: hasQuiz ? .bold : .regular))
-                .foregroundColor(hasQuiz ? .black : .gray)
-            
-            // 퀴즈 완료 표시 (동그라미)
-            if hasQuiz {
-                Circle()
-                    .stroke(isStreak ? Color.orange : Color.blue, lineWidth: 2)
-                    .frame(width: 36, height: 36)
-            }
+                .foregroundColor(hasQuiz ? .white : .gray)
         }
         .frame(height: 40)
     }

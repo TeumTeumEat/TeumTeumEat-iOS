@@ -13,6 +13,7 @@ struct SubjectListFeature {
     @ObservableState
     struct State: Equatable {
         var subjects: [Subject] = []
+        var currentGoalId: Int
         var isLoading: Bool = false
         var errorMessage: String?
         var isUpdating: Bool = false

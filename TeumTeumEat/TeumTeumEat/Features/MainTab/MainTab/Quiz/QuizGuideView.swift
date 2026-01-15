@@ -30,6 +30,7 @@ struct QuizGuideView: View {
                     
                     Text("퀴즈 안내")
                         .titleSemibold20()
+                        .foregroundStyle(.black)
                     
                     Spacer()
                     
@@ -68,7 +69,7 @@ struct QuizGuideView: View {
                     // 오늘의 지식 텍스트
                     Text("오늘의 지식과 관련한\n퀴즈 맞춰봐요")
                         .font(.system(size: 24,weight: .bold))
-                        .foregroundColor(.primary)
+                        .foregroundColor(.black)
                         .multilineTextAlignment(.center)
 //                        .lineSpacing(4)
                     
@@ -117,7 +118,7 @@ struct QuizGuideView: View {
                             }) {
                                 Image(systemName: store.isCheckboxSelected ? "checkmark.circle.fill" : "circle")
                                     .font(.system(size: 20))
-                                    .foregroundColor(store.isCheckboxSelected ? .blue : .black)
+                                    .foregroundColor(store.isCheckboxSelected ? .blue : .gray300)
                             }
                             
                             Text("안내 다시 보지 않기")
@@ -166,6 +167,7 @@ struct QuizGuideView: View {
             
             Spacer()
         }
+        .background(.white)
         .navigationBarHidden(true)
     }
 }

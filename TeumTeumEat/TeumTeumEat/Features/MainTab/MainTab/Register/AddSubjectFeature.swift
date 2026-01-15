@@ -326,46 +326,24 @@ struct AddSubjectCompleteView: View {
     
     var body: some View {
         ZStack {
-            // 배경 그라데이션
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(red: 0.15, green: 0.56, blue: 0.98),
-                    Color(red: 0.17, green: 0.65, blue: 1.0)
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            Color.white
+                .ignoresSafeArea()
             
             VStack(spacing: 0) {
                 Spacer()
                 
                 // 캐릭터 이미지
-                Image("character_complete")
+                Image("character_addComplete")
                     .resizable()
                     .scaledToFit()
                     .frame(height: 300)
                     .padding(.horizontal, 40)
                 
                 Spacer()
-                    .frame(height: 40)
-                
-                // 메시지
-                VStack(spacing: 12) {
-                    Text("새로운 주제로")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
-                    
-                    Text("바뀌었어요!!")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
-                }
-                
-                Spacer()
                 
                 // 확인 버튼
                 TTEButton(
-                    title: "확인",
+                    title: "시작하기",
                     size: .large,
                     isEnabled: true
                 ) {

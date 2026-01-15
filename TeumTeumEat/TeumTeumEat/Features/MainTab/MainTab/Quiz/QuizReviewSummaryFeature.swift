@@ -141,25 +141,37 @@ struct QuizCompleteView: View {
         VStack(spacing: 0) {
             Spacer()
             
-            // 완료 메시지
-            VStack(spacing: 20) {
-                // 아이콘 또는 이미지 (선택사항)
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 80))
-                    .foregroundColor(.green)
+            VStack(spacing: 40) {
+                Image("character_quiz_ending")
+                    .resizable()
+                    .frame(width: 280, height: 280)
                 
-                Text("오늘의 틈틈잇 완료!")
-                    .font(.system(size: 28, weight: .bold))
-                
-                Text("오늘도 수고하셨어요 🎉")
-                    .font(.system(size: 18))
-                    .foregroundColor(.gray)
+                Text("오늘의 틈틈잇 \n완료!")
+                    .font(.system(size: 30, weight: .semibold))
+                    .multilineTextAlignment(.center)
             }
             
             Spacer()
             
-            // 하단 버튼
-            VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                // 히스토리로
+                Button {
+                    store.send(.historyButtonTapped)
+                } label: {
+                    Text("내 스탬프")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.blue500)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(Color.blue100)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.blue100, lineWidth: 2)
+                        )
+                        .cornerRadius(12)
+                }
+                
+                // 홈으로
                 Button {
                     store.send(.homeButtonTapped)
                 } label: {
@@ -168,23 +180,7 @@ struct QuizCompleteView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
-                        .background(Color.blue)
-                        .cornerRadius(12)
-                }
-                
-                Button {
-                    store.send(.historyButtonTapped)
-                } label: {
-                    Text("히스토리로")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.blue)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(Color.white)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.blue, lineWidth: 2)
-                        )
+                        .background(Color.blue500)
                         .cornerRadius(12)
                 }
             }

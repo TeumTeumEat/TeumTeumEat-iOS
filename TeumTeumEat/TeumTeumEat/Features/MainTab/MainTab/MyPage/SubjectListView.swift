@@ -72,7 +72,10 @@ struct SubjectListView: View {
                                 print("Subject tapped: \(subject.name)")
                                 store.send(.subjectTapped(subject))
                             } label: {
-                                SelectedSubjectCard(subject: subject)
+                                SelectSubjectCard(
+                                    subject: subject,
+                                    isSelected: subject.goalId == store.currentGoalId
+                                )
                             }
                         }
                     }
@@ -88,6 +91,80 @@ struct SubjectListView: View {
         .onAppear {
             print("SubjectListView appeared - calling API")
             store.send(.onAppear)
+        }
+    }
+}
+
+struct SelectSubjectCard: View {
+    let subject: Subject
+    let isSelected: Bool
+    
+    var body: some View {
+           VStack(alignment: .leading, spacing: 12) {
+               tagSection
+               
+               Text(subject.name)
+                   .titleSemibold16()
+                   .foregroundColor(isSelected ? .blue500 : .black)
+                   .lineLimit(nil)
+                   .fixedSize(horizontal: false, vertical: true)
+               
+               if !subject.category.isEmpty && subject.category != ["문서"] {
+                   categorySection
+               }
+               
+               if !subject.description.isEmpty {
+                   Text(subject.description)
+                       .bodyRegular14()
+                       .foregroundColor(.gray)
+                       .lineLimit(nil)
+                       .fixedSize(horizontal: false, vertical: true)
+               }
+           }
+           .padding(20)
+           .frame(maxWidth: .infinity, alignment: .leading)
+           .background(isSelected ? Color.blue500.opacity(0.05) : Color.white)
+           .overlay(
+               RoundedRectangle(cornerRadius: 8)
+                   .stroke(isSelected ? Color.blue500 : Color.gray.opacity(0.3), lineWidth: isSelected ? 2 : 1)
+           )
+       }
+    
+    private var tagSection: some View {
+        HStack(spacing: 6) {
+            Text(subject.duration)
+                .bodyRegular14()
+                .foregroundColor(.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.blue)
+                .cornerRadius(4)
+            
+            Text("난이도 \(subject.difficulty)")
+                .bodyRegular14()
+                .foregroundColor(.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.blue)
+                .cornerRadius(4)
+            
+            Spacer()
+        }
+    }
+    
+    private var categorySection: some View {
+        HStack(spacing: 4) {
+            ForEach(Array(subject.category.enumerated()), id: \.offset) { index, category in
+                Text(category)
+                    .bodyRegular14()
+                    .foregroundColor(.gray)
+                
+                if index < subject.category.count - 1 {
+                    Text(">")
+                        .bodyRegular14()
+                        .foregroundColor(.gray)
+                }
+            }
         }
     }
 }
