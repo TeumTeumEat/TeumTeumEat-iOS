@@ -27,9 +27,23 @@ struct SnackImageMapper {
     ]
     
     /// documentId + createdAt 기반으로 간식 이미지 반환
+
     static func snackImage(for documentId: Int, createdAt: String) -> String {
-           let key = "\(documentId)-\(createdAt)"
-           let index = abs(key.hashValue) % snackImages.count
-           return snackImages[index]
-       }
+            let key = "\(documentId)-\(createdAt)"
+            // 안정적인 해시 함수 (항상 같은 결과)
+            var hash = 0
+            for char in key.unicodeScalars {
+                hash = (hash &* 31 &+ Int(char.value)) & 0x7FFFFFFF
+            }
+            
+            let index = hash % snackImages.count
+            
+            print("SnackImageMapper")
+            print("- key: \(key)")
+            print("- hash: \(hash)")
+            print("- index: \(index)")
+            print("- result: \(snackImages[index])")
+            
+            return snackImages[index]
+        }
 }

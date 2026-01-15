@@ -27,6 +27,55 @@ struct HomeFeature {
         
         var isLoading: Bool = false
         var errorMessage: String?
+        
+        var currentSnackImage: String {
+            print("currentSnackImage 호출")
+            print("- isTodayQuizCompleted: \(isTodayQuizCompleted)")
+            print("- currentGoal.type: \(currentGoal?.type ?? "nil")")
+            print("- categoryDocument: \(categoryDocument != nil)")
+            print("- pdfSummary: \(pdfSummary != nil)")
+            
+            guard !isTodayQuizCompleted else {
+                print("완료 상태 - done 반환")
+                return "done"
+            }
+            
+            // currentGoal의 type과 일치하는 문서만 사용
+            guard let goal = currentGoal else {
+                print("currentGoal 없음 - burger 반환")
+                return "burger"
+            }
+            
+            // Goal Type에 따라 올바른 문서만 체크
+            if goal.type == "CATEGORY", let categoryDoc = categoryDocument {
+                print("CATEGORY - categoryDocument 사용")
+                print("- documentId: \(categoryDoc.documentId)")
+                print("- createdAt: \(categoryDoc.createdAt)")
+                
+                let image = SnackImageMapper.snackImage(
+                    for: categoryDoc.documentId,
+                    createdAt: categoryDoc.createdAt
+                )
+                print("- 결과 이미지: \(image)")
+                return image
+            }
+            
+            if goal.type == "DOCUMENT", let pdfSum = pdfSummary {
+                print("DOCUMENT - pdfSummary 사용")
+                print("- documentId: \(pdfSum.documentId)")
+                print("- createdAt: \(pdfSum.createdAt)")
+                
+                let image = SnackImageMapper.snackImage(
+                    for: pdfSum.documentId,
+                    createdAt: pdfSum.createdAt
+                )
+                print("- 결과 이미지: \(image)")
+                return image
+            }
+            
+            print("문서 로딩 중 - burger 반환")
+            return "burger"
+        }
     }
     
     enum Action {
@@ -111,13 +160,40 @@ struct HomeFeature {
                 // 실패해도 다른 API에 영향 없음
                 return .none
                 
-                
             // Step 1 완료 → Step 2 시작
             case .fetchCurrentGoalResponse(.success(let goal)):
+                let previousGoal = state.currentGoal
                 state.currentGoal = goal
+                
+                //  Goal이 실제로 바뀌었는지 확인
+                let isNewGoal: Bool = {
+                    guard let prev = previousGoal else { return true }
+                    
+                    if prev.type != goal.type { return true }
+                    
+                    if goal.type == "CATEGORY" {
+                        return prev.category?.categoryId != goal.category?.categoryId
+                    }
+                    
+                    if goal.type == "DOCUMENT" {
+                        return prev.documentId != goal.documentId
+                    }
+                    
+                    return false
+                }()
+                
+                if isNewGoal {
+                    print("새로운 Goal - 이전 데이터 초기화")
+                    state.categoryDocument = nil
+                    state.pdfSummary = nil
+                    state.quizzes = []
+                } else {
+                    print("동일한 Goal - 데이터 유지")
+                }
+                
                 print("Step 1 완료 - Goal Type: \(goal.type)")
                 
-                // Step 2: 퀴즈 상태 확인
+                // Step 2: 퀴즈 상태는 항상 확인 (날짜 변경 감지용)
                 return .run { send in
                     do {
                         let status = try await apiClient.fetchUserQuizStatus()
@@ -135,19 +211,45 @@ struct HomeFeature {
                 
             // Step 2 완료 → Step 3 시작
             case .fetchQuizStatusResponse(.success(let status)):
+                let wasCompletedYesterday = state.isTodayQuizCompleted
                 state.quizStatus = status
                 state.isTodayQuizCompleted = status.hasSolvedToday
+                
                 print("Step 2 완료 - hasSolvedToday: \(status.hasSolvedToday)")
                 
-                // Step 3: Goal Type에 따라 요약글 조회
+                //날짜 변경 감지: 어제는 완료였는데 오늘은 미완료
+                if wasCompletedYesterday && !status.hasSolvedToday {
+                    print("날짜 변경 감지 - 새로운 문서 필요")
+                    state.categoryDocument = nil
+                    state.pdfSummary = nil
+                    state.quizzes = []
+                }
+                
                 guard let goal = state.currentGoal else {
                     state.errorMessage = "목표 정보가 없습니다"
                     state.isLoading = false
                     return .none
                 }
                 
+                // Step 3: Goal Type에 따라 요약글 조회
                 if goal.type == "CATEGORY" {
-                    // 카테고리 타입
+                    // 문서가 이미 있으면 퀴즈만 조회
+                    if let categoryDoc = state.categoryDocument {
+                        print("categoryDocument 존재 - 퀴즈만 조회")
+                        return .run { [docId = categoryDoc.documentId] send in
+                            do {
+                                let quizzes = try await apiClient.fetchUserQuizzes(
+                                    documentId: docId,
+                                    documentType: .category
+                                )
+                                await send(.fetchQuizzesResponse(.success(quizzes)))
+                            } catch {
+                                await send(.fetchQuizzesResponse(.failure(error)))
+                            }
+                        }
+                    }
+                    
+                    // 카테고리 문서 조회
                     guard let categoryId = goal.category?.categoryId else {
                         state.errorMessage = "카테고리 ID가 없습니다"
                         state.isLoading = false
@@ -164,17 +266,33 @@ struct HomeFeature {
                     }
                     
                 } else if goal.type == "DOCUMENT" {
-                    // PDF 타입
+                    // PDF 문서가 이미 있으면 퀴즈만 조회
+                    if let pdfSum = state.pdfSummary {
+                        print("pdfSummary 존재 - 퀴즈만 조회")
+                        return .run { [docId = pdfSum.documentId] send in
+                            do {
+                                let quizzes = try await apiClient.fetchUserQuizzes(
+                                    documentId: docId,
+                                    documentType: .document
+                                )
+                                await send(.fetchQuizzesResponse(.success(quizzes)))
+                            } catch {
+                                await send(.fetchQuizzesResponse(.failure(error)))
+                            }
+                        }
+                    }
+                    
+                    // PDF 문서 조회
                     guard let documentId = goal.documentId else {
                         state.errorMessage = "문서 ID가 없습니다"
                         state.isLoading = false
                         return .none
                     }
                     
-                    return .run { send in
+                    return .run { [goalId = goal.goalId] send in
                         do {
                             let summary = try await apiClient.fetchDailyPDFSummary(
-                                goalId: goal.goalId,
+                                goalId: goalId,
                                 documentId: documentId
                             )
                             await send(.fetchPDFSummaryResponse(.success(summary)))
@@ -273,7 +391,6 @@ struct HomeFeature {
                     return .none
                 }
                 
-                
                 if let categoryDoc = state.categoryDocument {
                     let summaryData = ContentSummaryFeature.State(
                         documentId: categoryDoc.documentId,
@@ -311,9 +428,6 @@ struct HomeFeature {
                     return .none
                 }
                 
-            // ContentSummary Delegate 처리
-            
-                
             case .delegate:
                 return .none
             }
@@ -344,6 +458,7 @@ struct HomeView: View {
                 } else {
                     CharacterImageView(
                         isTodayQuizCompleted: store.isTodayQuizCompleted,
+                        currentSnackImage: store.currentSnackImage,
                         onCharacterTapped: {
                             store.send(.characterEatTapped)
                         }
@@ -369,6 +484,7 @@ struct HomeView: View {
 // MARK: - Character Image View
 struct CharacterImageView: View {
     let isTodayQuizCompleted: Bool
+    let currentSnackImage: String
     let onCharacterTapped: () -> Void
     
     var body: some View {
@@ -397,7 +513,7 @@ struct CharacterImageView: View {
                     
                 } else {
                     // 미완료 시 - 햄버거 + 텍스트
-                    Image("hamburger")
+                    Image(currentSnackImage)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 180, height: 180)
