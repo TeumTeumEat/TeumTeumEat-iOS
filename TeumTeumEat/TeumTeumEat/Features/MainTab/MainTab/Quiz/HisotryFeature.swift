@@ -255,7 +255,7 @@ struct HistoryView: View {
                                     )
                                     .padding(.top, 5)
                                 }
-                                .padding(.horizontal, 18)
+                                .padding(.horizontal, 20)
                                 .padding(.top, 20)
                                 .padding(.bottom, 120)
                                 
@@ -371,7 +371,7 @@ struct HistoryDateCard: View {
     var body: some View {
         GeometryReader { geometry in
             HStack(spacing: 8) {
-                VStack(alignment: .trailing, spacing: 0) {
+                VStack(alignment: .trailing, spacing: 12) {
                     HStack(spacing: 8) {
                         Image("fire")
                             .resizable()
@@ -387,8 +387,8 @@ struct HistoryDateCard: View {
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     
                     Text(streakText)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.gray)
+                        .stSemibold16()
+                        .foregroundColor(.gray900)
                         .frame(height: 42)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
