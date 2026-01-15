@@ -48,8 +48,8 @@ struct MyPageView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     // 학습주제 섹션
                     HStack {
-                        Text("학습주제")
-                            .titleSemibold16()
+                        Text("학습 주제")
+                            .stSemibold18()
                             .foregroundColor(.black)
                         
                         Spacer()
@@ -59,7 +59,7 @@ struct MyPageView: View {
                         } label: {
                             HStack(spacing: 4) {
                                 Text("전체보기")
-                                    .bodyRegular14()
+                                    .cRegular14()
                                     .foregroundColor(.gray)
                                 
                                 Image(systemName: "chevron.right")
@@ -79,7 +79,7 @@ struct MyPageView: View {
                     } else if let selectedSubject = store.selectedSubject {
                         SelectedSubjectCard(subject: selectedSubject)
                             .padding(.horizontal, 20)
-                            .padding(.top, 12)
+                            .padding(.top, 16)
                             .padding(.bottom, 20)
                     } else {
                         Text("등록된 학습주제가 없습니다")

@@ -259,7 +259,9 @@ struct MyPageFeature {
                 return .none
                 
             case .viewAllSubjectsTapped:
-                state.subjectList = SubjectListFeature.State()
+                state.subjectList = SubjectListFeature.State(
+                    currentGoalId: state.selectedSubject?.goalId ?? -1
+                )
                 return .none
                 
             case .viewAppSettingsTapped:
@@ -396,6 +398,12 @@ struct SelectedSubjectCard: View {
     
     private var tagSection: some View {
         HStack(spacing: 6) {
+            Text("선택된 주제")
+                .stSemibold16()
+                .foregroundColor(.blue500)
+            
+            Spacer()
+            
             Text(subject.duration)
                 .bodyRegular14()
                 .foregroundColor(.white)
@@ -411,8 +419,6 @@ struct SelectedSubjectCard: View {
                 .padding(.vertical, 4)
                 .background(Color.blue)
                 .cornerRadius(4)
-            
-            Spacer()
         }
     }
     
