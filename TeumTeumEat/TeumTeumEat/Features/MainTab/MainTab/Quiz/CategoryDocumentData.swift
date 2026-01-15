@@ -12,6 +12,7 @@ struct CategoryDocumentData: Codable, Equatable {
     let content: String
     let hasSolvedToday: Bool
     let isFirstTime: Bool
+    let createdAt: String
 }
 
 struct PDFSummaryData: Codable, Equatable {
@@ -22,4 +23,5 @@ struct PDFSummaryData: Codable, Equatable {
     let status: String  // "COMPLETED", "PROCESSING" 등
     let hasSolvedToday: Bool
     let isFirstTime: Bool
+    let createdAt: String
 }
