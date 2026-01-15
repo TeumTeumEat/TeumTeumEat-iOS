@@ -426,17 +426,19 @@ struct StampCountCapsule: View {
     var body: some View {
         HStack(spacing: 8) {
             Text(title)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.black)
+                .bdMedium14_20()
+                .foregroundColor(.blue500)
             
             Image(iconName)
+                .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 24, height: 24)
+                .foregroundStyle(.blue500)
             
             Text("\(count)")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundColor(.black)
+                .tBold20()
+                .foregroundColor(.blue500)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -498,13 +500,13 @@ struct HistoryCalendarView: View {
                 onMonthChanged(newYear, newMonth)
             }) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.black)
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundColor(.gray800)
             }
             
             Text(monthYearString)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(.black)
+                .stSemibold18()
+                .foregroundStyle(.gray900)
             
             Button(action: {
                 let newMonth = currentMonth == 12 ? 1 : currentMonth + 1
@@ -512,8 +514,8 @@ struct HistoryCalendarView: View {
                 onMonthChanged(newYear, newMonth)
             }) {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.black)
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundColor(.gray800)
             }
         }
         .frame(maxWidth: .infinity)
