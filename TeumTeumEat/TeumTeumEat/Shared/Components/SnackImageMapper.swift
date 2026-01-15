@@ -9,7 +9,7 @@ import SwiftUI
 
 struct SnackImageMapper {
     private static let snackImages = [
-        "hamburger",
+        "burger",
         "pizza",
         "chicken",
         "fry",
