@@ -377,6 +377,7 @@ struct CharacterImageView: View {
             LottieView(animation: .named(isTodayQuizCompleted ? "home_v2_dummy" : "home_dummy"))
                 .playing(loopMode: .loop)
                 .frame(height: 548)
+                .offset(x: -10)
             
             // 오버레이 (완료/미완료에 따라 다름)
             VStack(spacing: 16) {
