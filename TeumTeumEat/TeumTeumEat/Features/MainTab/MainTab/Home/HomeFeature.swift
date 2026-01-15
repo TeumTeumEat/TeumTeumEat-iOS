@@ -268,10 +268,10 @@ struct HomeFeature {
             case .characterEatTapped:
                 // summaryData 생성 후 QuizFlow에 전달
                 
-                if state.isTodayQuizCompleted {
-                    print("오늘 퀴즈를 이미 완료했습니다")
-                    return .none
-                }
+//                if state.isTodayQuizCompleted {
+//                    print("오늘 퀴즈를 이미 완료했습니다")
+//                    return .none
+//                }
                 
                 
                 if let categoryDoc = state.categoryDocument {
@@ -416,9 +416,9 @@ struct CharacterImageView: View {
         .padding(.trailing, 3)
         .contentShape(Rectangle())
         .onTapGesture {
-            if !isTodayQuizCompleted {
+//            if !isTodayQuizCompleted {
                 onCharacterTapped()
-            }
+          //  }
         }
     }
 }
