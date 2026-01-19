@@ -88,6 +88,7 @@ struct CategorySelectionFeature {
         case categoriesLoaded(TaskResult<[CategoryResponse]>)
         
         case backTapped
+        case rootCategorySelected(String)
         case mainCategorySelected(String)
         case subCategorySelected(String)
         case detailCategorySelected(CategoryResponse)
@@ -98,7 +99,7 @@ struct CategorySelectionFeature {
         enum Delegate {
             case completed(String, String, CategoryResponse)
             case backToContentSelection
-            case saveProgress(main: String?, sub: String?, detail: CategoryResponse?)
+            case saveProgress(root: String?, main: String?, sub: String?, detail: CategoryResponse?)
         }
     }
     
