@@ -15,6 +15,7 @@ struct OnboardingData: Equatable, Codable {
     var contentType: ContentType = .category
     var uploadedFileURL: URL?
 
+    var selectedRootCategory: String?
     var selectedMainCategory: String?
     var selectedSubCategory: String?
     var selectedDetailCategory: CategoryResponse?
@@ -35,7 +36,8 @@ struct OnboardingData: Equatable, Codable {
         lhs.returnHomeTime == rhs.returnHomeTime &&
         lhs.dailyUsageMinutes == rhs.dailyUsageMinutes &&
         lhs.contentType == rhs.contentType &&
-        lhs.uploadedFileURL?.absoluteString == rhs.uploadedFileURL?.absoluteString && 
+        lhs.uploadedFileURL?.absoluteString == rhs.uploadedFileURL?.absoluteString &&
+        lhs.selectedRootCategory == rhs.selectedRootCategory && 
         lhs.selectedMainCategory == rhs.selectedMainCategory &&
         lhs.selectedSubCategory == rhs.selectedSubCategory &&
         lhs.selectedDetailCategory == rhs.selectedDetailCategory &&

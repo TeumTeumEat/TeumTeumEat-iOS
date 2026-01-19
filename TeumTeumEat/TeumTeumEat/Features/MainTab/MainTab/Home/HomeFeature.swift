@@ -453,8 +453,27 @@ struct HomeView: View {
                     .frame(height: store.isTodayQuizCompleted ? 5 : 11)
                 
                 if store.isLoading {
-                    ProgressView()
-                        .frame(height: 548)
+                    
+                    ZStack(alignment: .center) {
+                        // Lottie 배경
+                        LottieView(animation: .named("home_dummy"))
+                            .playing(loopMode: .loop)
+                            .frame(height: 548)
+                            .offset(x: -10)
+                        
+                        VStack(spacing: 16) {
+                            ProgressView()
+                                .scaleEffect(1.2)
+                            
+                            Text("퀴즈를 불러오는 중입니다...")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.gray600)
+                        }
+                        .padding(.bottom, 40)
+                    }
+                    .frame(height: 548)
+                    .padding(.leading, 30)
+                    .padding(.trailing, 3)
                 } else {
                     CharacterImageView(
                         isTodayQuizCompleted: store.isTodayQuizCompleted,

@@ -7,13 +7,15 @@
 
 import SwiftUI
 import ComposableArchitecture
+import Lottie
 
 struct OnboardingCompleteView: View {
     let store: StoreOf<OnboardingCompleteFeature>
     
     var body: some View {
         VStack(spacing: 0) {
-            Image("character_complete")
+            LottieView(animation: .named("onboarding_comp"))
+                .playing(loopMode: .loop)
                 .resizable()
                 .scaledToFit()
                 .frame(height: 293)

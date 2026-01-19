@@ -149,6 +149,7 @@ struct AddSubjectFileFeature {
                 state.summary = AddSubjectSummaryFeature.State(
                     contentType: .fileUpload,
                     fileName: state.uploadedFileURL?.lastPathComponent,
+                    rootCategory: nil,
                     mainCategory: nil,
                     subCategory: nil,
                     detailCategory: nil,
@@ -186,6 +187,7 @@ struct AddSubjectFileFeature {
                     dailyUsageMinutes: 0,
                     contentType: .fileUpload,
                     uploadedFileURL: state.uploadedFileURL,
+                    selectedRootCategory: nil,
                     selectedMainCategory: nil,
                     selectedSubCategory: nil,
                     selectedDetailCategory: nil,

@@ -19,7 +19,7 @@ struct CategoryResponse: Codable, Equatable, Identifiable {
     var id: Int { categoryId }
     
     var pathComponents: [String] {
-        path.split(separator: "/").map(String.init)
+        path.components(separatedBy: "/") 
     }
     
     var mainCategory: String? {

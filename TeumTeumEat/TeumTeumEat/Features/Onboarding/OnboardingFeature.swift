@@ -158,6 +158,7 @@ struct OnboardingFeature {
             
             if type == .fileUpload {
                 state.onboardingData.contentType = .fileUpload
+                state.onboardingData.selectedRootCategory = nil
                 state.onboardingData.selectedMainCategory = nil
                 state.onboardingData.selectedSubCategory = nil
                 state.onboardingData.selectedDetailCategory = nil
@@ -180,6 +181,7 @@ struct OnboardingFeature {
             } else {
                 // CategorySelection State 복원 (String으로)
                 var categoryState = CategorySelectionFeature.State()
+                categoryState.selectedRootCategory = state.onboardingData.selectedRootCategory
                 categoryState.selectedMainCategory = state.onboardingData.selectedMainCategory
                 categoryState.selectedSubCategory = state.onboardingData.selectedSubCategory
                 categoryState.selectedDetailCategory = state.onboardingData.selectedDetailCategory
@@ -205,6 +207,7 @@ struct OnboardingFeature {
                 // CategorySelection State 복원 - 3단계로
                 var categoryState = CategorySelectionFeature.State()
                 categoryState.currentStep = .detailCategory
+                categoryState.selectedRootCategory = state.onboardingData.selectedRootCategory
                 categoryState.selectedMainCategory = state.onboardingData.selectedMainCategory
                 categoryState.selectedSubCategory = state.onboardingData.selectedSubCategory
                 categoryState.selectedDetailCategory = state.onboardingData.selectedDetailCategory
@@ -212,13 +215,15 @@ struct OnboardingFeature {
             }
             return .none
             
-        case .categorySelection(.delegate(.saveProgress(let main, let sub, let detail))):
+        case .categorySelection(.delegate(.saveProgress(let root, let main, let sub, let detail))):
             print("OnboardingFeature - saveProgress")
+            print("Root: \(root ?? "nil")")
             print("Main: \(main ?? "nil")")
             print("Sub: \(sub ?? "nil")")
             print("Detail: \(detail?.name ?? "nil")")
             
             // String과 CategoryResponse로 저장
+            state.onboardingData.selectedRootCategory = root
             state.onboardingData.selectedMainCategory = main
             state.onboardingData.selectedSubCategory = sub
             state.onboardingData.selectedDetailCategory = detail
@@ -231,10 +236,11 @@ struct OnboardingFeature {
             state.contentSelection = ContentSelectionFeature.State()
             return .none
             
-        case .categorySelection(.delegate(.completed(let main, let sub, let detail))):
+        case .categorySelection(.delegate(.completed(let root, let main, let sub, let detail))):
             print("OnboardingFeature - category completed")
             
             // String과 CategoryResponse로 저장
+            state.onboardingData.selectedRootCategory = root
             state.onboardingData.selectedMainCategory = main
             state.onboardingData.selectedSubCategory = sub
             state.onboardingData.selectedDetailCategory = detail
@@ -326,6 +332,7 @@ struct OnboardingFeature {
                 programWeeks: state.onboardingData.programWeeks,
                 contentType: state.onboardingData.contentType,
                 fileName: state.onboardingData.uploadedFileURL?.lastPathComponent,
+                rootCategory: state.onboardingData.selectedRootCategory,
                 mainCategory: state.onboardingData.selectedMainCategory,
                 subCategory: state.onboardingData.selectedSubCategory,
                 detailCategory: state.onboardingData.selectedDetailCategory?.name,
@@ -531,9 +538,33 @@ extension String {
         case "데이터베이스": return "pm"
         case "디자인": return "palette"
         case "PM": return "note"
-        case "DevOps": return "phone"
-        case "네트워크": return "phone"
-        default: return "questionmark.circle"
+        case "DevOps": return "devops"
+        case "네트워크": return "network"
+        case "경제": return "economy"
+        case "건강": return "apple"
+        case "기초 과학": return "microscope"
+        case "맞춤법": return "spelling"
+        case "스포츠": return "sport"
+        case "시사 교양": return "earth"
+        case "주식": return "chart"
+        case "생활 법률 및 제도": return "scale"
+        case "식품과 영양": return "salad2"
+        case "질환과 안전": return "stethoscope"
+        case "금융 기초": return "financial"
+        case "물리 & 화학 상식": return "potion"
+        case "지구와 우주": return "ufo"
+        case "실전 언어": return "speak"
+        case "표준어 규정": return "ruler"
+        case "주거와 계약": return "homeContract"
+        case "생활과 노동": return "briefcase"
+        case "구기 종목 (축구 & 농구)": return "soccer"
+        case "러닝 & 유산소": return "running"
+        case "웨이트(헬스)": return "weight"
+        case "국제 사회": return "handShake"
+        case "지리와 문화": return "worldMap"
+        case "분석 기초": return "analysis"
+        case "투자 입문": return "invest"
+        default: return "web"
         }
     }
 }

@@ -12,7 +12,7 @@ import ComposableArchitecture
 struct CategorySelectionFeature {
     @ObservableState
     struct State: Equatable {
-        var currentStep: Step = .mainCategory
+        var currentStep: Step = .rootCategory
         
         // API 데이터
         var categories: [CategoryResponse] = []
@@ -20,33 +20,59 @@ struct CategorySelectionFeature {
         var loadError: String?
         
         // 선택된 값
+        var selectedRootCategory: String?
         var selectedMainCategory: String?
         var selectedSubCategory: String?
         var selectedDetailCategory: CategoryResponse?
         
         // Computed properties
-        var mainCategories: [String] {
-            Array(Set(categories.compactMap { $0.mainCategory })).sorted()
+        var rootCategories: [String] {
+            let result = Array(Set(categories.compactMap { $0.mainCategory })).sorted()
+            print("rootCategories: \(result)")
+            return result
         }
-        
-        var currentSubCategories: [String] {
-            guard let main = selectedMainCategory else { return [] }
-            let subs = categories
-                .filter { $0.mainCategory == main }
+        var mainCategories: [String] {
+            guard let root = selectedRootCategory else {
+                print("mainCategories: selectedRootCategory is nil")
+                return []
+            }
+            let mains = categories
+                .filter { $0.mainCategory == root }
                 .compactMap { $0.subCategory }
+            let result = Array(Set(mains)).sorted()
+            print("mainCategories for \(root): \(result)")
+            return result
+        }
+
+        // currentSubCategories → path[3] 사용 (iOS, Android, ...)
+        var currentSubCategories: [String] {
+            guard let root = selectedRootCategory,
+                  let main = selectedMainCategory else { return [] }
+            let subs = categories
+                .filter {
+                    $0.mainCategory == root &&
+                    $0.subCategory == main
+                }
+                .compactMap { $0.pathComponents[safe: 3] }  // [3] 추출
             return Array(Set(subs)).sorted()
         }
-        
+
+        // currentDetailCategories → name 사용
         var currentDetailCategories: [CategoryResponse] {
-            guard let main = selectedMainCategory,
+            guard let root = selectedRootCategory,
+                  let main = selectedMainCategory,
                   let sub = selectedSubCategory else { return [] }
             return categories.filter {
-                $0.mainCategory == main && $0.subCategory == sub
+                $0.mainCategory == root &&
+                $0.subCategory == main &&
+                $0.pathComponents[safe: 3] == sub
             }
         }
         
         var canProceed: Bool {
             switch currentStep {
+            case .rootCategory:
+                return selectedRootCategory != nil
             case .mainCategory:
                 return selectedMainCategory != nil
             case .subCategory:
@@ -57,6 +83,7 @@ struct CategorySelectionFeature {
         }
         
         enum Step {
+            case rootCategory
             case mainCategory
             case subCategory
             case detailCategory
@@ -69,6 +96,7 @@ struct CategorySelectionFeature {
         case categoriesLoaded(TaskResult<[CategoryResponse]>)
         
         case backTapped
+        case rootCategorySelected(String)
         case mainCategorySelected(String)
         case subCategorySelected(String)
         case detailCategorySelected(CategoryResponse)
@@ -77,9 +105,9 @@ struct CategorySelectionFeature {
         case delegate(Delegate)
         
         enum Delegate {
-            case completed(String, String, CategoryResponse)
+            case completed(root: String, main: String, sub: String, detail: CategoryResponse)
             case backToContentSelection
-            case saveProgress(main: String?, sub: String?, detail: CategoryResponse?)
+            case saveProgress(root: String?, main: String?, sub: String?, detail: CategoryResponse?)
         }
     }
     
@@ -114,8 +142,6 @@ struct CategorySelectionFeature {
                 print("Error: \(error)")
                 print("LocalizedDescription: \(error.localizedDescription)")
                 
-                
-                // 에러 메시지 처리
                 if let apiError = error as? CategoryAPIError {
                     state.loadError = apiError.errorDescription
                 } else {
@@ -123,19 +149,31 @@ struct CategorySelectionFeature {
                 }
                 return .none
                 
+            // MARK: - Back Navigation
             case .backTapped:
                 switch state.currentStep {
-                case .mainCategory:
-                    return .run { [main = state.selectedMainCategory,
+                case .rootCategory:
+                    return .run { [root = state.selectedRootCategory,
+                                   main = state.selectedMainCategory,
                                    sub = state.selectedSubCategory,
                                    detail = state.selectedDetailCategory] send in
-                        await send(.delegate(.saveProgress(main: main, sub: sub, detail: detail)))
+                        await send(.delegate(.saveProgress(root: root, main: main, sub: sub, detail: detail)))
                         await send(.delegate(.backToContentSelection))
                     }
+                    
+                case .mainCategory:
+                    state.currentStep = .rootCategory
+                    return .send(.delegate(.saveProgress(
+                        root: state.selectedRootCategory,
+                        main: state.selectedMainCategory,
+                        sub: state.selectedSubCategory,
+                        detail: state.selectedDetailCategory
+                    )))
                     
                 case .subCategory:
                     state.currentStep = .mainCategory
                     return .send(.delegate(.saveProgress(
+                        root: state.selectedRootCategory,
                         main: state.selectedMainCategory,
                         sub: state.selectedSubCategory,
                         detail: state.selectedDetailCategory
@@ -144,6 +182,7 @@ struct CategorySelectionFeature {
                 case .detailCategory:
                     state.currentStep = .subCategory
                     return .send(.delegate(.saveProgress(
+                        root: state.selectedRootCategory,
                         main: state.selectedMainCategory,
                         sub: state.selectedSubCategory,
                         detail: state.selectedDetailCategory
@@ -152,6 +191,10 @@ struct CategorySelectionFeature {
                 
             case .nextTapped:
                 switch state.currentStep {
+                case .rootCategory:
+                    state.currentStep = .mainCategory
+                    return .none
+                    
                 case .mainCategory:
                     state.currentStep = .subCategory
                     return .none
@@ -161,13 +204,18 @@ struct CategorySelectionFeature {
                     return .none
                     
                 case .detailCategory:
-                    guard let main = state.selectedMainCategory,
+                    guard let root = state.selectedRootCategory,
+                          let main = state.selectedMainCategory,
                           let sub = state.selectedSubCategory,
                           let detail = state.selectedDetailCategory else {
                         return .none
                     }
-                    return .send(.delegate(.completed(main, sub, detail)))
+                    return .send(.delegate(.completed(root: root, main: main, sub: sub, detail: detail)))
                 }
+                
+            case .rootCategorySelected(let category):
+                state.selectedRootCategory = category
+                return .none
                 
             case .mainCategorySelected(let category):
                 state.selectedMainCategory = category
@@ -205,5 +253,11 @@ enum Category: String, CaseIterable, Codable, Equatable {
         case .hobby: return "paintbrush.fill"
         case .culture: return "theatermasks.fill"
         }
+    }
+}
+
+extension Array {
+    subscript(safe index: Int) -> Element? {
+        return indices.contains(index) ? self[index] : nil
     }
 }

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import Lottie
 
 @Reducer
 struct QuizReviewSummaryFeature {
@@ -142,7 +143,9 @@ struct QuizCompleteView: View {
             Spacer()
             
             VStack(spacing: 40) {
-                Image("character_quiz_ending")
+                
+                LottieView(animation: .named("quiz_fin"))
+                    .playing(loopMode: .loop)
                     .resizable()
                     .frame(width: 280, height: 280)
                 
