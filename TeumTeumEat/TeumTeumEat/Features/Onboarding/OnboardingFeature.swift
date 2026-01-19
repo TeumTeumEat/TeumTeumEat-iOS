@@ -538,8 +538,16 @@ extension String {
         case "데이터베이스": return "pm"
         case "디자인": return "palette"
         case "PM": return "note"
-        case "DevOps": return "phone"
-        case "네트워크": return "phone"
+        case "DevOps": return "devops"
+        case "네트워크": return "network"
+        case "경제": return "economy"
+        case "건강": return "apple"
+        case "기초 과학": return "microscope"
+        case "맞춤법": return "spelling"
+        case "스포츠": return "sport"
+        case "시사 교양": return "earth"
+        case "주식": return "chart"
+        case "생활 법률 및 제도": return "scale"
         default: return "web"
         }
     }
