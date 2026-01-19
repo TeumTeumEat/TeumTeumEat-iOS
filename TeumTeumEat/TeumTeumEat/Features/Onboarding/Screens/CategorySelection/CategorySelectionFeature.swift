@@ -97,7 +97,7 @@ struct CategorySelectionFeature {
         case delegate(Delegate)
         
         enum Delegate {
-            case completed(String, String, CategoryResponse)
+            case completed(root: String, main: String, sub: String, detail: CategoryResponse)
             case backToContentSelection
             case saveProgress(root: String?, main: String?, sub: String?, detail: CategoryResponse?)
         }
@@ -134,8 +134,6 @@ struct CategorySelectionFeature {
                 print("Error: \(error)")
                 print("LocalizedDescription: \(error.localizedDescription)")
                 
-                
-                // 에러 메시지 처리
                 if let apiError = error as? CategoryAPIError {
                     state.loadError = apiError.errorDescription
                 } else {
@@ -143,19 +141,31 @@ struct CategorySelectionFeature {
                 }
                 return .none
                 
+            // MARK: - Back Navigation
             case .backTapped:
                 switch state.currentStep {
-                case .mainCategory:
-                    return .run { [main = state.selectedMainCategory,
+                case .rootCategory:
+                    return .run { [root = state.selectedRootCategory,
+                                   main = state.selectedMainCategory,
                                    sub = state.selectedSubCategory,
                                    detail = state.selectedDetailCategory] send in
-                        await send(.delegate(.saveProgress(main: main, sub: sub, detail: detail)))
+                        await send(.delegate(.saveProgress(root: root, main: main, sub: sub, detail: detail)))
                         await send(.delegate(.backToContentSelection))
                     }
+                    
+                case .mainCategory:
+                    state.currentStep = .rootCategory
+                    return .send(.delegate(.saveProgress(
+                        root: state.selectedRootCategory,
+                        main: state.selectedMainCategory,
+                        sub: state.selectedSubCategory,
+                        detail: state.selectedDetailCategory
+                    )))
                     
                 case .subCategory:
                     state.currentStep = .mainCategory
                     return .send(.delegate(.saveProgress(
+                        root: state.selectedRootCategory,
                         main: state.selectedMainCategory,
                         sub: state.selectedSubCategory,
                         detail: state.selectedDetailCategory
@@ -164,6 +174,7 @@ struct CategorySelectionFeature {
                 case .detailCategory:
                     state.currentStep = .subCategory
                     return .send(.delegate(.saveProgress(
+                        root: state.selectedRootCategory,
                         main: state.selectedMainCategory,
                         sub: state.selectedSubCategory,
                         detail: state.selectedDetailCategory
@@ -172,6 +183,10 @@ struct CategorySelectionFeature {
                 
             case .nextTapped:
                 switch state.currentStep {
+                case .rootCategory:
+                    state.currentStep = .mainCategory
+                    return .none
+                    
                 case .mainCategory:
                     state.currentStep = .subCategory
                     return .none
@@ -181,13 +196,18 @@ struct CategorySelectionFeature {
                     return .none
                     
                 case .detailCategory:
-                    guard let main = state.selectedMainCategory,
+                    guard let root = state.selectedRootCategory,
+                          let main = state.selectedMainCategory,
                           let sub = state.selectedSubCategory,
                           let detail = state.selectedDetailCategory else {
                         return .none
                     }
-                    return .send(.delegate(.completed(main, sub, detail)))
+                    return .send(.delegate(.completed(root: root, main: main, sub: sub, detail: detail)))
                 }
+                
+            case .rootCategorySelected(let category):
+                state.selectedRootCategory = category
+                return .none
                 
             case .mainCategorySelected(let category):
                 state.selectedMainCategory = category
