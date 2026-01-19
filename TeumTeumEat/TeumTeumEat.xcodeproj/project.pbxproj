@@ -13,6 +13,7 @@
 		46C647632F06D960009F030A /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 46C647622F06D960009F030A /* Lottie */; };
 		46C65A642F13E1FA009F030A /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 46C65A632F13E1FA009F030A /* FirebaseCore */; };
 		46C65A6C2F13EB11009F030A /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 46C65A6B2F13EB11009F030A /* FirebaseMessaging */; };
+		46E995172F1E6C3E009946C1 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 46E995162F1E6C3E009946C1 /* InfoPlist.xcstrings */; };
 		46FE6B842EEACE0B009E626A /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 46FE6B832EEACE0B009E626A /* ComposableArchitecture */; };
 /* End PBXBuildFile section */
 
@@ -34,6 +35,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		46E995162F1E6C3E009946C1 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		46FE666E2EE1770E009E626A /* TeumTeumEat.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TeumTeumEat.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		46FE667B2EE17711009E626A /* TeumTeumEatTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TeumTeumEatTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		46FE66852EE17711009E626A /* TeumTeumEatUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TeumTeumEatUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -105,6 +107,7 @@
 		46FE66652EE1770D009E626A = {
 			isa = PBXGroup;
 			children = (
+				46E995162F1E6C3E009946C1 /* InfoPlist.xcstrings */,
 				46FE66702EE1770E009E626A /* TeumTeumEat */,
 				46FE667E2EE17711009E626A /* TeumTeumEatTests */,
 				46FE66882EE17711009E626A /* TeumTeumEatUITests */,
@@ -229,6 +232,7 @@
 			knownRegions = (
 				en,
 				Base,
+				ko,
 			);
 			mainGroup = 46FE66652EE1770D009E626A;
 			minimizedProjectReferenceProxies = 1;
@@ -256,6 +260,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				46E995172F1E6C3E009946C1 /* InfoPlist.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -373,6 +378,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -430,6 +436,7 @@
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
