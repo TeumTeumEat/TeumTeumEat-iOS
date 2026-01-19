@@ -12,7 +12,7 @@ import ComposableArchitecture
 struct CategorySelectionFeature {
     @ObservableState
     struct State: Equatable {
-        var currentStep: Step = .mainCategory
+        var currentStep: Step = .rootCategory
         
         // API 데이터
         var categories: [CategoryResponse] = []
@@ -20,33 +20,51 @@ struct CategorySelectionFeature {
         var loadError: String?
         
         // 선택된 값
+        var selectedRootCategory: String?
         var selectedMainCategory: String?
         var selectedSubCategory: String?
         var selectedDetailCategory: CategoryResponse?
         
         // Computed properties
+        var rootCategories: [String] {
+            Array(Set(categories.compactMap { $0.pathComponents[safe: 1] })).sorted()
+        }
+        
         var mainCategories: [String] {
-            Array(Set(categories.compactMap { $0.mainCategory })).sorted()
+            guard let root = selectedRootCategory else { return [] }
+            let mains = categories
+                .filter { $0.pathComponents[safe: 1] == root }
+                .compactMap { $0.pathComponents[safe: 2] }
+            return Array(Set(mains)).sorted()
         }
         
-        var currentSubCategories: [String] {
-            guard let main = selectedMainCategory else { return [] }
-            let subs = categories
-                .filter { $0.mainCategory == main }
-                .compactMap { $0.subCategory }
-            return Array(Set(subs)).sorted()
-        }
-        
-        var currentDetailCategories: [CategoryResponse] {
-            guard let main = selectedMainCategory,
-                  let sub = selectedSubCategory else { return [] }
-            return categories.filter {
-                $0.mainCategory == main && $0.subCategory == sub
+        var currentSubCategories: [String] {  // 변경!
+                guard let root = selectedRootCategory,
+                      let main = selectedMainCategory else { return [] }
+                let subs = categories
+                    .filter {
+                        $0.pathComponents[safe: 1] == root &&
+                        $0.pathComponents[safe: 2] == main
+                    }
+                    .compactMap { $0.pathComponents[safe: 3] }
+                return Array(Set(subs)).sorted()
             }
-        }
+            
+            var currentDetailCategories: [CategoryResponse] {
+                guard let root = selectedRootCategory,
+                      let main = selectedMainCategory,
+                      let sub = selectedSubCategory else { return [] }
+                return categories.filter {
+                    $0.pathComponents[safe: 1] == root &&
+                    $0.pathComponents[safe: 2] == main &&
+                    $0.pathComponents[safe: 3] == sub
+                }
+            }
         
         var canProceed: Bool {
             switch currentStep {
+            case .rootCategory:
+                return selectedRootCategory != nil
             case .mainCategory:
                 return selectedMainCategory != nil
             case .subCategory:
@@ -57,6 +75,7 @@ struct CategorySelectionFeature {
         }
         
         enum Step {
+            case rootCategory
             case mainCategory
             case subCategory
             case detailCategory
@@ -205,5 +224,11 @@ enum Category: String, CaseIterable, Codable, Equatable {
         case .hobby: return "paintbrush.fill"
         case .culture: return "theatermasks.fill"
         }
+    }
+}
+
+extension Array {
+    subscript(safe index: Int) -> Element? {
+        return indices.contains(index) ? self[index] : nil
     }
 }
