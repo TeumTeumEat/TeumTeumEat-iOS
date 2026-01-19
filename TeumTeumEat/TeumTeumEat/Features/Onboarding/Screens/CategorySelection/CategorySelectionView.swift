@@ -22,10 +22,15 @@ struct CategorySelectionView: View {
                     onRetry: { store.send(.retryLoad) }
                 )
             } else {
+                
+                let _ = print("현재 Step: \(store.currentStep)")
+                let _ = print("categories 개수: \(store.categories.count)")
                 switch store.currentStep {
                 case .rootCategory:
+                    let _ = print("RootCategory 화면 표시!")
                     RootCategoryStepView(store: store, showProgressBar: showProgressBar)
                 case .mainCategory:
+                    let _ = print("MainCategory 화면 표시!")
                     MainCategoryStepView(store: store, showProgressBar: showProgressBar)
                 case .subCategory:
                     SubCategoryStepView(store: store, showProgressBar: showProgressBar)
@@ -117,7 +122,7 @@ struct RootCategoryStepView: View {
                         )
                     } else {
                         Spacer()
-                        Text("카테고리 선택")
+                        Text("카테고리 선택111")
                             .font(.system(size: 18, weight: .semibold))
                         Spacer()
                         Color.clear.frame(width: 40, height: 40)

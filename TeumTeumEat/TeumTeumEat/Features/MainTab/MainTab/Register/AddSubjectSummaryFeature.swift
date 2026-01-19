@@ -14,6 +14,7 @@ struct AddSubjectSummaryFeature {
     struct State: Equatable {
         let contentType: OnboardingData.ContentType
         let fileName: String?
+        let rootCategory: String?
         let mainCategory: String?
         let subCategory: String?
         let detailCategory: String?
@@ -22,12 +23,13 @@ struct AddSubjectSummaryFeature {
         let programWeeks: Int
         
         var categoryText: String {
-            guard let main = mainCategory,
+            guard let root = rootCategory,
+                  let main = mainCategory,
                   let sub = subCategory,
                   let detail = detailCategory else {
                 return "미설정"
             }
-            return "\(main) > \(sub) > \(detail)"
+            return "\(root) > \(main) > \(sub) > \(detail)"
         }
         
         var fileNameText: String {

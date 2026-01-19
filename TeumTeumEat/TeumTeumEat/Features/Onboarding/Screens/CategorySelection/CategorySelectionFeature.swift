@@ -27,39 +27,47 @@ struct CategorySelectionFeature {
         
         // Computed properties
         var rootCategories: [String] {
-            Array(Set(categories.compactMap { $0.pathComponents[safe: 1] })).sorted()
+            let result = Array(Set(categories.compactMap { $0.mainCategory })).sorted()
+            print("rootCategories: \(result)")
+            return result
         }
-        
         var mainCategories: [String] {
-            guard let root = selectedRootCategory else { return [] }
+            guard let root = selectedRootCategory else {
+                print("mainCategories: selectedRootCategory is nil")
+                return []
+            }
             let mains = categories
-                .filter { $0.pathComponents[safe: 1] == root }
-                .compactMap { $0.pathComponents[safe: 2] }
-            return Array(Set(mains)).sorted()
+                .filter { $0.mainCategory == root }
+                .compactMap { $0.subCategory }
+            let result = Array(Set(mains)).sorted()
+            print("mainCategories for \(root): \(result)")
+            return result
         }
-        
-        var currentSubCategories: [String] {  // 변경!
-                guard let root = selectedRootCategory,
-                      let main = selectedMainCategory else { return [] }
-                let subs = categories
-                    .filter {
-                        $0.pathComponents[safe: 1] == root &&
-                        $0.pathComponents[safe: 2] == main
-                    }
-                    .compactMap { $0.pathComponents[safe: 3] }
-                return Array(Set(subs)).sorted()
-            }
-            
-            var currentDetailCategories: [CategoryResponse] {
-                guard let root = selectedRootCategory,
-                      let main = selectedMainCategory,
-                      let sub = selectedSubCategory else { return [] }
-                return categories.filter {
-                    $0.pathComponents[safe: 1] == root &&
-                    $0.pathComponents[safe: 2] == main &&
-                    $0.pathComponents[safe: 3] == sub
+
+        // currentSubCategories → path[3] 사용 (iOS, Android, ...)
+        var currentSubCategories: [String] {
+            guard let root = selectedRootCategory,
+                  let main = selectedMainCategory else { return [] }
+            let subs = categories
+                .filter {
+                    $0.mainCategory == root &&
+                    $0.subCategory == main
                 }
+                .compactMap { $0.pathComponents[safe: 3] }  // [3] 추출
+            return Array(Set(subs)).sorted()
+        }
+
+        // currentDetailCategories → name 사용
+        var currentDetailCategories: [CategoryResponse] {
+            guard let root = selectedRootCategory,
+                  let main = selectedMainCategory,
+                  let sub = selectedSubCategory else { return [] }
+            return categories.filter {
+                $0.mainCategory == root &&
+                $0.subCategory == main &&
+                $0.pathComponents[safe: 3] == sub
             }
+        }
         
         var canProceed: Bool {
             switch currentStep {

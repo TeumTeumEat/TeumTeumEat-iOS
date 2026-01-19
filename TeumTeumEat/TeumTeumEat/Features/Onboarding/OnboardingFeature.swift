@@ -158,6 +158,7 @@ struct OnboardingFeature {
             
             if type == .fileUpload {
                 state.onboardingData.contentType = .fileUpload
+                state.onboardingData.selectedRootCategory = nil
                 state.onboardingData.selectedMainCategory = nil
                 state.onboardingData.selectedSubCategory = nil
                 state.onboardingData.selectedDetailCategory = nil
@@ -180,6 +181,7 @@ struct OnboardingFeature {
             } else {
                 // CategorySelection State 복원 (String으로)
                 var categoryState = CategorySelectionFeature.State()
+                categoryState.selectedRootCategory = state.onboardingData.selectedRootCategory
                 categoryState.selectedMainCategory = state.onboardingData.selectedMainCategory
                 categoryState.selectedSubCategory = state.onboardingData.selectedSubCategory
                 categoryState.selectedDetailCategory = state.onboardingData.selectedDetailCategory
@@ -205,6 +207,7 @@ struct OnboardingFeature {
                 // CategorySelection State 복원 - 3단계로
                 var categoryState = CategorySelectionFeature.State()
                 categoryState.currentStep = .detailCategory
+                categoryState.selectedRootCategory = state.onboardingData.selectedRootCategory
                 categoryState.selectedMainCategory = state.onboardingData.selectedMainCategory
                 categoryState.selectedSubCategory = state.onboardingData.selectedSubCategory
                 categoryState.selectedDetailCategory = state.onboardingData.selectedDetailCategory
@@ -212,13 +215,15 @@ struct OnboardingFeature {
             }
             return .none
             
-        case .categorySelection(.delegate(.saveProgress(let main, let sub, let detail))):
+        case .categorySelection(.delegate(.saveProgress(let root, let main, let sub, let detail))):
             print("OnboardingFeature - saveProgress")
+            print("Root: \(root ?? "nil")")
             print("Main: \(main ?? "nil")")
             print("Sub: \(sub ?? "nil")")
             print("Detail: \(detail?.name ?? "nil")")
             
             // String과 CategoryResponse로 저장
+            state.onboardingData.selectedRootCategory = root
             state.onboardingData.selectedMainCategory = main
             state.onboardingData.selectedSubCategory = sub
             state.onboardingData.selectedDetailCategory = detail
@@ -231,10 +236,11 @@ struct OnboardingFeature {
             state.contentSelection = ContentSelectionFeature.State()
             return .none
             
-        case .categorySelection(.delegate(.completed(let main, let sub, let detail))):
+        case .categorySelection(.delegate(.completed(let root, let main, let sub, let detail))):
             print("OnboardingFeature - category completed")
             
             // String과 CategoryResponse로 저장
+            state.onboardingData.selectedRootCategory = root
             state.onboardingData.selectedMainCategory = main
             state.onboardingData.selectedSubCategory = sub
             state.onboardingData.selectedDetailCategory = detail
@@ -326,6 +332,7 @@ struct OnboardingFeature {
                 programWeeks: state.onboardingData.programWeeks,
                 contentType: state.onboardingData.contentType,
                 fileName: state.onboardingData.uploadedFileURL?.lastPathComponent,
+                rootCategory: state.onboardingData.selectedRootCategory,
                 mainCategory: state.onboardingData.selectedMainCategory,
                 subCategory: state.onboardingData.selectedSubCategory,
                 detailCategory: state.onboardingData.selectedDetailCategory?.name,

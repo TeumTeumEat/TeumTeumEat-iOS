@@ -15,6 +15,7 @@ struct AddSubjectFeature {
         var currentStep: Step = .category
         
         // 선택된 값들
+        var selectedRootCategory: String?
         var selectedMainCategory: String?
         var selectedSubCategory: String?
         var selectedDetailCategory: CategoryResponse?
@@ -65,8 +66,23 @@ struct AddSubjectFeature {
         Reduce { state, action in
             switch action {
             // MARK: - Category Selection
-            case .categorySelection(.delegate(.completed(let main, let sub, let detail))):
+            case .categorySelection(.delegate(.saveProgress(let root, let main, let sub, let detail))):
+                // 카테고리 진행 상황 저장 (뒤로가기 시)
+                print("AddSubject - saveProgress")
+                print("Root: \(root ?? "nil")")
+                print("Main: \(main ?? "nil")")
+                print("Sub: \(sub ?? "nil")")
+                print("Detail: \(detail?.name ?? "nil")")
+                
+                state.selectedRootCategory = root
+                state.selectedMainCategory = main
+                state.selectedSubCategory = sub
+                state.selectedDetailCategory = detail
+                return .none
+                
+            case .categorySelection(.delegate(.completed(let root, let main, let sub, let detail))):
                 // 카테고리 선택 완료
+                state.selectedRootCategory = root
                 state.selectedMainCategory = main
                 state.selectedSubCategory = sub
                 state.selectedDetailCategory = detail
@@ -96,17 +112,20 @@ struct AddSubjectFeature {
                 
                 // 카테고리 state 복원 (detail 단계까지)
                 var categoryState = CategorySelectionFeature.State()
+                categoryState.selectedRootCategory = state.selectedRootCategory
                 categoryState.selectedMainCategory = state.selectedMainCategory
                 categoryState.selectedSubCategory = state.selectedSubCategory
                 categoryState.selectedDetailCategory = state.selectedDetailCategory
                 
-                // currentStep을 detailCategory로 설정
+                // currentStep을 적절한 단계로 설정
                 if state.selectedDetailCategory != nil {
                     categoryState.currentStep = .detailCategory
                 } else if state.selectedSubCategory != nil {
                     categoryState.currentStep = .subCategory
                 } else if state.selectedMainCategory != nil {
                     categoryState.currentStep = .mainCategory
+                } else if state.selectedRootCategory != nil {
+                    categoryState.currentStep = .rootCategory
                 }
                 
                 state.categorySelection = categoryState
@@ -157,6 +176,7 @@ struct AddSubjectFeature {
                 state.summary = AddSubjectSummaryFeature.State(
                     contentType: .category,
                     fileName: nil,
+                    rootCategory: state.selectedRootCategory,
                     mainCategory: state.selectedMainCategory,
                     subCategory: state.selectedSubCategory,
                     detailCategory: state.selectedDetailCategory?.name,
@@ -182,7 +202,7 @@ struct AddSubjectFeature {
             case .summary(.delegate(.complete)):
                 // Summary 완료 → Loading으로
                 print("주제 추가 시작")
-                print("카테고리: \(state.selectedMainCategory ?? "") > \(state.selectedSubCategory ?? "") > \(state.selectedDetailCategory?.name ?? "")")
+                print("카테고리: \(state.selectedRootCategory ?? "") > \(state.selectedMainCategory ?? "") > \(state.selectedSubCategory ?? "") > \(state.selectedDetailCategory?.name ?? "")")
                 print("난이도: \(state.selectedDifficulty ?? "")")
                 print("프롬프트: \(state.customPrompt)")
                 print("기간: \(state.selectedWeeks)주")
@@ -194,6 +214,7 @@ struct AddSubjectFeature {
                     dailyUsageMinutes: 0,
                     contentType: .category,
                     uploadedFileURL: nil,
+                    selectedRootCategory: state.selectedRootCategory,
                     selectedMainCategory: state.selectedMainCategory,
                     selectedSubCategory: state.selectedSubCategory,
                     selectedDetailCategory: state.selectedDetailCategory,
