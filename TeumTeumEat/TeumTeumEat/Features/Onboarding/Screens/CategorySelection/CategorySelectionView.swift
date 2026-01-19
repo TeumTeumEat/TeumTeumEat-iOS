@@ -122,7 +122,7 @@ struct RootCategoryStepView: View {
                         )
                     } else {
                         Spacer()
-                        Text("카테고리 선택111")
+                        Text("카테고리 선택")
                             .font(.system(size: 18, weight: .semibold))
                         Spacer()
                         Color.clear.frame(width: 40, height: 40)
@@ -547,7 +547,7 @@ struct CategoryGridButton: View {
                     .btSemiBold20_24()
                     .foregroundColor(isSelected ? .blue500 : .gray600)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                    .minimumScaleFactor(0.5)
             }
             .frame(maxWidth: .infinity)
             .frame(height: 60)

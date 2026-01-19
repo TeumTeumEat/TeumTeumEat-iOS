@@ -540,7 +540,7 @@ extension String {
         case "PM": return "note"
         case "DevOps": return "phone"
         case "네트워크": return "phone"
-        default: return "questionmark.circle"
+        default: return "web"
         }
     }
 }
