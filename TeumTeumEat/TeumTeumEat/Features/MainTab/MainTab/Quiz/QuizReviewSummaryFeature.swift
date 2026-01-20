@@ -190,5 +190,6 @@ struct QuizCompleteView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 34)
         }
+        .background(.white)
     }
 }

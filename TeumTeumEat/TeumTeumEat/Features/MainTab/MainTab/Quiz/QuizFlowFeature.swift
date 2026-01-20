@@ -474,6 +474,7 @@ struct QuizView: View {
             
             Spacer()
         }
+        .background(.white)
     }
     
     func getRotation(direction: QuizFeature.SwipeDirection?) -> Angle {
