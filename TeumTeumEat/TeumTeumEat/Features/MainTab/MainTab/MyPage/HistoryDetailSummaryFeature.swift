@@ -87,7 +87,7 @@ struct HistoryDetailSummaryFeature {
                     documentType: state.documentType,
                     date: state.date
                 )
-                print("🔍 퀴즈 확인 버튼 클릭 - ID: \(state.historyId), Type: \(state.documentType), Date: \(state.date)")
+                print(" 퀴즈 확인 버튼 클릭 - ID: \(state.historyId), Type: \(state.documentType), Date: \(state.date)")
                 return .none
                 
             case .detailAnswer(.delegate(.dismissed)):
@@ -130,6 +130,7 @@ struct HistoryDetailSummaryView: View {
                             
                             Text("오늘의 냠냠지식")
                                 .titleSemibold20()
+                                .foregroundStyle(.black)
                             
                             Spacer()
                             
@@ -166,6 +167,7 @@ struct HistoryDetailSummaryView: View {
                         ScrollView {
                             Markdown(store.summaryText)
                                 .markdownTheme(.gitHub)
+                                .foregroundStyle(.black)
                                 .padding(.horizontal, 20)
                                 .padding(.top, 24)
                                 .padding(.bottom, 180)
@@ -226,5 +228,6 @@ struct HistoryDetailSummaryView: View {
         .onAppear {
             store.send(.onAppear)
         }
+        .preferredColorScheme(.light)
     }
 }
