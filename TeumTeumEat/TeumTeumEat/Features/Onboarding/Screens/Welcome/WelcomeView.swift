@@ -39,8 +39,8 @@ struct WelcomeView: View {
                 .padding(.top, 25)
             
             Spacer()
-                
-            TTEButton(title: "시작하기", size: .large) {
+            
+            TTEButton(title: "시작하기", size: .largeFull) {
                 store.send(.startOnboardingTapped)
             }
             .padding(.horizontal, 20)

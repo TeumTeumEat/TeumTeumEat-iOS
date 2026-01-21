@@ -119,11 +119,12 @@ struct OnboardingSummaryView: View {
                         
                         TTEButton(
                             title: "다음으로",
-                            size: .large,
+                            size: .largeFull,
                             isEnabled: true
                         ) {
                             store.send(.completeTapped)
                         }
+                        .frame(maxWidth: .infinity)
                         .padding(.horizontal, 20)
                     }
                     .padding(.bottom, 32)

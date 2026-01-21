@@ -130,18 +130,19 @@ struct TimeSettingView: View {
                                 .contentShape(Rectangle())
                             }
                             .padding(.horizontal, 30)
-                            .padding(.top, 66)
+                            .padding(.top, 56)
                             
                             Spacer()
                                 .frame(minHeight: 20)
                             
                             TTEButton(
                                 title: "다음으로",
-                                size: .large,
+                                size: .largeFull,
                                 isEnabled: store.canProceed
                             ) {
                                 store.send(.nextTapped)
                             }
+                            .frame(maxWidth: .infinity)
                             .padding(.horizontal, 20)
                             .padding(.bottom, 32)
                         }

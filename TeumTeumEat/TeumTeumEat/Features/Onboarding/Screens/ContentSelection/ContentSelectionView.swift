@@ -69,11 +69,12 @@ struct ContentSelectionView: View {
                             
                             TTEButton(
                                 title: "다음으로",
-                                size: .large,
+                                size: .largeFull,
                                 isEnabled: store.canProceed
                             ) {
                                 store.send(.nextTapped)
                             }
+                            .frame(maxWidth: .infinity)
                             .padding(.horizontal, 20)
                             .padding(.bottom, 32)
                         }

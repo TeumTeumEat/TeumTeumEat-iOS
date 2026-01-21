@@ -31,11 +31,12 @@ struct OnboardingCompleteView: View {
             
             TTEButton(
                 title: "시작하기",
-                size: .large,
+                size: .largeFull,
                 isEnabled: true
             ) {
                 store.send(.startButtonTapped)
             }
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, 20)
             .padding(.bottom, 60)
         }

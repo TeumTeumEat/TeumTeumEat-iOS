@@ -43,7 +43,7 @@ struct NameInputView: View {
                                     .scaledToFit()
                                     .frame(height: 264)
                                     .padding(.horizontal, 32)
-                                    .padding(.top, 20)
+                                    .padding(.top, 40)
 
                                 VStack(spacing: 8) {
                                     TTETextField(
@@ -82,12 +82,13 @@ struct NameInputView: View {
                                 
                                 TTEButton(
                                     title: "다음으로",
-                                    size: .large,
+                                    size: .largeFull,
                                     isEnabled: store.canProceed
                                 ) {
                                     isNameFieldFocused = false
                                     store.send(.nextTapped)
                                 }
+                                .frame(maxWidth: .infinity)
                                 .padding(.horizontal, 20)
                                 .padding(.bottom, 32)
                             }
