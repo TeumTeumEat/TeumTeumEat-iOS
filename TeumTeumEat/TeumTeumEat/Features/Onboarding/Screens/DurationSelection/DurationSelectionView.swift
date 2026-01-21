@@ -61,7 +61,7 @@ struct DurationSelectionView: View {
                                 .frame(minHeight: 30)
                             
                             TTEButton(
-                                title: "다음",
+                                title: "다음으로",
                                 size: .large,
                                 isEnabled: store.canProceed
                             ) {

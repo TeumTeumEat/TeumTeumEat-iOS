@@ -160,7 +160,7 @@ struct SummaryRow: View {
             .background(Color.white)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.gray300, lineWidth: 2)
+                    .strokeBorder(Color.gray300, lineWidth: 2)
             )
             .cornerRadius(12)
         }
