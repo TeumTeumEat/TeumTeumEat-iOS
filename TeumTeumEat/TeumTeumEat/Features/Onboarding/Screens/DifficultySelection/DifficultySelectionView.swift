@@ -42,9 +42,9 @@ struct DifficultySelectionView: View {
                                 Image("character_difficulty")
                                     .resizable()
                                     .scaledToFit()
-                                    .frame(height: 283)
+                                    .frame(height: 263)
                                     .padding(.horizontal, 32)
-                                    .padding(.top, 0)
+                                    .padding(.top, 20)
                                 
                                 VStack(alignment: .leading, spacing: 12) {
                                     Text("퀴즈 난이도 설정")

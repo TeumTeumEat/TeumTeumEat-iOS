@@ -38,9 +38,9 @@ struct OnboardingSummaryView: View {
                             Image("character_summary")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(height: 283)
+                                .frame(height: 263)
                                 .padding(.horizontal, 32)
-                                .padding(.top, 5)
+                                .padding(.top, 20)
                             
                             VStack(spacing: 16) {
                                 SummaryRow(

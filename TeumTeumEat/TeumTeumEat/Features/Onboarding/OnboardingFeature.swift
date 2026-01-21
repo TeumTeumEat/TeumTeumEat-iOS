@@ -233,7 +233,15 @@ struct OnboardingFeature {
         case .categorySelection(.delegate(.backToContentSelection)):
             print("OnboardingFeature - backToContentSelection")
             state.categorySelection = nil
-            state.contentSelection = ContentSelectionFeature.State()
+            
+            // ContentSelection State 복원 - 기존 선택 유지
+            var contentSelectionState = ContentSelectionFeature.State()
+            if state.onboardingData.contentType == .fileUpload {
+                contentSelectionState.selectedType = .fileUpload
+            } else if state.onboardingData.contentType == .category {
+                contentSelectionState.selectedType = .category
+            }
+            state.contentSelection = contentSelectionState
             return .none
             
         case .categorySelection(.delegate(.completed(let root, let main, let sub, let detail))):
@@ -263,7 +271,15 @@ struct OnboardingFeature {
         // FileUpload
         case .fileUpload(.backTapped):
             state.fileUpload = nil
-            state.contentSelection = ContentSelectionFeature.State()
+            
+            // ContentSelection State 복원 - 기존 선택 유지
+            var contentSelectionState = ContentSelectionFeature.State()
+            if state.onboardingData.contentType == .fileUpload {
+                contentSelectionState.selectedType = .fileUpload
+            } else if state.onboardingData.contentType == .category {
+                contentSelectionState.selectedType = .category
+            }
+            state.contentSelection = contentSelectionState
             return .none
             
         case .fileUpload(.nextTapped):
