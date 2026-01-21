@@ -461,7 +461,7 @@ struct QuizView: View {
                             store.send(.answerSelected(answer))
                         }
                     )
-                    .frame(height: 426)
+                    .frame(height: 476)
                     .padding(.top, 34)
                     .rotationEffect(getRotation(direction: store.swipeDirection))
                     .offset(getOffset(direction: store.swipeDirection))
@@ -474,6 +474,7 @@ struct QuizView: View {
             
             Spacer()
         }
+        .background(.white)
     }
     
     func getRotation(direction: QuizFeature.SwipeDirection?) -> Angle {
@@ -621,11 +622,12 @@ struct QuizResultView: View {
                     .font(.system(size: 24, weight: .bold))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
+                    .foregroundStyle(.black)
                 
                 // 점수 표시 (선택사항)
                 Text("\(store.score)점")
                     .font(.system(size: 48, weight: .heavy))
-                    .foregroundColor(.blue)
+                    .foregroundColor(.blue500)
                 
                 // 정답/오답 표시
                 HStack(spacing: 40) {
@@ -667,6 +669,7 @@ struct QuizResultView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 34)
         }
+        .background(.white)
     }
 }
 

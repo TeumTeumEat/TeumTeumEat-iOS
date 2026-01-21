@@ -21,9 +21,8 @@ struct NameInputView: View {
                         store.send(.backTapped)
                     } label: {
                         Image(systemName: "chevron.left")
-                            .font(.headline)
                             .foregroundColor(.black)
-                            .frame(width: 40, height: 40)
+                            .frame(width: 24, height: 24,alignment: .leading)
                             .contentShape(Rectangle())
                     }
                     
@@ -33,8 +32,8 @@ struct NameInputView: View {
                         height: 15
                     )
                 }
-                .padding(.horizontal, 24)
-                
+                .padding(.horizontal, 20)
+
                 GeometryReader { scrollGeometry in
                     ScrollViewReader { proxy in
                         ScrollView {
@@ -44,7 +43,7 @@ struct NameInputView: View {
                                     .scaledToFit()
                                     .frame(height: 264)
                                     .padding(.horizontal, 32)
-                                    .padding(.top, 20)
+                                    .padding(.top, 40)
 
                                 VStack(spacing: 8) {
                                     TTETextField(
@@ -83,12 +82,13 @@ struct NameInputView: View {
                                 
                                 TTEButton(
                                     title: "다음으로",
-                                    size: .large,
+                                    size: .largeFull,
                                     isEnabled: store.canProceed
                                 ) {
                                     isNameFieldFocused = false
                                     store.send(.nextTapped)
                                 }
+                                .frame(maxWidth: .infinity)
                                 .padding(.horizontal, 20)
                                 .padding(.bottom, 32)
                             }

@@ -545,6 +545,7 @@ struct CharacterImageView: View {
                 
                 Spacer()
             }
+            .offset(x: -12)
         }
         .frame(height: 548)
         .padding(.leading, 30)

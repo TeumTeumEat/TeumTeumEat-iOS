@@ -9,23 +9,26 @@ import SwiftUI
 
 enum ButtonSize {
     case large // 300 x 60
+    case largeFull
     case medium // 300 x 50
     case regular // 144 x 50
     case small // 87 x 50
     case grid // 154 x 60
     
-    var width: CGFloat {
+    var width: CGFloat? {
         switch self {
         case .large, .medium: return 320
+        case .largeFull: return nil
         case .grid: return 154
         case .regular: return 144
         case .small: return 87
         }
     }
     
-    var height: CGFloat {
+    var height: CGFloat? {
         switch self {
         case .large, .grid: return 60
+        case .largeFull: return 60
         case .medium: return 50
         case .regular: return 50
         case .small:return 50
@@ -34,7 +37,7 @@ enum ButtonSize {
     
     func applyTypography(to text: Text) -> some View {
             switch self {
-            case .large:
+            case .large, .largeFull:
                 return AnyView(text.btBold20_24())
             case .medium, .regular:
                 return AnyView(text.stSemibold18())
@@ -47,7 +50,7 @@ enum ButtonSize {
     
     var typography: TypographyStyle {
         switch self {
-        case .large:
+        case .large, .largeFull:
             return .headBold20
         case .medium, .regular:
             return .titleSemibold18

@@ -22,9 +22,8 @@ struct DifficultySelectionView: View {
                         store.send(.backTapped)
                     } label: {
                         Image(systemName: "chevron.left")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                            .frame(width: 40, height: 40)
+                            .foregroundColor(.black)
+                            .frame(width: 24, height: 24, alignment: .leading)
                             .contentShape(Rectangle())
                     }
                     
@@ -34,7 +33,7 @@ struct DifficultySelectionView: View {
                         height: 15
                     )
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 20)
                 
                 GeometryReader { scrollGeometry in
                     ScrollViewReader { proxy in
@@ -43,9 +42,9 @@ struct DifficultySelectionView: View {
                                 Image("character_difficulty")
                                     .resizable()
                                     .scaledToFit()
-                                    .frame(height: 283)
+                                    .frame(height: 263)
                                     .padding(.horizontal, 32)
-                                    .padding(.top, 0)
+                                    .padding(.top, 20)
                                 
                                 VStack(alignment: .leading, spacing: 12) {
                                     Text("퀴즈 난이도 설정")
@@ -145,13 +144,14 @@ struct DifficultySelectionView: View {
                                     .frame(minHeight: isTextEditorFocused ? 0 : 30)
                                 
                                 TTEButton(
-                                    title: "다음",
-                                    size: .large,
+                                    title: "다음으로",
+                                    size: .largeFull,
                                     isEnabled: store.canProceed
                                 ) {
                                     isTextEditorFocused = false
                                     store.send(.nextTapped)
                                 }
+                                .frame(maxWidth: .infinity)
                                 .padding(.horizontal, 20)
                                 .padding(.bottom, 32)
                             }

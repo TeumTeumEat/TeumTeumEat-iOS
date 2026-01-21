@@ -20,9 +20,8 @@ struct TimeSettingView: View {
                         store.send(.backTapped)
                     } label: {
                         Image(systemName: "chevron.left")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                            .frame(width: 40, height: 40)
+                            .foregroundColor(.black)
+                            .frame(width: 24, height: 24, alignment: .leading)
                             .contentShape(Rectangle())
                     }
                     
@@ -32,7 +31,7 @@ struct TimeSettingView: View {
                         height: 15
                     )
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 20)
                 
                 GeometryReader { scrollGeometry in
                     ScrollView {
@@ -40,9 +39,9 @@ struct TimeSettingView: View {
                             Image("character_timeSetting")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(height: 285)
+                                .frame(height: 265)
                                 .padding(.horizontal, 32)
-                                .padding(.top, 1)
+                                .padding(.top, 21)
                             
                             // 집을 나오는 시간
                             VStack(alignment: .leading, spacing: 12) {
@@ -131,18 +130,19 @@ struct TimeSettingView: View {
                                 .contentShape(Rectangle())
                             }
                             .padding(.horizontal, 30)
-                            .padding(.top, 46)
+                            .padding(.top, 56)
                             
                             Spacer()
                                 .frame(minHeight: 20)
                             
                             TTEButton(
                                 title: "다음으로",
-                                size: .large,
+                                size: .largeFull,
                                 isEnabled: store.canProceed
                             ) {
                                 store.send(.nextTapped)
                             }
+                            .frame(maxWidth: .infinity)
                             .padding(.horizontal, 20)
                             .padding(.bottom, 32)
                         }

@@ -20,9 +20,8 @@ struct OnboardingSummaryView: View {
                             store.send(.backTapped)
                         } label: {
                             Image(systemName: "chevron.left")
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                                .frame(width: 40, height: 40)
+                                .foregroundColor(.black)
+                                .frame(width: 24, height: 24, alignment: .leading)
                                 .contentShape(Rectangle())
                         }
                         
@@ -32,16 +31,16 @@ struct OnboardingSummaryView: View {
                             height: 15
                         )
                     }
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, 20)
                     
                     ScrollView {
                         VStack(spacing: 0) {
                             Image("character_summary")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(height: 283)
+                                .frame(height: 263)
                                 .padding(.horizontal, 32)
-                                .padding(.top, 5)
+                                .padding(.top, 20)
                             
                             VStack(spacing: 16) {
                                 SummaryRow(
@@ -120,11 +119,12 @@ struct OnboardingSummaryView: View {
                         
                         TTEButton(
                             title: "다음으로",
-                            size: .large,
+                            size: .largeFull,
                             isEnabled: true
                         ) {
                             store.send(.completeTapped)
                         }
+                        .frame(maxWidth: .infinity)
                         .padding(.horizontal, 20)
                     }
                     .padding(.bottom, 32)
@@ -160,7 +160,7 @@ struct SummaryRow: View {
             .background(Color.white)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.gray300, lineWidth: 2)
+                    .strokeBorder(Color.gray300, lineWidth: 2)
             )
             .cornerRadius(12)
         }

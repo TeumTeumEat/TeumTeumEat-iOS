@@ -66,6 +66,7 @@ struct QuizReviewSummaryView: View {
                         
                         Text("콘텐츠 요약")
                             .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(.black)
                         
                         Spacer()
                         
@@ -85,6 +86,7 @@ struct QuizReviewSummaryView: View {
                 ScrollView {
                     Markdown(store.summaryText)
                         .markdownTheme(.gitHub)
+                        .colorScheme(.light)
                         .padding(.horizontal, 20)
                         .padding(.top, 24)
                         .padding(.bottom, 40)
@@ -152,6 +154,7 @@ struct QuizCompleteView: View {
                 Text("오늘의 틈틈잇 \n완료!")
                     .font(.system(size: 30, weight: .semibold))
                     .multilineTextAlignment(.center)
+                    .foregroundStyle(.black)
             }
             
             Spacer()
@@ -190,5 +193,6 @@ struct QuizCompleteView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 34)
         }
+        .background(.white)
     }
 }

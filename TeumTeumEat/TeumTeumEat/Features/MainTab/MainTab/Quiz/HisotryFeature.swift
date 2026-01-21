@@ -198,107 +198,119 @@ struct HistoryView: View {
                 )
                 
                 // 나머지 전체 스크롤
-                ScrollView {
-                    VStack(spacing: 0) {
-                        // 탭 헤더
-                        TTETabHeader(
-                            selectedTab: Binding(
-                                get: { store.selectedTab },
-                                set: { store.send(.tabSelected($0)) }
-                            ),
-                            tabs: store.tabs
-                        )
-                        .padding(.top, 1)
-                        
-                        VStack(spacing: 16) {
-                            switch store.selectedTab {
-                            case 0:
-                                // 날짜별
-                                VStack(spacing: 16) {
-                                    HistoryDateCard(
-                                        fireCount: store.fireCount
-                                    )
-                                    
-                                    // 스탬프 카운트 HStack
-                                    HStack(spacing: 12) {
-                                        StampCountCapsule(
-                                            title: "총 스탬프",
-                                            count: store.calendarData?.totalStamps ?? 0,
-                                            iconName: "stamp",
-                                            backgroundColor: Color(hex: "EAF4FF")
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            // 탭 헤더
+                            TTETabHeader(
+                                selectedTab: Binding(
+                                    get: { store.selectedTab },
+                                    set: { store.send(.tabSelected($0)) }
+                                ),
+                                tabs: store.tabs
+                            )
+                            .padding(.top, 1)
+                            
+                            VStack(spacing: 16) {
+                                switch store.selectedTab {
+                                case 0:
+                                    // 날짜별
+                                    VStack(spacing: 16) {
+                                        HistoryDateCard(
+                                            fireCount: store.fireCount
                                         )
                                         
-                                        StampCountCapsule(
-                                            title: "이번달 스탬프",
-                                            count: store.calendarData?.stampedDates.count ?? 0,
-                                            iconName: "stamp",
-                                            backgroundColor: Color(hex: "EAF4FF")
-                                        )
-                                    }
-                                    
-                                    HistoryCalendarView(
-                                        currentYear: store.currentYear,
-                                        currentMonth: store.currentMonth,
-                                        stampedDates: store.calendarData?.stampedDates ?? [],
-                                        selectedDateString: store.selectedDateString,
-                                        historyItems: store.selectedDateHistoryItems,
-                                        onMonthChanged: { year, month in
-                                            store.send(.monthChanged(year: year, month: month))
-                                        },
-                                        onDateSelected: { dateString in
-                                            store.send(.dateSelected(dateString))
-                                        },
-                                        onItemTapped: { id, type, date in
-                                            store.send(.historyItemTapped(id: id, type: type, date: date))
+                                        // 스탬프 카운트 HStack
+                                        HStack(spacing: 12) {
+                                            StampCountCapsule(
+                                                title: "총 스탬프",
+                                                count: store.calendarData?.totalStamps ?? 0,
+                                                iconName: "stamp",
+                                                backgroundColor: Color(hex: "EAF4FF")
+                                            )
+                                            
+                                            StampCountCapsule(
+                                                title: "이번달 스탬프",
+                                                count: store.calendarData?.stampedDates.count ?? 0,
+                                                iconName: "stamp",
+                                                backgroundColor: Color(hex: "EAF4FF")
+                                            )
                                         }
                                         
-                                    )
-                                    .padding(.top, 5)
+                                        HistoryCalendarView(
+                                            currentYear: store.currentYear,
+                                            currentMonth: store.currentMonth,
+                                            stampedDates: store.calendarData?.stampedDates ?? [],
+                                            selectedDateString: store.selectedDateString,
+                                            historyItems: store.selectedDateHistoryItems,
+                                            onMonthChanged: { year, month in
+                                                store.send(.monthChanged(year: year, month: month))
+                                            },
+                                            onDateSelected: { dateString in
+                                                store.send(.dateSelected(dateString))
+                                            },
+                                            onItemTapped: { id, type, date in
+                                                store.send(.historyItemTapped(id: id, type: type, date: date))
+                                            }
+                                        )
+                                        .padding(.top, 5)
+                                        .id("calendar")  // ID 추가
+                                    }
+                                    .padding(.horizontal, 20)
+                                    .padding(.top, 20)
+                                    .padding(.bottom, 120)
+                                    
+                                case 1:
+                                    // 주제별
+                                    VStack(spacing: 16) {
+                                        if store.isLoadingTopics {
+                                            ProgressView()
+                                                .frame(maxWidth: .infinity, maxHeight: 300)
+                                        } else if store.topicCategories.isEmpty {
+                                            Text("주제별 히스토리가 없습니다")
+                                                .foregroundColor(.gray)
+                                                .frame(maxWidth: .infinity, maxHeight: 300)
+                                        } else {
+                                            ForEach(store.topicCategories) { category in
+                                                ExpandableSummaryRow(
+                                                    categories: [category.categoryName],
+                                                    items: category.histories.map { history in
+                                                        QuizHistoryItem(
+                                                            id: "\(history.id)",
+                                                            title: history.title,
+                                                            dateText: formatDate(history.lastStudiedAt),
+                                                            summarySnippet: history.summarySnippet,
+                                                            isStreak: false
+                                                        )
+                                                    },
+                                                    onItemTapped: { item in
+                                                        print("선택된 항목: \(item.title)")
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+                                    .padding(.horizontal, 18)
+                                    .padding(.top, 20)
+                                    .padding(.bottom, 120)
+                                default:
+                                    EmptyView()
                                 }
-                                .padding(.horizontal, 20)
-                                .padding(.top, 20)
-                                .padding(.bottom, 120)
-                                
-                            case 1:
-                                // 주제별
-                                VStack(spacing: 16) {
-                                     if store.isLoadingTopics {
-                                         ProgressView()
-                                             .frame(maxWidth: .infinity, maxHeight: 300)
-                                     } else if store.topicCategories.isEmpty {
-                                         Text("주제별 히스토리가 없습니다")
-                                             .foregroundColor(.gray)
-                                             .frame(maxWidth: .infinity, maxHeight: 300)
-                                     } else {
-                                         ForEach(store.topicCategories) { category in
-                                             ExpandableSummaryRow(
-                                                 categories: [category.categoryName],
-                                                 items: category.histories.map { history in
-                                                     QuizHistoryItem(
-                                                        id: "\(history.id)",
-                                                        title: history.title,
-                                                        dateText: formatDate(history.lastStudiedAt),
-                                                        summarySnippet: history.summarySnippet,
-                                                        isStreak: false
-                                                     )
-                                                 },
-                                                 onItemTapped: { item in
-                                                     print("선택된 항목: \(item.title)")
-                                                 }
-                                             )
-                                         }
-                                     }
-                                 }
-                                 .padding(.horizontal, 18)
-                                 .padding(.top, 20)
-                                 .padding(.bottom, 120)
-                            default:
-                                EmptyView()
+                            }
+                        }
+                        .onChange(of: store.selectedDateString) { oldValue, newValue in
+                            if newValue != nil {
+                                // Cell이 렌더링될 시간을 주고 스크롤
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        proxy.scrollTo("calendar", anchor: .center)
+                                    }
+                                }
                             }
                         }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .background(Color.white)
             .navigationBarHidden(true)
@@ -332,7 +344,6 @@ struct HistoryView: View {
         return displayFormatter.string(from: date)
     }
 }
-
 
 
 struct HistoryDateCard: View {
@@ -393,6 +404,7 @@ struct HistoryDateCard: View {
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .frame(maxWidth: .infinity)
+                .padding(.trailing, 24)
                 .background(Color(hex: "EAF4FF"))
                 
                 Image(streakImage)
@@ -484,7 +496,7 @@ struct HistoryCalendarView: View {
             // 선택된 날짜 정보
             if selectedDateString != nil, !historyItems.isEmpty {
                 selectedDateInfo()
-                    .padding(.top, 16)
+                    .padding(.top, 0)
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }

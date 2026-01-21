@@ -23,7 +23,7 @@ struct TTEProgressBar: View {
         backgroundColor: Color = Color(hex: "E0E0E0"),
         height: CGFloat = 8,
         showStepText: Bool = true,
-        cornerRadius: CGFloat = 4
+        cornerRadius: CGFloat = 16
     ) {
         self.currentStep = currentStep
         self.totalSteps = totalSteps
@@ -62,8 +62,9 @@ struct TTEProgressBar: View {
             
             if showStepText {
                 Text("\(currentStep)/\(totalSteps)")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.gray)
+                    .cRegular14()
+                    .foregroundColor(.black)
+                    .frame(width: 40)
             }
         }
     }

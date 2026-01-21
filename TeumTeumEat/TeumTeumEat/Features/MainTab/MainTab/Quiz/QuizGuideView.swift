@@ -61,7 +61,7 @@ struct QuizGuideView: View {
                         .padding(.vertical, 10)
                         .background(
                             Capsule()
-                                .fill(Color.blue)
+                                .fill(Color.blue500)
                         )
                         .padding(.horizontal, 86.5)
                         .padding(.top, 4)
@@ -147,7 +147,7 @@ struct QuizGuideView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 52)
-                            .background(Color(red: 0.2, green: 0.4, blue: 0.8))
+                            .background(.blue500)
                             .cornerRadius(12)
                         }
                         .disabled(store.isSubmitting)  // API 호출 중에는 비활성화

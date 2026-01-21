@@ -20,8 +20,8 @@ enum QuizButtonType {
     
     var icon: String {
         switch self {
-        case .correct: return "o_thin"
-        case .wrong: return "x_thin"
+        case .correct: return "o_bold"
+        case .wrong: return "x_bold"
         }
     }
     
@@ -35,8 +35,15 @@ enum QuizButtonType {
     
     var selectedBackgroundColor: Color {
         switch self {
-        case .correct: return .blue
-        case .wrong: return .red
+        case .correct: return .blue500
+        case .wrong: return .red500
+        }
+    }
+    
+    var backgroundColor: Color {
+        switch self {
+        case .correct: return .blue100
+        case .wrong: return .red100
         }
     }
 }
@@ -79,11 +86,11 @@ struct TTEQuizButton: View {
         }
         .frame(width: buttonWidth, height: buttonHeight)
         .background(
-            Capsule()
+            RoundedRectangle(cornerRadius: 24)
                 .fill(backgroundColor)
         )
         .overlay(
-            Capsule()
+            RoundedRectangle(cornerRadius: 24)
                 .stroke(borderColor, lineWidth: borderWidth)
         )
         .animation(.easeInOut(duration: 0.2), value: currentAnswer)
@@ -99,6 +106,10 @@ struct TTEQuizButton: View {
         }
     }
     
+    private var isUnselected: Bool {
+         return currentAnswer != .none && !isSelected
+     }
+    
     // 현재 보여줄 아이콘 (선택 상태에 따라)
     private var currentIcon: String {
         return isSelected ? type.selectedIcon : type.icon
@@ -107,35 +118,41 @@ struct TTEQuizButton: View {
     // 배경 색상
     private var backgroundColor: Color {
         if isSelected {
+            // 선택된 상태
             return type.selectedBackgroundColor
+        } else if isUnselected {
+            // 선택되지 않은 상태 (다른 버튼이 선택됨)
+            return .gray100
         } else {
-            return .white.opacity(0.5)
+            // 기본 상태
+            return type.backgroundColor
         }
     }
     
     // 아이콘 색상
     private var iconColor: Color {
-        if isSelected {
-            return .white
-        } else {
-            switch type {
-            case .correct: return .blue
-            case .wrong: return .red
+            if isSelected {
+                // 선택된 상태 - 흰색
+                return .white
+            } else if isUnselected {
+                // 선택되지 않은 상태 - 회색
+                return .gray500
+            } else {
+                // 기본 상태
+                switch type {
+                case .correct: return .blue500
+                case .wrong: return .red500
+                }
             }
         }
-    }
     
     // 테두리 색상
     private var borderColor: Color {
-        if isSelected {
-            return .clear
-        } else {
-            return Color(hex: "C4C4C4").opacity(0.5)
-        }
+        return .clear
     }
     
     // 테두리 두께
     private var borderWidth: CGFloat {
-        return isSelected ? 0 : 2
-    }
+            return 0
+        }
 }

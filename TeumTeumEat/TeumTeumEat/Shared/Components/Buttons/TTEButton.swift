@@ -85,7 +85,8 @@ struct TTEButton: View {
                     Spacer()
                 }
                 .padding(.leading, iconLeadingPadding ?? 22.5)
-                .frame(width: size.width, height: size.height)
+                .frame(maxWidth: size.width == nil ? .infinity : size.width)
+                .frame(height: size.height)
                 .background(customBackgroundColor ?? style.backgroundColor(isEnabled: isEnabled))
                 .cornerRadius(16)
                 .overlay(
@@ -99,7 +100,8 @@ struct TTEButton: View {
                 // 아이콘이 없을 때 (기존 버튼)
                 size.applyTypography(to: Text(title))
                     .foregroundColor(customForegroundColor ?? style.foregroundColor(isEnabled: isEnabled))
-                    .frame(width: size.width, height: size.height)
+                    .frame(maxWidth: size.width == nil ? .infinity : size.width)
+                    .frame(height: size.height)
                     .background(customBackgroundColor ?? style.backgroundColor(isEnabled: isEnabled))
                     .cornerRadius(16)
                     .overlay(
