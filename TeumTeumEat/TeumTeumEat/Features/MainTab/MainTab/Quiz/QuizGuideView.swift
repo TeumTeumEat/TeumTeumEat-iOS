@@ -61,7 +61,7 @@ struct QuizGuideView: View {
                         .padding(.vertical, 10)
                         .background(
                             Capsule()
-                                .fill(Color.blue)
+                                .fill(Color.blue500)
                         )
                         .padding(.horizontal, 86.5)
                         .padding(.top, 4)

@@ -85,7 +85,7 @@ struct ContentSummaryView: View {
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 56)
-                                .background(Color.blue)
+                                .background(Color.blue500)
                                 .cornerRadius(12)
                         }
                         .padding(.horizontal, 20)
