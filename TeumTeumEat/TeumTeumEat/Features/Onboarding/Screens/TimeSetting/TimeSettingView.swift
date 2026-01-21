@@ -39,9 +39,9 @@ struct TimeSettingView: View {
                             Image("character_timeSetting")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(height: 285)
+                                .frame(height: 265)
                                 .padding(.horizontal, 32)
-                                .padding(.top, 1)
+                                .padding(.top, 21)
                             
                             // 집을 나오는 시간
                             VStack(alignment: .leading, spacing: 12) {
@@ -130,7 +130,7 @@ struct TimeSettingView: View {
                                 .contentShape(Rectangle())
                             }
                             .padding(.horizontal, 30)
-                            .padding(.top, 46)
+                            .padding(.top, 66)
                             
                             Spacer()
                                 .frame(minHeight: 20)
