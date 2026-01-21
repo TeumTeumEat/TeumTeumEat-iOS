@@ -93,6 +93,7 @@ struct TermsAgreementBottomSheet: View {
                         Spacer()
                     }
                     .padding(.leading, 4)
+                    .padding(.top, 24)
                 }
                 .padding()
             }

@@ -90,7 +90,7 @@ struct LoginView: View {
                 onAgree: { store.send(.agreeTermsTapped) },
                 onDismiss: { store.send(.dismissTermsSheet) }
             )
-            .presentationDetents([.medium, .large])
+            .presentationDetents([.height(328)])
         }
     }
     
