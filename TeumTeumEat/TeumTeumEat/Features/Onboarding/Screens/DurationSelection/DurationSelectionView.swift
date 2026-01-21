@@ -19,9 +19,8 @@ struct DurationSelectionView: View {
                         store.send(.backTapped)
                     } label: {
                         Image(systemName: "chevron.left")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                            .frame(width: 40, height: 40)
+                            .foregroundColor(.black)
+                            .frame(width: 24, height: 24, alignment: .leading)
                             .contentShape(Rectangle())
                     }
                     
@@ -31,7 +30,7 @@ struct DurationSelectionView: View {
                         height: 15
                     )
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 20)
                 
                 GeometryReader { scrollGeometry in
                     ScrollView {

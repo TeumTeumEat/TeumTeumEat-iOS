@@ -108,9 +108,8 @@ struct RootCategoryStepView: View {
                         store.send(.backTapped)
                     } label: {
                         Image(systemName: "chevron.left")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                            .frame(width: 40, height: 40)
+                            .foregroundColor(.black)
+                            .frame(width: 24, height: 24,alignment: .leading)
                             .contentShape(Rectangle())
                     }
                     
@@ -128,7 +127,7 @@ struct RootCategoryStepView: View {
                         Color.clear.frame(width: 40, height: 40)
                     }
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 20)
                 
                 GeometryReader { scrollGeometry in
                     ScrollView {
@@ -197,9 +196,8 @@ struct MainCategoryStepView: View {
                         store.send(.backTapped)
                     } label: {
                         Image(systemName: "chevron.left")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                            .frame(width: 40, height: 40)
+                            .foregroundColor(.black)
+                            .frame(width: 24, height: 24, alignment: .leading)
                             .contentShape(Rectangle())
                     }
                     
@@ -217,7 +215,7 @@ struct MainCategoryStepView: View {
                         Color.clear.frame(width: 40, height: 40)
                     }
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 20)
                 
                 GeometryReader { scrollGeometry in
                     ScrollView {
@@ -286,9 +284,8 @@ struct SubCategoryStepView: View {
                         store.send(.backTapped)
                     } label: {
                         Image(systemName: "chevron.left")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                            .frame(width: 40, height: 40)
+                            .foregroundColor(.black)
+                            .frame(width: 24, height: 24, alignment: .leading)
                             .contentShape(Rectangle())
                     }
                     
@@ -306,7 +303,7 @@ struct SubCategoryStepView: View {
                         Color.clear.frame(width: 40, height: 40)
                     }
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 20)
                 
                 GeometryReader { scrollGeometry in
                     ScrollView {
@@ -369,9 +366,8 @@ struct DetailCategoryStepView: View {
                     store.send(.backTapped)
                 } label: {
                     Image(systemName: "chevron.left")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                        .frame(width: 40, height: 40)
+                        .foregroundColor(.black)
+                        .frame(width: 24, height: 24, alignment: .leading)
                         .contentShape(Rectangle())
                 }
                 
@@ -389,7 +385,7 @@ struct DetailCategoryStepView: View {
                     Color.clear.frame(width: 40, height: 40)
                 }
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, 20)
             
             GeometryReader { scrollGeometry in
                 ScrollView {
