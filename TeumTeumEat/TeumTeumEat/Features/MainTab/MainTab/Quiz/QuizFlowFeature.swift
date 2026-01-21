@@ -461,7 +461,7 @@ struct QuizView: View {
                             store.send(.answerSelected(answer))
                         }
                     )
-                    .frame(height: 426)
+                    .frame(height: 476)
                     .padding(.top, 34)
                     .rotationEffect(getRotation(direction: store.swipeDirection))
                     .offset(getOffset(direction: store.swipeDirection))
