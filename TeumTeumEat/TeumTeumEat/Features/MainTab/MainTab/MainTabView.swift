@@ -52,8 +52,8 @@ struct MainTabView: View {
                                     store.send(.registerMenuItemTapped(.category))
                                 }
                             )
-                            .padding(.leading, 60)
-                            .padding(.bottom, 34 + 50 + 18)
+                            .padding(.leading,store.selectedTab == .quiz ? 76 : 60)
+                            .padding(.bottom, store.selectedTab == .quiz ? (0 + 50 + 18) : (20 + 50 + 18))
                             
                             Spacer()
                         }
@@ -73,7 +73,7 @@ struct MainTabView: View {
                         }
                     )
                     .padding(.horizontal, 60)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, store.selectedTab == .quiz ? 0 : 20)
                 }
             }
             .ignoresSafeArea(.keyboard)
@@ -145,7 +145,7 @@ struct CustomTabBar: View {
             
             TTETabButton(
                 icon: Image("home"),
-                size: .large,
+                size: selectedTab == .quiz ? .small : .large,  // quiz일 때 small, 아니면 large
                 isSelected: selectedTab == .home
             ) {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -163,6 +163,7 @@ struct CustomTabBar: View {
                 }
             }
         }
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedTab)  // 애니메이션 추가
     }
 }
 
