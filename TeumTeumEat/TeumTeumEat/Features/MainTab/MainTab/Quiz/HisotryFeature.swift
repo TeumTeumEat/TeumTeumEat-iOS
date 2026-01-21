@@ -393,6 +393,7 @@ struct HistoryDateCard: View {
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .frame(maxWidth: .infinity)
+                .padding(.trailing, 24)
                 .background(Color(hex: "EAF4FF"))
                 
                 Image(streakImage)
