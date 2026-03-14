@@ -16,6 +16,7 @@ struct HomeFeature {
         var fireCount: Int = 0
         var stampCount: Int = 0
         var isTodayQuizCompleted: Bool = false
+        var isExpired: Bool = false
         
         // API 관련 상태
         var currentGoal: GoalResponse?
@@ -31,10 +32,16 @@ struct HomeFeature {
         var currentSnackImage: String {
             print("currentSnackImage 호출")
             print("- isTodayQuizCompleted: \(isTodayQuizCompleted)")
+            print("- isExpired: \(isExpired)")
             print("- currentGoal.type: \(currentGoal?.type ?? "nil")")
             print("- categoryDocument: \(categoryDocument != nil)")
             print("- pdfSummary: \(pdfSummary != nil)")
-            
+
+            guard !isExpired else {
+                print("만료 상태 - done 반환")
+                return "done"
+            }
+
             guard !isTodayQuizCompleted else {
                 print("완료 상태 - done 반환")
                 return "done"
@@ -109,6 +116,7 @@ struct HomeFeature {
             isFirstTime: Bool
         )
         case openMyPageRequested
+        case goalExpiredTapped
     }
     
     @Dependency(\.apiClient) var apiClient
@@ -162,9 +170,16 @@ struct HomeFeature {
                 
             // Step 1 완료 → Step 2 시작
             case .fetchCurrentGoalResponse(.success(let goal)):
+                if state.isExpired {
+                    state.currentGoal = goal
+                    state.isLoading = false
+                    print("Step 1 완료 - Goal 만료됨, 조기 종료")
+                    return .none
+                }
+
                 let previousGoal = state.currentGoal
                 state.currentGoal = goal
-                
+
                 //  Goal이 실제로 바뀌었는지 확인
                 let isNewGoal: Bool = {
                     guard let prev = previousGoal else { return true }
@@ -384,8 +399,12 @@ struct HomeFeature {
                 return .none
                 
             case .characterEatTapped:
+                if state.isExpired {
+                    return .send(.delegate(.goalExpiredTapped))
+                }
+
                 // summaryData 생성 후 QuizFlow에 전달
-                
+
                 if state.isTodayQuizCompleted {
                     print("오늘 퀴즈를 이미 완료했습니다")
                     return .none
@@ -450,7 +469,7 @@ struct HomeView: View {
                 )
                 
                 Spacer()
-                    .frame(height: store.isTodayQuizCompleted ? 5 : 11)
+                    .frame(height: (store.isTodayQuizCompleted || store.isExpired) ? 5 : 11)
                 
                 if store.isLoading {
                     
@@ -477,6 +496,7 @@ struct HomeView: View {
                 } else {
                     CharacterImageView(
                         isTodayQuizCompleted: store.isTodayQuizCompleted,
+                        isExpired: store.isExpired,
                         currentSnackImage: store.currentSnackImage,
                         onCharacterTapped: {
                             store.send(.characterEatTapped)
@@ -503,46 +523,59 @@ struct HomeView: View {
 // MARK: - Character Image View
 struct CharacterImageView: View {
     let isTodayQuizCompleted: Bool
+    let isExpired: Bool
     let currentSnackImage: String
     let onCharacterTapped: () -> Void
-    
+
     var body: some View {
         ZStack(alignment: .center) {
             // Lottie 배경 (항상 동일한 위치)
-            LottieView(animation: .named(isTodayQuizCompleted ? "home_v2_dummy" : "home_dummy"))
+            LottieView(animation: .named((isTodayQuizCompleted || isExpired) ? "home_v2_dummy" : "home_dummy"))
                 .playing(loopMode: .loop)
                 .frame(height: 548)
                 .offset(x: -10)
-            
-            // 오버레이 (완료/미완료에 따라 다름)
+
+            // 오버레이 (만료/완료/미완료에 따라 다름)
             VStack(spacing: 16) {
                 Spacer()
-                
-                if isTodayQuizCompleted {
+
+                if isExpired {
+                    // 만료 시 - done 이미지
+                    Image("done")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 180, height: 180)
+
+                    Text("학습 기간이\n만료되었어요!")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.black)
+                        .multilineTextAlignment(.center)
+
+                } else if isTodayQuizCompleted {
                     // 완료 시 - done 이미지
                     Image("done")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 180, height: 180)
-                    
+
                     Text("오늘의 지식을\n다 먹었어요!")
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.black)
                         .multilineTextAlignment(.center)
-                    
+
                 } else {
                     // 미완료 시 - 햄버거 + 텍스트
                     Image(currentSnackImage)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 180, height: 180)
-                    
+
                     Text("오늘의 냠냠지식이\n도착했어요!")
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.black)
                         .multilineTextAlignment(.center)
                 }
-                
+
                 Spacer()
             }
             .offset(x: -12)
@@ -552,7 +585,8 @@ struct CharacterImageView: View {
         .padding(.trailing, 3)
         .contentShape(Rectangle())
         .onTapGesture {
-            if !isTodayQuizCompleted {
+            // 만료 시에는 항상 터치 가능, 완료 시에만 막음
+            if !isTodayQuizCompleted || isExpired {
                 onCharacterTapped()
             }
         }

@@ -120,6 +120,16 @@ struct MainTabView: View {
                 QuizFlowView(store: quizFlowStore)
             }
         }
+        .fullScreenCover(
+            isPresented: Binding(
+                get: { store.quizFinished != nil },
+                set: { _ in }
+            )
+        ) {
+            if let quizFinishedStore = store.scope(state: \.quizFinished, action: \.quizFinished) {
+                QuizFinishedView(store: quizFinishedStore)
+            }
+        }
     }
 }
 

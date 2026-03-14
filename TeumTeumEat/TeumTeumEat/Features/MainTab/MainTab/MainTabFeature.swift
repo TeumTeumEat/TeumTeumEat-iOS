@@ -24,6 +24,7 @@ struct MainTabFeature {
         var addSubjectFile: AddSubjectFileFeature.State?
         var quizFlow: QuizFlowFeature.State?
         var myPage: MyPageFeature.State?
+        var quizFinished: QuizFinishedFeature.State?
         
         enum Tab {
             case home
@@ -43,6 +44,7 @@ struct MainTabFeature {
         case addSubjectFile(AddSubjectFileFeature.Action)
         case quizFlow(QuizFlowFeature.Action)
         case myPage(MyPageFeature.Action)
+        case quizFinished(QuizFinishedFeature.Action)
         case delegate(Delegate)
     }
     
@@ -103,6 +105,10 @@ struct MainTabFeature {
                     }
                     return .none
                     
+                case .home(.delegate(.goalExpiredTapped)):
+                    state.quizFinished = QuizFinishedFeature.State()
+                    return .none
+
                 case .home(.delegate(.openMyPageRequested)):
                     state.myPage = MyPageFeature.State()
                     print("Home에서 MyPage 열기")
@@ -176,8 +182,22 @@ struct MainTabFeature {
                 case .myPage(.delegate(.withdrawal)):
                     print("MainTabFeature: 회원탈퇴 요청 받음")
                     return .send(.delegate(.withdrawal))
-                    
-                case .home, .quiz, .register, .addSubject, .addSubjectFile, .quizFlow, .myPage, .delegate:
+
+                case .quizFinished(.delegate(.startCategoryFlow)):
+                    state.quizFinished = nil
+                    state.addSubject = AddSubjectFeature.State()
+                    return .none
+
+                case .quizFinished(.delegate(.startDocumentFlow)):
+                    state.quizFinished = nil
+                    state.addSubjectFile = AddSubjectFileFeature.State()
+                    return .none
+
+                case .quizFinished(.delegate(.dismissed)):
+                    state.quizFinished = nil
+                    return .none
+
+                case .home, .quiz, .register, .addSubject, .addSubjectFile, .quizFlow, .myPage, .quizFinished, .delegate:
                     return .none
                 }
             }
@@ -192,6 +212,9 @@ struct MainTabFeature {
         }
         .ifLet(\.myPage, action: \.myPage) {
             MyPageFeature()
+        }
+        .ifLet(\.quizFinished, action: \.quizFinished) {
+            QuizFinishedFeature()
         }
     }
 }

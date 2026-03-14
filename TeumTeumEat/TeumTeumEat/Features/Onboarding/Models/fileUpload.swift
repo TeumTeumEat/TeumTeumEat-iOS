@@ -36,6 +36,7 @@ struct GoalResponse: Decodable, Equatable {
     let fileName: String?          // DOCUMENT 타입일 때만 존재
     let category: CategoryInfo?    // CATEGORY 타입일 때만 존재
     let documentId: Int?
+    let isExpired: Bool
 }
 
 struct CategoryInfo: Decodable, Equatable {
