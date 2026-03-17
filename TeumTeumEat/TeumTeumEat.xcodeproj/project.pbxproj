@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		46AE2AA12F0125BD0061B2EE /* KakaoSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 46AE2AA02F0125BD0061B2EE /* KakaoSDK */; };
 		46AE2AA32F0125BD0061B2EE /* KakaoSDKAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 46AE2AA22F0125BD0061B2EE /* KakaoSDKAuth */; };
+		46C646952F6982AC005BA910 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 46C646942F6982AC005BA910 /* GoogleMobileAds */; };
 		46C6475C2F06B813009F030A /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 46C6475B2F06B813009F030A /* MarkdownUI */; };
 		46C647632F06D960009F030A /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 46C647622F06D960009F030A /* Lottie */; };
 		46C65A642F13E1FA009F030A /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 46C65A632F13E1FA009F030A /* FirebaseCore */; };
@@ -81,6 +82,7 @@
 				46FE6B842EEACE0B009E626A /* ComposableArchitecture in Frameworks */,
 				46C65A6C2F13EB11009F030A /* FirebaseMessaging in Frameworks */,
 				46AE2AA12F0125BD0061B2EE /* KakaoSDK in Frameworks */,
+				46C646952F6982AC005BA910 /* GoogleMobileAds in Frameworks */,
 				46AE2AA32F0125BD0061B2EE /* KakaoSDKAuth in Frameworks */,
 				46C65A642F13E1FA009F030A /* FirebaseCore in Frameworks */,
 				46C6475C2F06B813009F030A /* MarkdownUI in Frameworks */,
@@ -152,6 +154,7 @@
 				46C647622F06D960009F030A /* Lottie */,
 				46C65A632F13E1FA009F030A /* FirebaseCore */,
 				46C65A6B2F13EB11009F030A /* FirebaseMessaging */,
+				46C646942F6982AC005BA910 /* GoogleMobileAds */,
 			);
 			productName = TeumTeumEat;
 			productReference = 46FE666E2EE1770E009E626A /* TeumTeumEat.app */;
@@ -242,6 +245,7 @@
 				46C6475A2F06B813009F030A /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
 				46C647612F06D960009F030A /* XCRemoteSwiftPackageReference "lottie-ios" */,
 				46C65A622F13E1FA009F030A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				46C646932F6982AC005BA910 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 46FE666F2EE1770E009E626A /* Products */;
@@ -453,7 +457,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 3PVV8DQPL6;
+				DEVELOPMENT_TEAM = 7K76RWRQBL;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TeumTeumEat/Info.plist;
@@ -492,7 +496,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 3PVV8DQPL6;
+				DEVELOPMENT_TEAM = 7K76RWRQBL;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TeumTeumEat/Info.plist;
@@ -642,6 +646,14 @@
 				minimumVersion = 2.26.0;
 			};
 		};
+		46C646932F6982AC005BA910 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 13.1.0;
+			};
+		};
 		46C6475A2F06B813009F030A /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui";
@@ -686,6 +698,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 46AE2A9F2F0125BD0061B2EE /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
 			productName = KakaoSDKAuth;
+		};
+		46C646942F6982AC005BA910 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 46C646932F6982AC005BA910 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
 		};
 		46C6475B2F06B813009F030A /* MarkdownUI */ = {
 			isa = XCSwiftPackageProductDependency;
