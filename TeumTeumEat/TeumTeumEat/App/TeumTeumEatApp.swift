@@ -12,6 +12,7 @@ import KakaoSDKCommon
 import UserNotifications
 import FirebaseCore
 import FirebaseMessaging
+import GoogleMobileAds
 
 @main
 struct TeumTeumEatApp: App {
@@ -49,7 +50,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         
         // Firebase 초기화
         FirebaseApp.configure()
-        
+
+        // AdMob 초기화
+        MobileAds.shared.start(completionHandler: nil)
+
         // Messaging delegate 설정
         Messaging.messaging().delegate = self
         

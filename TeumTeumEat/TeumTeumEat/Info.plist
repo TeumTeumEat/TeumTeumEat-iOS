@@ -33,6 +33,8 @@
 		<string>Pretendard-Medium.otf</string>
 		<string>Pretendard-Bold.otf</string>
 	</array>
+	<key>GADApplicationIdentifier</key>
+	<string>$(ADMOB_APP_ID)</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

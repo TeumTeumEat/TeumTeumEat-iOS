@@ -34,4 +34,11 @@ enum Config  {
         }
         return url
     }
+
+    static var admobAppID: String {
+        guard let id = Bundle.main.object(forInfoDictionaryKey: "GADApplicationIdentifier") as? String else {
+            fatalError("GADApplicationIdentifier not found")
+        }
+        return id
+    }
 }
