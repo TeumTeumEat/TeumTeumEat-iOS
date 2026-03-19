@@ -7,34 +7,75 @@
 
 import SwiftUI
 import ComposableArchitecture
+import FirebaseRemoteConfig
 
 @Reducer
 struct SplashFeature {
     struct State: Equatable {
         var isActive = false
+        var showForceUpdateAlert = false
     }
-    
+
     enum Action {
         case onAppear
+        case checkAppVersion
+        case appVersionChecked(Bool)
+        case openAppStore
         case checkAuthentication
         case onboardingStatusResponse(Result<Bool, Error>)
         case authenticationChecked(AuthState)
-        
+
         enum AuthState {
             case authenticated(isOnboardingCompleted: Bool)
             case unauthenticated
         }
     }
-    
+
     @Dependency(\.apiClient) var apiClient
-    
+    @Dependency(\.openURL) var openURL
+
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .onAppear:
                 return .run { send in
                     try await Task.sleep(for: .seconds(2))
-                    await send(.checkAuthentication)
+                    await send(.checkAppVersion)
+                }
+
+            case .checkAppVersion:
+                return .run { send in
+                    let remoteConfig = RemoteConfig.remoteConfig()
+                    let settings = RemoteConfigSettings()
+                    settings.minimumFetchInterval = 0 // TODO: 출시 전 3600으로 변경
+                    remoteConfig.configSettings = settings
+                    remoteConfig.setDefaults(["minimum_required_version": "1.0.0" as NSObject])
+
+                    let status = try? await remoteConfig.fetchAndActivate()
+                    print("[RemoteConfig] fetchAndActivate status: \(String(describing: status))")
+
+                    let minVersion = remoteConfig["minimum_required_version"].stringValue ?? "1.0.0"
+                    let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+
+                    print("[RemoteConfig] minVersion: \(minVersion), currentVersion: \(currentVersion)")
+
+                    let needsUpdate = currentVersion.compare(minVersion, options: .numeric) == .orderedAscending
+                    print("[RemoteConfig] needsUpdate: \(needsUpdate)")
+                    await send(.appVersionChecked(needsUpdate))
+                }
+
+            case .appVersionChecked(let needsUpdate):
+                if needsUpdate {
+                    state.showForceUpdateAlert = true
+                    return .none
+                }
+                return .send(.checkAuthentication)
+
+            case .openAppStore:
+                return .run { _ in
+                    if let url = URL(string: "itms-apps://itunes.apple.com/app/id YOUR_APP_ID") {
+                        await openURL(url)
+                    }
                 }
                 
             case .checkAuthentication:

@@ -12,6 +12,7 @@
 		46C646952F6982AC005BA910 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 46C646942F6982AC005BA910 /* GoogleMobileAds */; };
 		46C6475C2F06B813009F030A /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 46C6475B2F06B813009F030A /* MarkdownUI */; };
 		46C647632F06D960009F030A /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 46C647622F06D960009F030A /* Lottie */; };
+		46C648C42F6C4568005BA910 /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 46C648C32F6C4568005BA910 /* FirebaseRemoteConfig */; };
 		46C65A642F13E1FA009F030A /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 46C65A632F13E1FA009F030A /* FirebaseCore */; };
 		46C65A6C2F13EB11009F030A /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 46C65A6B2F13EB11009F030A /* FirebaseMessaging */; };
 		46E995172F1E6C3E009946C1 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 46E995162F1E6C3E009946C1 /* InfoPlist.xcstrings */; };
@@ -78,6 +79,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				46C648C42F6C4568005BA910 /* FirebaseRemoteConfig in Frameworks */,
 				46C647632F06D960009F030A /* Lottie in Frameworks */,
 				46FE6B842EEACE0B009E626A /* ComposableArchitecture in Frameworks */,
 				46C65A6C2F13EB11009F030A /* FirebaseMessaging in Frameworks */,
@@ -155,6 +157,7 @@
 				46C65A632F13E1FA009F030A /* FirebaseCore */,
 				46C65A6B2F13EB11009F030A /* FirebaseMessaging */,
 				46C646942F6982AC005BA910 /* GoogleMobileAds */,
+				46C648C32F6C4568005BA910 /* FirebaseRemoteConfig */,
 			);
 			productName = TeumTeumEat;
 			productReference = 46FE666E2EE1770E009E626A /* TeumTeumEat.app */;
@@ -713,6 +716,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 46C647612F06D960009F030A /* XCRemoteSwiftPackageReference "lottie-ios" */;
 			productName = Lottie;
+		};
+		46C648C32F6C4568005BA910 /* FirebaseRemoteConfig */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 46C65A622F13E1FA009F030A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseRemoteConfig;
 		};
 		46C65A632F13E1FA009F030A /* FirebaseCore */ = {
 			isa = XCSwiftPackageProductDependency;
