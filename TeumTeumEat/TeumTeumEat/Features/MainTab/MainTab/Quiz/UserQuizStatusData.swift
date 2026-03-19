@@ -11,4 +11,9 @@ struct UserQuizStatusData: Codable, Equatable {
     let hasSolvedToday: Bool
     let isFirstTime: Bool
     let hasCreatedToday: Bool
+    let isQuizGuideSeen: Bool
+    let availableQuizCount: Int
+    let targetQuizSetCount: Int
+    let completedQuizSetCount: Int
+    let isCompleted: Bool
 }

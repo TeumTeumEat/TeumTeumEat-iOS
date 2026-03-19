@@ -35,6 +35,8 @@
 	</array>
 	<key>GADApplicationIdentifier</key>
 	<string>$(ADMOB_APP_ID)</string>
+	<key>ADMOB_REWARDED_AD_UNIT_ID</key>
+	<string>$(ADMOB_REWARDED_AD_UNIT_ID)</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

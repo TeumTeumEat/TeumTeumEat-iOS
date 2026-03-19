@@ -28,6 +28,12 @@ struct HomeFeature {
         
         var isLoading: Bool = false
         var errorMessage: String?
+
+        var showCouponModal: Bool = false
+
+        var availableQuizCount: Int {
+            quizStatus?.availableQuizCount ?? 0
+        }
         
         var currentSnackImage: String {
             print("currentSnackImage 호출")
@@ -106,6 +112,12 @@ struct HomeFeature {
         case settingTapped
         case toggleQuizStatus
         case characterEatTapped
+        case speechBubbleTapped
+        case dismissCouponModal
+        case couponUseTapped
+        case adRewardEarned
+        case postAdRewardResponse(Result<Void, Error>)
+        case refreshQuizStatusResponse(Result<UserQuizStatusData, Error>)
         case delegate(Delegate)
     }
     
@@ -393,11 +405,58 @@ struct HomeFeature {
                 
             case .settingTapped:
                 return .send(.delegate(.openMyPageRequested))
-                
+
             case .toggleQuizStatus:
                 state.isTodayQuizCompleted.toggle()
                 return .none
-                
+
+            case .speechBubbleTapped:
+                state.showCouponModal = true
+                return .none
+
+            case .dismissCouponModal:
+                state.showCouponModal = false
+                return .none
+
+            case .couponUseTapped:
+                guard state.availableQuizCount > 0 else { return .none }
+                state.isTodayQuizCompleted = false
+                state.showCouponModal = false
+                return .none
+
+            case .adRewardEarned:
+                return .run { send in
+                    do {
+                        try await apiClient.postAdReward()
+                        await send(.postAdRewardResponse(.success(())))
+                    } catch {
+                        await send(.postAdRewardResponse(.failure(error)))
+                    }
+                }
+
+            case .postAdRewardResponse(.success):
+                return .run { send in
+                    do {
+                        let status = try await apiClient.fetchUserQuizStatus()
+                        await send(.refreshQuizStatusResponse(.success(status)))
+                    } catch {
+                        await send(.refreshQuizStatusResponse(.failure(error)))
+                    }
+                }
+
+            case .postAdRewardResponse(.failure(let error)):
+                print("광고 보상 API 실패: \(error)")
+                return .none
+
+            case .refreshQuizStatusResponse(.success(let status)):
+                state.quizStatus = status
+                state.showCouponModal = true
+                return .none
+
+            case .refreshQuizStatusResponse(.failure(let error)):
+                print("퀴즈 상태 새로고침 실패: \(error)")
+                return .none
+
             case .characterEatTapped:
                 if state.isExpired {
                     return .send(.delegate(.goalExpiredTapped))
@@ -501,6 +560,9 @@ struct HomeView: View {
                         currentSnackImage: store.currentSnackImage,
                         onCharacterTapped: {
                             store.send(.characterEatTapped)
+                        },
+                        onSpeechBubbleTapped: {
+                            store.send(.speechBubbleTapped)
                         }
                     )
                 }
@@ -515,7 +577,29 @@ struct HomeView: View {
             .navigationBarHidden(true)
             .onAppear {
                 store.send(.onAppear)
+                RewardedAdManager.shared.loadAd()
             }
+            // 쿠폰 모달
+            .overlay {
+                if store.showCouponModal {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                        .onTapGesture { store.send(.dismissCouponModal) }
+
+                    CouponModalView(
+                        couponCount: store.availableQuizCount,
+                        onUse: { store.send(.couponUseTapped) },
+                        onCharge: {
+                            store.send(.dismissCouponModal)
+                            RewardedAdManager.shared.showAd {
+                                store.send(.adRewardEarned)
+                            }
+                        }
+                    )
+                    .transition(.scale(scale: 0.95).combined(with: .opacity))
+                }
+            }
+            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: store.showCouponModal)
             // TODO: 광고 테스트 확인 후 삭제
             .overlay(alignment: .bottomTrailing) {
                 Button("AD\n테스트") {
@@ -542,6 +626,7 @@ struct CharacterImageView: View {
     let isExpired: Bool
     let currentSnackImage: String
     let onCharacterTapped: () -> Void
+    let onSpeechBubbleTapped: () -> Void
 
     var body: some View {
         ZStack(alignment: .center) {
@@ -568,6 +653,10 @@ struct CharacterImageView: View {
                         .multilineTextAlignment(.center)
 
                 } else if isTodayQuizCompleted {
+                    // 말풍선
+                    SpeechBubbleView()
+                        .onTapGesture { onSpeechBubbleTapped() }
+
                     // 완료 시 - done 이미지
                     Image("done")
                         .resizable()
@@ -666,6 +755,41 @@ struct HomeNavigationBar: View {
         .frame(height: 48)
         .padding(.horizontal, 20)
         .background(Color.white)
+    }
+}
+
+// MARK: - Speech Bubble
+struct SpeechBubbleView: View {
+    var body: some View {
+        VStack(spacing: 0) {
+            Text("음냐냐.. 퀴즈 더 풀고싶다~ click!")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.black)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.white)
+                        .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 2)
+                )
+
+            // 말풍선 꼬리
+            Triangle()
+                .fill(Color.white)
+                .frame(width: 14, height: 8)
+                .shadow(color: .black.opacity(0.06), radius: 2, x: 0, y: 1)
+        }
+    }
+}
+
+struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        path.closeSubpath()
+        return path
     }
 }
 

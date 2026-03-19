@@ -18,6 +18,7 @@ enum APIError: Error, LocalizedError, Equatable {
     // 클라이언트 측 에러
     case invalidURL
     case noAccessToken
+    case noRefreshToken
     case encodingFailed(Error)
     
     // 서버 에러
@@ -35,6 +36,9 @@ enum APIError: Error, LocalizedError, Equatable {
             
         case .noAccessToken:
             return "인증 정보가 없습니다. 다시 로그인해주세요."
+
+        case .noRefreshToken:
+            return "갱신 토큰이 없습니다. 다시 로그인해주세요."
             
         case .encodingFailed(let error):
             return "요청 데이터 인코딩 실패: \(error.localizedDescription)"
@@ -114,9 +118,8 @@ enum APIError: Error, LocalizedError, Equatable {
         if case .serverError(let code, _, _) = self {
             return ["AUTH-002", "AUTH-003", "AUTH-005"].contains(code)
         }
-        if case .noAccessToken = self {
-            return true
-        }
+        if case .noAccessToken = self { return true }
+        if case .noRefreshToken = self { return true }
         return false
     }
     
@@ -125,6 +128,8 @@ enum APIError: Error, LocalizedError, Equatable {
         case (.invalidURL, .invalidURL):
             return true
         case (.noAccessToken, .noAccessToken):
+            return true
+        case (.noRefreshToken, .noRefreshToken):
             return true
         case (.encodingFailed(let lhsError), .encodingFailed(let rhsError)):
             return lhsError.localizedDescription == rhsError.localizedDescription

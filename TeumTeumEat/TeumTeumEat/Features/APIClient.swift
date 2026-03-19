@@ -16,13 +16,53 @@ enum HTTPMethod: String {
     case patch = "PATCH"
 }
 
+// MARK: - Token Reissue Models
+private struct ReissueTokenRequest: Encodable {
+    let refreshToken: String
+}
+
+private struct ReissueTokenData: Decodable {
+    let accessToken: String
+    let refreshToken: String
+}
+
+// MARK: - Token Refresh Coordinator
+/// 동시에 여러 API 요청이 토큰 만료를 감지했을 때 중복 재발급을 방지하는 Actor
+private actor TokenRefreshCoordinator {
+    static let shared = TokenRefreshCoordinator()
+    private init() {}
+
+    private var refreshTask: Task<Void, Error>?
+
+    func refresh(using apiClient: APIClient) async throws {
+        if let task = refreshTask {
+            try await task.value
+            return
+        }
+
+        let task = Task<Void, Error> {
+            try await apiClient.performTokenReissue()
+        }
+        refreshTask = task
+
+        do {
+            try await task.value
+            refreshTask = nil
+        } catch {
+            refreshTask = nil
+            throw error
+        }
+    }
+}
+
 struct APIClient {
     
     func request<T: Decodable>(
         endpoint: String,
         method: HTTPMethod = .get,
         body: Encodable? = nil,
-        requiresAuth: Bool = true
+        requiresAuth: Bool = true,
+        isRetry: Bool = false
     ) async throws -> T {
         // 1. URL 구성
         let baseURL = Config.baseURL
@@ -92,27 +132,39 @@ struct APIClient {
                 }
                 
             case 400...599:
-                // 에러 응답 - 서버 에러 파싱
+                // 에러 응답 디코딩 (sync only - try await는 이 블록 밖에서 처리)
+                let errorCode: String
+                let errorMessage: String
+                let errorDetails: String?
+
                 do {
                     let errorResponse = try JSONDecoder().decode(APIErrorResponse.self, from: data)
-                    print("Server Error - Code: \(errorResponse.code), Message: \(errorResponse.message)")
-                    throw APIError.serverError(
-                        code: errorResponse.code,
-                        message: errorResponse.message,
-                        details: errorResponse.details
-                    )
-                } catch let decodingError as DecodingError {
-                    // 에러 응답 파싱 실패 - HTTP 상태 코드로 폴백
-                    print("Failed to decode error response: \(decodingError)")
-                    throw APIError.serverError(
-                        code: "HTTP-\(httpResponse.statusCode)",
-                        message: "서버 오류 (상태 코드: \(httpResponse.statusCode))",
-                        details: nil
-                    )
-                } catch let apiError as APIError {
-                    // 이미 APIError인 경우 그대로 throw
-                    throw apiError
+                    errorCode = errorResponse.code
+                    errorMessage = errorResponse.message
+                    errorDetails = errorResponse.details
+                    print("Server Error - Code: \(errorCode), Message: \(errorMessage)")
+                } catch {
+                    errorCode = "HTTP-\(httpResponse.statusCode)"
+                    errorMessage = "서버 오류 (상태 코드: \(httpResponse.statusCode))"
+                    errorDetails = nil
+                    print("Failed to decode error response, fallback to HTTP status")
                 }
+
+                // AUTH-002: 액세스 토큰 만료 → 재발급 후 1회 retry
+                if errorCode == "AUTH-002", requiresAuth, !isRetry {
+                    print("Access token expired. Attempting token refresh...")
+                    try await TokenRefreshCoordinator.shared.refresh(using: self)
+                    print("Token refreshed. Retrying original request...")
+                    return try await self.request(
+                        endpoint: endpoint,
+                        method: method,
+                        body: body,
+                        requiresAuth: requiresAuth,
+                        isRetry: true
+                    )
+                }
+
+                throw APIError.serverError(code: errorCode, message: errorMessage, details: errorDetails)
                 
             default:
                 // 예상치 못한 상태 코드
@@ -136,6 +188,37 @@ struct APIClient {
 
 extension APIClient: DependencyKey {
     static let liveValue = APIClient()
+}
+
+// MARK: - Token Reissue
+extension APIClient {
+    /// 토큰 재발급 (TokenRefreshCoordinator 내부에서만 호출)
+    fileprivate func performTokenReissue() async throws {
+        guard let refreshToken = KeyChainManager.shared.getRefreshToken() else {
+            print("No refresh token found in KeyChain")
+            throw APIError.noRefreshToken
+        }
+
+        let response: APIResponse<ReissueTokenData> = try await request(
+            endpoint: "/api/v2/users/reissue",
+            method: .post,
+            body: ReissueTokenRequest(refreshToken: refreshToken),
+            requiresAuth: false,
+            isRetry: true
+        )
+
+        guard response.code == "OK", let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+
+        KeyChainManager.shared.saveAccessToken(data.accessToken)
+        KeyChainManager.shared.saveRefreshToken(data.refreshToken)
+        print("Token reissued and saved successfully")
+    }
 }
 
 extension DependencyValues {
@@ -889,6 +972,29 @@ extension APIClient {
         }
 }
 
+
+extension APIClient {
+    /// 광고 시청 보상 처리
+    func postAdReward() async throws {
+        let response: APIResponse<EmptyData> = try await request(
+            endpoint: "/api/v1/user-quizzes/ad-reward",
+            method: .post,
+            requiresAuth: true
+        )
+
+        print("postAdReward - Response code: \(response.code)")
+
+        guard response.code == "OK" else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+
+        print("Ad reward processed successfully")
+    }
+}
 
 extension APIClient {
     /// 퀴즈 가이드 본 것으로 표시
