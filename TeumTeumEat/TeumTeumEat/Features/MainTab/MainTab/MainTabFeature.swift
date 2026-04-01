@@ -20,11 +20,11 @@ struct MainTabFeature {
         var quiz: HistoryFeature.State = .init()
         var register: RegisterFeature.State = .init()
         
+        var newGoalFlow: NewGoalFlowFeature.State?
         var addSubject: AddSubjectFeature.State?
         var addSubjectFile: AddSubjectFileFeature.State?
         var quizFlow: QuizFlowFeature.State?
         var myPage: MyPageFeature.State?
-        var quizFinished: QuizFinishedFeature.State?
         
         enum Tab {
             case home
@@ -40,11 +40,11 @@ struct MainTabFeature {
         case home(HomeFeature.Action)
         case quiz(HistoryFeature.Action)
         case register(RegisterFeature.Action)
+        case newGoalFlow(NewGoalFlowFeature.Action)
         case addSubject(AddSubjectFeature.Action)
         case addSubjectFile(AddSubjectFileFeature.Action)
         case quizFlow(QuizFlowFeature.Action)
         case myPage(MyPageFeature.Action)
-        case quizFinished(QuizFinishedFeature.Action)
         case delegate(Delegate)
     }
     
@@ -105,8 +105,16 @@ struct MainTabFeature {
                     }
                     return .none
                     
-                case .home(.delegate(.goalExpiredTapped)):
-                    state.quizFinished = QuizFinishedFeature.State()
+                case .home(.delegate(.startNewGoalTapped)):
+                    state.newGoalFlow = NewGoalFlowFeature.State()
+                    return .none
+
+                case .newGoalFlow(.delegate(.completed)):
+                    state.newGoalFlow = nil
+                    return .send(.home(.onAppear))
+
+                case .newGoalFlow(.delegate(.cancelled)):
+                    state.newGoalFlow = nil
                     return .none
 
                 case .home(.delegate(.openMyPageRequested)):
@@ -183,24 +191,13 @@ struct MainTabFeature {
                     print("MainTabFeature: 회원탈퇴 요청 받음")
                     return .send(.delegate(.withdrawal))
 
-                case .quizFinished(.delegate(.startCategoryFlow)):
-                    state.quizFinished = nil
-                    state.addSubject = AddSubjectFeature.State()
-                    return .none
-
-                case .quizFinished(.delegate(.startDocumentFlow)):
-                    state.quizFinished = nil
-                    state.addSubjectFile = AddSubjectFileFeature.State()
-                    return .none
-
-                case .quizFinished(.delegate(.dismissed)):
-                    state.quizFinished = nil
-                    return .none
-
-                case .home, .quiz, .register, .addSubject, .addSubjectFile, .quizFlow, .myPage, .quizFinished, .delegate:
+                case .home, .quiz, .register, .newGoalFlow, .addSubject, .addSubjectFile, .quizFlow, .myPage, .delegate:
                     return .none
                 }
             }
+        .ifLet(\.newGoalFlow, action: \.newGoalFlow) {
+            NewGoalFlowFeature()
+        }
         .ifLet(\.addSubject, action: \.addSubject) {
             AddSubjectFeature()
         }
@@ -212,9 +209,6 @@ struct MainTabFeature {
         }
         .ifLet(\.myPage, action: \.myPage) {
             MyPageFeature()
-        }
-        .ifLet(\.quizFinished, action: \.quizFinished) {
-            QuizFinishedFeature()
         }
     }
 }
