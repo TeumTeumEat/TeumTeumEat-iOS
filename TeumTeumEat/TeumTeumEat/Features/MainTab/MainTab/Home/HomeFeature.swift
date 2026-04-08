@@ -785,7 +785,14 @@ struct HomeNavigationBar: View {
 // MARK: - Speech Bubble
 struct SpeechBubbleView: View {
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(alignment: .trailing, spacing: 0) {
+            // 말풍선 꼬리 - 오른쪽 상단, 위를 향함
+            TriangleUp()
+                .fill(Color.white)
+                .frame(width: 14, height: 8)
+                .shadow(color: .black.opacity(0.12), radius: 2, x: 0, y: -2)
+                .padding(.trailing, 16)
+
             Text("음냐냐.. 퀴즈 더 풀고싶다~ click!")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.black)
@@ -796,12 +803,6 @@ struct SpeechBubbleView: View {
                         .fill(Color.white)
                         .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 2)
                 )
-
-            // 말풍선 꼬리
-            Triangle()
-                .fill(Color.white)
-                .frame(width: 14, height: 8)
-                .shadow(color: .black.opacity(0.06), radius: 2, x: 0, y: 1)
         }
     }
 }
@@ -812,6 +813,17 @@ struct Triangle: Shape {
         path.move(to: CGPoint(x: rect.midX, y: rect.maxY))
         path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
         path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+struct TriangleUp: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
         path.closeSubpath()
         return path
     }
