@@ -86,7 +86,6 @@ struct APIClient {
                 throw APIError.noAccessToken
             }
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            print("Access Token added to request")
         }
         
         // 4. Request Body 추가 (POST, PUT 등)
@@ -124,7 +123,6 @@ struct APIClient {
                 // 성공 - 데이터 디코딩
                 do {
                     let decodedData = try JSONDecoder().decode(T.self, from: data)
-                    print("Successfully decoded response")
                     return decodedData
                 } catch {
                     print("Decoding Error: \(error)")
@@ -572,9 +570,6 @@ extension APIClient {
             requiresAuth: true
         )
         
-        print("fetchUserQuizStatus - Response code: \(response.code)")
-        print("fetchUserQuizStatus - Response data: \(String(describing: response.data))")
-        
         guard response.code == "OK",
               let statusData = response.data else {
             throw APIError.serverError(
@@ -583,41 +578,80 @@ extension APIClient {
                 details: response.details
             )
         }
-        
-        print("Quiz Status - hasSolvedToday: \(statusData.hasSolvedToday)")
-        print("Quiz Status - isFirstTime: \(statusData.isFirstTime)")
-        print("Quiz Status - hasCreatedToday: \(statusData.hasCreatedToday)")
+
+        print("[QuizStatus] hasSolvedToday: \(statusData.hasSolvedToday), hasCreatedToday: \(statusData.hasCreatedToday), availableCount: \(statusData.availableQuizCount)")
         
         return statusData
     }
     
-    /// 오늘의 카테고리 자료(요약글) 조회하기
+    /// 오늘의 카테고리 자료(요약글) 조회 (없으면 생성 후 재조회)
     func fetchDailyCategoryDocument(categoryId: Int) async throws -> CategoryDocumentData {
+        let dailyEndpoint = "/api/v1/categories/\(categoryId)/documents/daily"
+
+        // Step 1: GET으로 요약글 조회 시도
+        do {
+            let documentData = try await fetchCategoryDocumentGET(endpoint: dailyEndpoint)
+            print("[CategoryDocument] GET 성공 - documentId: \(documentData.documentId), hasSolvedToday: \(documentData.hasSolvedToday)")
+            return documentData
+        } catch let apiError as APIError {
+            if case .serverError(let code, _, _) = apiError, code == "COMMON-005" {
+                // 요약글 아직 없음 → 생성 필요
+                print("[CategoryDocument] COMMON-005 - 요약글 없음, 생성 시작")
+            } else {
+                throw apiError
+            }
+        }
+
+        // Step 2: 문서 없음 → POST로 생성 시도
+        do {
+            let _: APIResponse<EmptyData> = try await request(
+                endpoint: dailyEndpoint,
+                method: .post,
+                requiresAuth: true
+            )
+            print("[CategoryDocument] POST 생성 완료")
+        } catch let apiError as APIError {
+            if case .serverError(let code, _, _) = apiError, code == "QUIZ-003" {
+                // 이미 생성된 문서 있음 → GET으로 조회
+                print("[CategoryDocument] QUIZ-003 - 기존 문서 존재, GET으로 조회")
+            } else {
+                throw apiError
+            }
+        }
+
+        // Step 3: GET으로 최종 조회
         let response: APIResponse<CategoryDocumentData> = try await request(
-            endpoint: "/api/v1/categories/\(categoryId)/documents/daily",
+            endpoint: dailyEndpoint,
             method: .get,
             requiresAuth: true
         )
-        
-        print("fetchDailyCategoryDocument - Response code: \(response.code)")
-        print("fetchDailyCategoryDocument - CategoryId: \(categoryId)")
-        print("etchDailyCategoryDocument - Response data: \(String(describing: response.data))")
-        
-        guard response.code == "OK",
-              let documentData = response.data else {
+
+        guard response.code == "OK", let documentData = response.data else {
             throw APIError.serverError(
                 code: response.code,
                 message: response.message,
                 details: response.details
             )
         }
-        
-        print("Category Document - documentId: \(documentData.documentId)")
-        print("Category Document - hasSolvedToday: \(documentData.hasSolvedToday)")
-        print("Category Document - isFirstTime: \(documentData.isFirstTime)")
-        print("Category Document - content length: \(documentData.content.count) characters")
-        
+
+        print("[CategoryDocument] GET 완료 - documentId: \(documentData.documentId), hasSolvedToday: \(documentData.hasSolvedToday)")
         return documentData
+    }
+
+    private func fetchCategoryDocumentGET(endpoint: String) async throws -> CategoryDocumentData {
+        let response: APIResponse<CategoryDocumentData> = try await request(
+            endpoint: endpoint,
+            method: .get,
+            requiresAuth: true
+        )
+        guard response.code == "OK", let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        return data
     }
     
     /// PDF(요약글) 조회하기
@@ -628,10 +662,6 @@ extension APIClient {
             requiresAuth: true
         )
         
-        print("fetchDailyPDFSummary - Response code: \(response.code)")
-        print("fetchDailyPDFSummary - GoalId: \(goalId), DocumentId: \(documentId)")
-        print("fetchDailyPDFSummary - Response data: \(String(describing: response.data))")
-        
         guard response.code == "OK",
               let summaryData = response.data else {
             throw APIError.serverError(
@@ -640,12 +670,8 @@ extension APIClient {
                 details: response.details
             )
         }
-        
-        print("PDF Summary - documentId: \(summaryData.documentId)")
-        print("PDF Summary - fileName: \(summaryData.fileName)")
-        print("PDF Summary - status: \(summaryData.status)")
-        print("PDF Summary - hasSolvedToday: \(summaryData.hasSolvedToday)")
-        print("PDF Summary - summary length: \(summaryData.summary.count) characters")
+
+        print("[PDFSummary] documentId: \(summaryData.documentId), hasSolvedToday: \(summaryData.hasSolvedToday), isFirstTime: \(summaryData.isFirstTime)")
         
         return summaryData
     }
@@ -658,10 +684,6 @@ extension APIClient {
             requiresAuth: true
         )
         
-        print("fetchUserQuizzes - Response code: \(response.code)")
-        print("fetchUserQuizzes - DocumentId: \(documentId), Type: \(documentType.rawValue)")
-        print("fetchUserQuizzes - Response data: \(String(describing: response.data))")
-        
         guard response.code == "OK",
               let quizzes = response.data else {
             throw APIError.serverError(
@@ -670,11 +692,8 @@ extension APIClient {
                 details: response.details
             )
         }
-        
-        print("User Quizzes - Count: \(quizzes.count)")
-        quizzes.forEach { quiz in
-            print("   Quiz ID: \(quiz.quizId), Type: \(quiz.type)")
-        }
+
+        print("[UserQuizzes] count: \(quizzes.count)")
         
         return quizzes
     }
@@ -993,6 +1012,27 @@ extension APIClient {
         }
 
         print("Ad reward processed successfully")
+    }
+}
+
+extension APIClient {
+    /// 퀴즈 세트 풀이 완료 처리 (일일 퀴즈 횟수 차감)
+    func completeQuizSet() async throws {
+        let response: APIResponse<EmptyData> = try await request(
+            endpoint: "/api/v1/user-quizzes/complete-set",
+            method: .post,
+            requiresAuth: true
+        )
+
+        guard response.code == "OK" else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+
+        print("[QuizFlow] 퀴즈 세트 차감 완료")
     }
 }
 

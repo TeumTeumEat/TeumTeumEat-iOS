@@ -16,4 +16,5 @@ struct UserQuizStatusData: Codable, Equatable {
     let targetQuizSetCount: Int
     let completedQuizSetCount: Int
     let isCompleted: Bool
+    let canIssueCoupon: Bool
 }

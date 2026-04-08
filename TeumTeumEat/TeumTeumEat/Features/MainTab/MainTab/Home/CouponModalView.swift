@@ -8,6 +8,7 @@ import SwiftUI
 struct CouponModalView: View {
     let couponCount: Int
     let maxCouponCount: Int = 10
+    let canIssueCoupon: Bool
     let onUse: () -> Void
     let onCharge: () -> Void
 
@@ -79,9 +80,10 @@ struct CouponModalView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
-                        .background(Color.blue500)
+                        .background(canIssueCoupon ? Color.blue500 : Color.gray300)
                         .cornerRadius(10)
                 }
+                .disabled(!canIssueCoupon)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 28)

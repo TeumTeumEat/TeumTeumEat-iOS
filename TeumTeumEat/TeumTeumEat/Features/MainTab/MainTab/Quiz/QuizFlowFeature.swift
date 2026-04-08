@@ -54,6 +54,7 @@ struct QuizFlowFeature {
         case detailResult(QuizDetailResultFeature.Action)
         case reviewSummary(QuizReviewSummaryFeature.Action)
         case complete(QuizCompleteFeature.Action)
+        case completeSetResponse(Result<Void, Error>)
         case delegate(Delegate)
     }
     
@@ -67,11 +68,13 @@ struct QuizFlowFeature {
         }
     }
     
+    @Dependency(\.apiClient) var apiClient
+
     var body: some ReducerOf<Self> {
         Scope(state: \.contentSummary, action: \.contentSummary) {
             ContentSummaryFeature()
         }
-        
+
         Reduce { state, action in
             switch action {
             case .contentSummary(.delegate(.startQuiz(let quizzes, let isFirstTime))):
@@ -79,23 +82,46 @@ struct QuizFlowFeature {
                     state.currentStep = .quizGuide
                     state.quizGuide = QuizGuideFeature.State()
                     print("QuizFlow: 퀴즈 가이드로 이동")
+                    return .none
                 } else {
                     state.currentStep = .quiz
                     let convertedQuizzes = quizzes.map { Quiz(from: $0) }
                     state.quiz = QuizFeature.State(quizzes: convertedQuizzes)
-                    print("QuizFlow: 퀴즈로 바로 이동")
+                    print("QuizFlow: 퀴즈로 바로 이동 - complete-set 호출")
+                    return .run { send in
+                        do {
+                            try await apiClient.completeQuizSet()
+                            await send(.completeSetResponse(.success(())))
+                        } catch {
+                            await send(.completeSetResponse(.failure(error)))
+                        }
+                    }
                 }
-                return .none
-                
+
             case .contentSummary(.delegate(.cancelled)):
                 print("QuizFlow: ContentSummary에서 취소")
                 return .send(.delegate(.cancelled))
-                
+
             case .quizGuide(.delegate(.startQuiz)):
                 state.currentStep = .quiz
                 let convertedQuizzes = state.quizzes.map { Quiz(from: $0) }
                 state.quiz = QuizFeature.State(quizzes: convertedQuizzes)
-                print("QuizFlow: 안내 완료, 퀴즈 시작")
+                print("QuizFlow: 안내 완료, 퀴즈 시작 - complete-set 호출")
+                return .run { send in
+                    do {
+                        try await apiClient.completeQuizSet()
+                        await send(.completeSetResponse(.success(())))
+                    } catch {
+                        await send(.completeSetResponse(.failure(error)))
+                    }
+                }
+
+            case .completeSetResponse(.success):
+                print("[QuizFlow] complete-set 성공")
+                return .none
+
+            case .completeSetResponse(.failure(let error)):
+                print("[QuizFlow] complete-set 실패: \(error)")
                 return .none
                 
             case .quiz(.delegate(.completed)):

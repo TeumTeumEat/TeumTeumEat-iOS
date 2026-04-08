@@ -31,63 +31,29 @@ struct HomeFeature {
         var errorMessage: String?
 
         var showCouponModal: Bool = false
+        var isUsingCoupon: Bool = false
 
         var availableQuizCount: Int {
             quizStatus?.availableQuizCount ?? 0
         }
+
+        var canIssueCoupon: Bool {
+            quizStatus?.canIssueCoupon ?? true
+        }
         
         var currentSnackImage: String {
-            print("currentSnackImage 호출")
-            print("- isTodayQuizCompleted: \(isTodayQuizCompleted)")
-            print("- isExpired: \(isExpired)")
-            print("- currentGoal.type: \(currentGoal?.type ?? "nil")")
-            print("- categoryDocument: \(categoryDocument != nil)")
-            print("- pdfSummary: \(pdfSummary != nil)")
+            guard !isExpired else { return "done" }
+            guard !isTodayQuizCompleted else { return "done" }
+            guard let goal = currentGoal else { return "burger" }
 
-            guard !isExpired else {
-                print("만료 상태 - done 반환")
-                return "done"
-            }
-
-            guard !isTodayQuizCompleted else {
-                print("완료 상태 - done 반환")
-                return "done"
-            }
-            
-            // currentGoal의 type과 일치하는 문서만 사용
-            guard let goal = currentGoal else {
-                print("currentGoal 없음 - burger 반환")
-                return "burger"
-            }
-            
-            // Goal Type에 따라 올바른 문서만 체크
             if goal.type == "CATEGORY", let categoryDoc = categoryDocument {
-                print("CATEGORY - categoryDocument 사용")
-                print("- documentId: \(categoryDoc.documentId)")
-                print("- createdAt: \(categoryDoc.createdAt)")
-                
-                let image = SnackImageMapper.snackImage(
-                    for: categoryDoc.documentId,
-                    createdAt: categoryDoc.createdAt
-                )
-                print("- 결과 이미지: \(image)")
-                return image
+                return SnackImageMapper.snackImage(for: categoryDoc.documentId, createdAt: categoryDoc.createdAt)
             }
-            
+
             if goal.type == "DOCUMENT", let pdfSum = pdfSummary {
-                print("DOCUMENT - pdfSummary 사용")
-                print("- documentId: \(pdfSum.documentId)")
-                print("- createdAt: \(pdfSum.createdAt)")
-                
-                let image = SnackImageMapper.snackImage(
-                    for: pdfSum.documentId,
-                    createdAt: pdfSum.createdAt
-                )
-                print("- 결과 이미지: \(image)")
-                return image
+                return SnackImageMapper.snackImage(for: pdfSum.documentId, createdAt: pdfSum.createdAt)
             }
-            
-            print("문서 로딩 중 - burger 반환")
+
             return "burger"
         }
     }
@@ -176,12 +142,10 @@ struct HomeFeature {
                 state.calendarData = calendarData
                 state.fireCount = calendarData.currentStreak
                 state.stampCount = calendarData.totalStamps
-                print("캘린더 조회 완료 - Fire: \(calendarData.currentStreak), Stamp: \(calendarData.totalStamps)")
                 return .none
-                
+
             case .fetchCalendarHistoryResponse(.failure(let error)):
-                print("캘린더 조회 실패: \(error)")
-                // 실패해도 다른 API에 영향 없음
+                print("[Home] 캘린더 조회 실패: \(error)")
                 return .none
                 
             // Step 1 완료 → Step 2 시작
@@ -190,40 +154,28 @@ struct HomeFeature {
                 if goal.isExpired {
                     state.currentGoal = goal
                     state.isLoading = false
-                    print("Step 1 완료 - Goal 만료됨, 조기 종료")
+                    print("[Home] Goal 만료")
                     return .none
                 }
 
                 let previousGoal = state.currentGoal
                 state.currentGoal = goal
 
-                //  Goal이 실제로 바뀌었는지 확인
                 let isNewGoal: Bool = {
                     guard let prev = previousGoal else { return true }
-                    
                     if prev.type != goal.type { return true }
-                    
-                    if goal.type == "CATEGORY" {
-                        return prev.category?.categoryId != goal.category?.categoryId
-                    }
-                    
-                    if goal.type == "DOCUMENT" {
-                        return prev.documentId != goal.documentId
-                    }
-                    
+                    if goal.type == "CATEGORY" { return prev.category?.categoryId != goal.category?.categoryId }
+                    if goal.type == "DOCUMENT" { return prev.documentId != goal.documentId }
                     return false
                 }()
-                
+
                 if isNewGoal {
-                    print("새로운 Goal - 이전 데이터 초기화")
                     state.categoryDocument = nil
                     state.pdfSummary = nil
                     state.quizzes = []
-                } else {
-                    print("동일한 Goal - 데이터 유지")
                 }
-                
-                print("Step 1 완료 - Goal Type: \(goal.type)")
+
+                print("[Home] Step1 완료 - type: \(goal.type)")
                 
                 // Step 2: 퀴즈 상태는 항상 확인 (날짜 변경 감지용)
                 return .run { send in
@@ -238,20 +190,21 @@ struct HomeFeature {
             case .fetchCurrentGoalResponse(.failure(let error)):
                 state.isLoading = false
                 state.errorMessage = "목표 조회 실패: \(error.localizedDescription)"
-                print("Step 1 실패: \(error)")
+                print("[Home] Step1 실패: \(error)")
                 return .none
                 
             // Step 2 완료 → Step 3 시작
             case .fetchQuizStatusResponse(.success(let status)):
                 let wasCompletedYesterday = state.isTodayQuizCompleted
                 state.quizStatus = status
-                state.isTodayQuizCompleted = status.hasSolvedToday
-                
-                print("Step 2 완료 - hasSolvedToday: \(status.hasSolvedToday)")
-                
-                //날짜 변경 감지: 어제는 완료였는데 오늘은 미완료
+                if !state.isUsingCoupon {
+                    state.isTodayQuizCompleted = status.hasSolvedToday
+                }
+                state.isUsingCoupon = false
+
+                print("[Home] Step2 완료 - hasSolvedToday: \(status.hasSolvedToday)")
+
                 if wasCompletedYesterday && !status.hasSolvedToday {
-                    print("날짜 변경 감지 - 새로운 문서 필요")
                     state.categoryDocument = nil
                     state.pdfSummary = nil
                     state.quizzes = []
@@ -265,9 +218,7 @@ struct HomeFeature {
                 
                 // Step 3: Goal Type에 따라 요약글 조회
                 if goal.type == "CATEGORY" {
-                    // 문서가 이미 있으면 퀴즈만 조회
                     if let categoryDoc = state.categoryDocument {
-                        print("categoryDocument 존재 - 퀴즈만 조회")
                         return .run { [docId = categoryDoc.documentId] send in
                             do {
                                 let quizzes = try await apiClient.fetchUserQuizzes(
@@ -298,9 +249,7 @@ struct HomeFeature {
                     }
                     
                 } else if goal.type == "DOCUMENT" {
-                    // PDF 문서가 이미 있으면 퀴즈만 조회
                     if let pdfSum = state.pdfSummary {
-                        print("pdfSummary 존재 - 퀴즈만 조회")
                         return .run { [docId = pdfSum.documentId] send in
                             do {
                                 let quizzes = try await apiClient.fetchUserQuizzes(
@@ -345,18 +294,17 @@ struct HomeFeature {
                    case .serverError(let code, _, _) = apiError, code == "GOAL-002" {
                     state.isExpired = true
                     state.isLoading = false
-                    print("Step 2 실패 - GOAL-002: 학습 기간 만료")
                     return .none
                 }
                 state.isLoading = false
                 state.errorMessage = "퀴즈 상태 조회 실패: \(error.localizedDescription)"
-                print("Step 2 실패: \(error)")
+                print("[Home] Step2 실패: \(error)")
                 return .none
                 
             // Step 3-A 완료 (카테고리) → Step 4 시작
             case .fetchCategoryDocumentResponse(.success(let document)):
                 state.categoryDocument = document
-                print("Step 3 완료 (카테고리) - documentId: \(document.documentId)")
+                print("[Home] Step3 완료 - CATEGORY documentId: \(document.documentId)")
                 
                 // Step 4: 퀴즈 조회
                 return .run { send in
@@ -376,18 +324,17 @@ struct HomeFeature {
                    case .serverError(let code, _, _) = apiError, code == "GOAL-002" {
                     state.isExpired = true
                     state.isLoading = false
-                    print("Step 3 실패 (카테고리) - GOAL-002: 학습 기간 만료")
                     return .none
                 }
                 state.isLoading = false
                 state.errorMessage = "카테고리 문서 조회 실패: \(error.localizedDescription)"
-                print("Step 3 실패 (카테고리): \(error)")
+                print("[Home] Step3 실패 (CATEGORY): \(error)")
                 return .none
                 
             // Step 3-B 완료 (PDF) → Step 4 시작
             case .fetchPDFSummaryResponse(.success(let summary)):
                 state.pdfSummary = summary
-                print("Step 3 완료 (PDF) - documentId: \(summary.documentId)")
+                print("[Home] Step3 완료 - PDF documentId: \(summary.documentId)")
                 
                 // Step 4: 퀴즈 조회
                 return .run { send in
@@ -407,33 +354,30 @@ struct HomeFeature {
                    case .serverError(let code, _, _) = apiError, code == "GOAL-002" {
                     state.isExpired = true
                     state.isLoading = false
-                    print("Step 3 실패 (PDF) - GOAL-002: 학습 기간 만료")
                     return .none
                 }
                 state.isLoading = false
                 state.errorMessage = "PDF 요약 조회 실패: \(error.localizedDescription)"
-                print("Step 3 실패 (PDF): \(error)")
+                print("[Home] Step3 실패 (PDF): \(error)")
                 return .none
                 
             // Step 4 완료
             case .fetchQuizzesResponse(.success(let quizzes)):
                 state.quizzes = quizzes
                 state.isLoading = false
-                print("Step 4 완료 - 퀴즈 개수: \(quizzes.count)")
-                print("전체 플로우 완료!")
+                print("[Home] Step4 완료 - 퀴즈 \(quizzes.count)개, 플로우 종료")
                 return .none
-                
+
             case .fetchQuizzesResponse(.failure(let error)):
                 if let apiError = error as? APIError,
                    case .serverError(let code, _, _) = apiError, code == "GOAL-002" {
                     state.isExpired = true
                     state.isLoading = false
-                    print("Step 4 실패 - GOAL-002: 학습 기간 만료")
                     return .none
                 }
                 state.isLoading = false
                 state.errorMessage = "퀴즈 조회 실패: \(error.localizedDescription)"
-                print("Step 4 실패: \(error)")
+                print("[Home] Step4 실패: \(error)")
                 return .none
                 
             case .settingTapped:
@@ -454,9 +398,8 @@ struct HomeFeature {
             case .couponUseTapped:
                 guard state.availableQuizCount > 0 else { return .none }
                 state.isTodayQuizCompleted = false
+                state.isUsingCoupon = true
                 state.showCouponModal = false
-                state.categoryDocument = nil
-                state.pdfSummary = nil
                 state.quizzes = []
                 state.isLoading = true
                 return .run { send in
@@ -645,6 +588,7 @@ struct HomeView: View {
 
                     CouponModalView(
                         couponCount: store.availableQuizCount,
+                        canIssueCoupon: store.canIssueCoupon,
                         onUse: { store.send(.couponUseTapped) },
                         onCharge: {
                             store.send(.dismissCouponModal)
