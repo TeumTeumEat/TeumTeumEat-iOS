@@ -204,6 +204,13 @@ struct HomeFeature {
 
                 print("[Home] Step2 완료 - hasSolvedToday: \(status.hasSolvedToday)")
 
+                if status.isCompleted {
+                    state.isExpired = true
+                    state.isLoading = false
+                    print("[Home] Goal 완료 - 모든 퀴즈 세트 완료")
+                    return .none
+                }
+
                 if wasCompletedYesterday && !status.hasSolvedToday {
                     state.categoryDocument = nil
                     state.pdfSummary = nil
@@ -370,7 +377,8 @@ struct HomeFeature {
 
             case .fetchQuizzesResponse(.failure(let error)):
                 if let apiError = error as? APIError,
-                   case .serverError(let code, _, _) = apiError, code == "GOAL-002" {
+                   case .serverError(let code, _, _) = apiError,
+                   code == "GOAL-002" || code == "GOAL-003" {
                     state.isExpired = true
                     state.isLoading = false
                     return .none
