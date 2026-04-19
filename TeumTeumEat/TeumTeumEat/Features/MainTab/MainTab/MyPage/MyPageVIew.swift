@@ -85,7 +85,8 @@ struct MyPageView: View {
                         Text("선택된 학습 주제가 없습니다.")
                             .bodyRegular14()
                             .foregroundColor(.gray)
-                            .frame(maxWidth: .infinity)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 20)
                             .padding(.vertical, 40)
                     }
                     

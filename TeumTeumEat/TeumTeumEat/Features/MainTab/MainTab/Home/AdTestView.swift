@@ -12,8 +12,7 @@ struct AdTestView: View {
     @State private var statusMessage = "광고 로드 전"
     @State private var isLoading = false
 
-    // 구글 공식 테스트 광고 ID
-    private let testAdUnitID = "ca-app-pub-3940256099942544/5224354917"
+    private let testAdUnitID = Config.admobRewardedAdUnitID
 
     var body: some View {
         VStack(spacing: 32) {
