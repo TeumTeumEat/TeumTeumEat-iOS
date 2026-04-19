@@ -80,8 +80,11 @@ struct MyPageFeature {
                     async let goalsTask: Void = {
                         do {
                             let goal = try await apiClient.fetchCurrentGoal()
-                            let selectedSubject = Subject(from: goal)
-                            await send(.selectedSubjectResponse(.success(selectedSubject)))
+                            if goal.isExpired {
+                                await send(.selectedSubjectResponse(.success(nil)))
+                            } else {
+                                await send(.selectedSubjectResponse(.success(Subject(from: goal))))
+                            }
                         } catch {
                             await send(.selectedSubjectResponse(.failure(error)))
                         }

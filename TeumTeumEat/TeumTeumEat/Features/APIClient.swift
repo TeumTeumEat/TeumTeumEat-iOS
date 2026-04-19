@@ -355,10 +355,11 @@ extension APIClient {
             )
         }
         
-        print("Goals fetched successfully - Count: \(data.goalResponses.count)")
-        print("GoalResponses count: \(data.goalResponses.count)")
-        print("GoalResponses: \(data.goalResponses)")
-           
+        print("Goals fetched - Count: \(data.goalResponses.count)")
+        data.goalResponses.forEach { goal in
+            print("[Goal] id:\(goal.goalId) type:\(goal.type) isExpired:\(goal.isExpired) isCompleted:\(goal.isCompleted) period:\(goal.studyPeriod) difficulty:\(goal.difficulty) start:\(goal.startDate) end:\(goal.endDate)")
+        }
+
         return data.goalResponses
     }
     
@@ -391,31 +392,31 @@ extension APIClient {
     }
     
     /// PDF 문서 등록
-     func registerDocument(
-         goalId: Int,
-         fileName: String,
-         fileKey: String
-     ) async throws {
-         let response: APIResponse<EmptyData> = try await request(
-             endpoint: "/api/v1/goals/\(goalId)/documents",
-             method: .post,
-             body: RegisterDocumentRequest(
-                 fileName: fileName,
-                 fileKey: fileKey
-             ),
-             requiresAuth: true
-         )
-         
-         guard response.code == "OK" else {
-             throw APIError.serverError(
-                 code: response.code,
-                 message: response.message,
-                 details: response.details
-             )
-         }
-         
-         print("Document registered successfully - GoalId: \(goalId), FileName: \(fileName)")
-     }
+    func registerDocument(
+        goalId: Int,
+        fileName: String,
+        fileKey: String
+    ) async throws {
+        let response: APIResponse<EmptyData> = try await request(
+            endpoint: "/api/v1/goals/\(goalId)/documents",
+            method: .post,
+            body: RegisterDocumentRequest(
+                fileName: fileName,
+                fileKey: fileKey
+            ),
+            requiresAuth: true
+        )
+
+        guard response.code == "OK" else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+
+        print("Document registered successfully - GoalId: \(goalId), FileName: \(fileName)")
+    }
     
     func getPresignedURL(fileName: String) async throws -> PresignedURLData {
          let response: APIResponse<PresignedURLData> = try await request(
@@ -1044,9 +1045,9 @@ extension APIClient {
             method: .post,
             requiresAuth: true
         )
-        
+
         print("updateQuizGuideSeen - Response code: \(response.code)")
-        
+
         guard response.code == "OK",
               let data = response.data else {
             throw APIError.serverError(
@@ -1055,7 +1056,135 @@ extension APIClient {
                 details: response.details
             )
         }
-        
+
         print("Quiz guide seen status updated: \(data.isQuizGuideSeen)")
+    }
+}
+
+// MARK: - SSE Helpers (file-private)
+private struct SSEDataPayload: Decodable {
+    let status: String
+    let remain: Int?
+    let reason: String?
+}
+
+private struct SSEErrorResponse: Decodable {
+    let code: String
+    let message: String
+}
+
+extension APIClient {
+    func connectDocumentSSE(
+        goalId: Int,
+        documentId: Int,
+        lastEventId: String? = nil
+    ) -> AsyncThrowingStream<SSEDocumentStatus, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                let endpoint = "/api/v1/goals/\(goalId)/documents/\(documentId)/sse"
+                guard let url = URL(string: Config.baseURL + endpoint) else {
+                    continuation.finish(throwing: APIError.invalidURL)
+                    return
+                }
+
+                var request = URLRequest(url: url)
+                request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+                request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+
+                if let token = KeyChainManager.shared.getAccessToken() {
+                    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                }
+                if let lastEventId = lastEventId {
+                    request.setValue(lastEventId, forHTTPHeaderField: "Last-Event-ID")
+                }
+
+                do {
+                    print("[SSE DEBUG] 요청 시작 - URL: \(url.absoluteString)")
+                    let sseConfig = URLSessionConfiguration.default
+                    sseConfig.timeoutIntervalForRequest = 600
+                    sseConfig.timeoutIntervalForResource = 600
+                    let sseSession = URLSession(configuration: sseConfig)
+                    let (bytes, response) = try await sseSession.bytes(for: request)
+                    print("[SSE DEBUG] 응답 수신 완료")
+
+                    guard let httpResponse = response as? HTTPURLResponse else {
+                        continuation.finish(throwing: APIError.invalidResponse)
+                        return
+                    }
+
+                    print("[SSE DEBUG] HTTP 상태 코드: \(httpResponse.statusCode)")
+
+                    if httpResponse.statusCode != 200 {
+                        var errorData = Data()
+                        for try await byte in bytes {
+                            errorData.append(byte)
+                        }
+                        if let errorResponse = try? JSONDecoder().decode(SSEErrorResponse.self, from: errorData) {
+                            continuation.finish(throwing: APIError.serverError(
+                                code: errorResponse.code,
+                                message: errorResponse.message,
+                                details: nil
+                            ))
+                        } else {
+                            continuation.finish(throwing: APIError.serverError(
+                                code: "SSE-\(httpResponse.statusCode)",
+                                message: "SSE 연결 실패 (상태 코드: \(httpResponse.statusCode))",
+                                details: nil
+                            ))
+                        }
+                        return
+                    }
+
+                    var eventType = ""
+                    var eventData = ""
+                    print("[SSE DEBUG] 이벤트 루프 시작")
+
+                    for try await line in bytes.lines {
+                        // 빈 줄 또는 새 id: 가 오면 이전 이벤트 dispatch
+                        if line.isEmpty || line.hasPrefix("id:") {
+                            if !eventData.isEmpty,
+                               let event = parseSSEEvent(type: eventType, data: eventData) {
+                                print("[SSE DEBUG] 이벤트 dispatch: \(eventType) / \(eventData.prefix(80))")
+                                continuation.yield(event)
+                                if case .completed = event { continuation.finish(); return }
+                                if case .failed = event { continuation.finish(); return }
+                            }
+                            eventType = ""
+                            eventData = ""
+                        } else if line.hasPrefix("event:") {
+                            eventType = String(line.dropFirst(6)).trimmingCharacters(in: .whitespaces)
+                        } else if line.hasPrefix("data:") {
+                            let value = String(line.dropFirst(5)).trimmingCharacters(in: .whitespaces)
+                            if eventData.isEmpty {
+                                eventData = value
+                            } else {
+                                eventData += "\n" + value
+                            }
+                        }
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    private func parseSSEEvent(type: String, data: String) -> SSEDocumentStatus? {
+        guard let jsonData = data.data(using: .utf8),
+              let payload = try? JSONDecoder().decode(SSEDataPayload.self, from: jsonData) else {
+            return nil
+        }
+        switch payload.status {
+        case "CONNECTED": return .connected
+        case "PENDING":   return .pending
+        case "PROCESSING": return .processing(remainMs: payload.remain ?? 0)
+        case "COMPLETED":  return .completed
+        case "FAILED":
+            let reason = SSEFailureReason(rawValue: payload.reason ?? "") ?? .serverError
+            return .failed(reason: reason)
+        default: return nil
+        }
     }
 }
