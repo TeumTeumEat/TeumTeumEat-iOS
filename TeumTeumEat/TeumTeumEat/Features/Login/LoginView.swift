@@ -112,13 +112,24 @@ struct LoginView: View {
                            let code = String(data: authCodeData, encoding: .utf8) {
                             authCode = code
                         }
-                        
+
+                        let fullName = appleIDCredential.fullName
+                        print("[Apple] fullName 객체: \(String(describing: fullName))")
+                        print("[Apple] givenName: \(String(describing: fullName?.givenName))")
+                        print("[Apple] familyName: \(String(describing: fullName?.familyName))")
+                        print("[Apple] nickname: \(String(describing: fullName?.nickname))")
+
+                        let name = [fullName?.givenName, fullName?.familyName]
+                            .compactMap { $0 }
+                            .filter { !$0.isEmpty }
+                            .joined(separator: " ")
+
+                        print("[Apple] 조합된 name: '\(name)' → 전송값: '\(name.isEmpty ? "TestUser" : name)'")
                         print("애플 로그인 성공")
-                        print("Identity Token: \(identityToken)")
                         print("Authorization Code: \(authCode ?? "없음")")
-                        
+
                         // TCA 액션 전송
-                        store.send(.appleLoginSuccess(idToken: identityToken, authCode: authCode))
+                        store.send(.appleLoginSuccess(idToken: identityToken, authCode: authCode, name: name.isEmpty ? "TestUser" : name))
                     }
                     
                 case .failure(let error):

@@ -18,6 +18,7 @@ struct LoginFeature {
         var pendingIdToken: String?
         var pendingAuthCode: String?
         var pendingProvider: SocialProvider?
+        var pendingName: String?
         var showTermsSheet = false
     }
     
@@ -29,10 +30,10 @@ struct LoginFeature {
     enum Action {
         case kakaoLoginTapped
         
-        case appleLoginSuccess(idToken: String, authCode: String?)
+        case appleLoginSuccess(idToken: String, authCode: String?, name: String?)
         case appleLoginFailure(Error)
 
-        case loginAttempt(idToken: String, authCode: String?, provider: SocialProvider, termsAgreed: Bool)
+        case loginAttempt(idToken: String, authCode: String?, provider: SocialProvider, termsAgreed: Bool, name: String?)
         case loginResponse(Result<SocialLoginResponse, Error>)
         
         case dismissTermsSheet
@@ -61,20 +62,21 @@ struct LoginFeature {
                         print("ID Token: \(kakaoIdToken)")
                         print("Token Length: \(kakaoIdToken.count)")
                         print("서버 로그인 시도 (termsAgreed: false)")
-                        await send(.loginAttempt(idToken: kakaoIdToken, authCode: nil, provider: .kakao, termsAgreed: false))
+                        await send(.loginAttempt(idToken: kakaoIdToken, authCode: nil, provider: .kakao, termsAgreed: false, name: nil))
                     } catch {
                         print("카카오 로그인 전체 실패:", error)
                         await send(.loginResponse(.failure(error)))
                     }
                 }
                 
-            case .appleLoginSuccess(let idToken, let authCode):
+            case .appleLoginSuccess(let idToken, let authCode, let name):
                 print("애플 로그인 성공 - 서버 로그인 시도")
                 return .send(.loginAttempt(
                     idToken: idToken,
                     authCode: authCode,
                     provider: .appleProvider,
-                    termsAgreed: false
+                    termsAgreed: false,
+                    name: name
                 ))
                 
             case .appleLoginFailure(let error):
@@ -83,12 +85,13 @@ struct LoginFeature {
                 print("애플 로그인 실패: \(error)")
                 return .none
                 
-            case .loginAttempt(let idToken,let authCode,let provider, let termsAgreed):
+            case .loginAttempt(let idToken, let authCode, let provider, let termsAgreed, let name):
                 state.isLoading = true
                 state.errorMessage = nil
                 state.pendingIdToken = idToken
                 state.pendingAuthCode = authCode
                 state.pendingProvider = provider
+                state.pendingName = name
                 
                 print("서버 로그인 요청")
                 print("idToken: \(String(idToken.prefix(20)))...")
@@ -100,7 +103,8 @@ struct LoginFeature {
                             idToken: idToken,
                             authCode: authCode,
                             provider: provider,
-                            termsAgreed: termsAgreed
+                            termsAgreed: termsAgreed,
+                            name: name
                         )
                         
                         print("서버 응답 수신")
@@ -188,7 +192,8 @@ struct LoginFeature {
                     idToken: idToken,
                     authCode: authCode,
                     provider: provider,
-                    termsAgreed: true
+                    termsAgreed: true,
+                    name: state.pendingName
                 ))
             case .delegate:
                 return .none
@@ -225,7 +230,7 @@ extension LoginFeature {
         }
     }
     
-    private func loginToServer(idToken: String, authCode: String?, provider: SocialProvider, termsAgreed: Bool) async throws -> SocialLoginResponse {
+    private func loginToServer(idToken: String, authCode: String?, provider: SocialProvider, termsAgreed: Bool, name: String?) async throws -> SocialLoginResponse {
         print("서버 API 호출 시작")
         let baseURL = Config.baseURL
         let endPoint = "/api/v1/auth/oauth/register?provider=\(provider.rawValue)"
@@ -241,7 +246,7 @@ extension LoginFeature {
             idToken: idToken,
             authCode: authCode,
             termsAgreed: termsAgreed,
-            name: "TestUser"
+            name: name ?? "TestUser"
         )
         request.httpBody = try JSONEncoder().encode(body)
         
@@ -273,7 +278,7 @@ extension LoginFeature {
         print("   idToken: \(String(idToken.prefix(30)))... (길이: \(idToken.count))")
         print("   authCode: \(authCode != nil ? "\(String(authCode!.prefix(30)))... (길이: \(authCode!.count))" : "nil")")
         print("   termsAgreed: \(termsAgreed)")
-        print("   name: TestUser")
+        print("   name: \(name ?? "nil")")
         
         
         let (data, httpResponse) = try await URLSession.shared.data(for: request)
