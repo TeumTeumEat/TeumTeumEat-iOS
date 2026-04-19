@@ -53,7 +53,7 @@ struct SubjectListFeature {
             case .goalsResponse(.success(let goals)):
                 state.isLoading = false
                 print("API Response - Goals count: \(goals.count)")
-                state.subjects = goals.map { Subject(from: $0) }
+                state.subjects = goals.filter { !$0.isExpired }.map { Subject(from: $0) }
                 print("Final subjects count: \(state.subjects.count)")
                 return .none
                 
