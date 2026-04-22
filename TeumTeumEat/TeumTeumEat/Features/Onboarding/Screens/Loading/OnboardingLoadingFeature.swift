@@ -12,126 +12,148 @@ import ComposableArchitecture
 struct OnboardingLoadingFeature {
     @ObservableState
     struct State: Equatable {
-        var loadingSteps: [LoadingStep] = [
-            LoadingStep(title: "카테고리 퀴즈 생성 중", isCompleted: false),
-            LoadingStep(title: "맞춤형 문제 준비 중", isCompleted: false),
-            LoadingStep(title: "최적화 진행 중", isCompleted: false)
-        ]
+        var loadingSteps: [LoadingStep]
         var currentStepIndex: Int = 0
-        
-        // API 관련 상태
+
         var onboardingData: OnboardingData
         var isOnboarding: Bool = true
         var animationCompleted: Bool = false
         var apiCompleted: Bool = false
         var isFileUpload: Bool = false
         var apiError: APIError?
-        
+
+        // SSE 관련
+        var sseGoalId: Int? = nil
+        var sseDocumentId: Int? = nil
+        var sseProgress: Double = 0.0
+        var remainingSeconds: Int? = nil
+        var totalInitialMs: Int? = nil
+
         @Presents var errorAlert: AlertState<Action.ErrorAlert>?
         @Presents var confirmCancelAlert: AlertState<Action.ConfirmCancelAlert>?
-        
-        // 완료 여부
+
         var canProceed: Bool {
-            animationCompleted && apiCompleted && apiError == nil
+            if isFileUpload {
+                return apiCompleted && apiError == nil
+            }
+            return animationCompleted && apiCompleted && apiError == nil
         }
-        
-        var animationDelay: TimeInterval {
-            isFileUpload ? 10.0 : 1.0  // 파일이면 단계당 10초, 아니면 1초
+
+        init(onboardingData: OnboardingData, isOnboarding: Bool = true, isFileUpload: Bool = false) {
+            self.onboardingData = onboardingData
+            self.isOnboarding = isOnboarding
+            self.isFileUpload = isFileUpload
+
+            if isFileUpload {
+                self.loadingSteps = [
+                    LoadingStep(title: "PDF 파일 업로드 중", isCompleted: false),
+                    LoadingStep(title: "문서 등록 중", isCompleted: false),
+                    LoadingStep(title: "퀴즈 생성 중", isCompleted: false)
+                ]
+            } else {
+                self.loadingSteps = [
+                    LoadingStep(title: "카테고리 퀴즈 생성 중", isCompleted: false),
+                    LoadingStep(title: "맞춤형 문제 준비 중", isCompleted: false),
+                    LoadingStep(title: "최적화 진행 중", isCompleted: false)
+                ]
+            }
         }
-        
+
         struct LoadingStep: Equatable, Identifiable {
             let id = UUID()
             let title: String
             var isCompleted: Bool
         }
     }
-    
+
     enum Action {
         case onAppear
         case updateProgress
         case animationCompleted
-        
-        // API 관련 액션
+
+        // 공통 API
         case submitOnboardingData
         case apiSuccess
         case apiFailure(APIError)
         case checkCompletion
-        
         case loadingCompleted
-        
-        
+
+        // 파일 업로드 전용
+        case uploadStepCompleted
+        case sseStartRequested(goalId: Int, documentId: Int)
+        case sseEventReceived(SSEDocumentStatus)
+        case sseConnectionFailed(String)
+        case tickTimer
+
         case errorAlert(PresentationAction<ErrorAlert>)
-            case confirmCancelAlert(PresentationAction<ConfirmCancelAlert>)
-            
-            // Delegate 액션 추가
-            case delegate(Delegate)
-            
-            enum ErrorAlert: Equatable {
-                case retry
-                case cancel
-            }
-            
-            enum ConfirmCancelAlert: Equatable {
-                case confirmCancel  // 정말 취소
-                case goBack         // 돌아가기
-            }
-            
-            enum Delegate: Equatable {
-                case onboardingCancelled
-            }
+        case confirmCancelAlert(PresentationAction<ConfirmCancelAlert>)
+        case delegate(Delegate)
+
+        enum ErrorAlert: Equatable {
+            case retry
+            case cancel
+        }
+
+        enum ConfirmCancelAlert: Equatable {
+            case confirmCancel
+            case goBack
+        }
+
+        enum Delegate: Equatable {
+            case onboardingCancelled
+        }
     }
-    
+
+    private enum CancelID: Hashable {
+        case sseStream
+        case timer
+    }
+
     @Dependency(\.apiClient) var apiClient
-    
+
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
+
+            // MARK: - onAppear
             case .onAppear:
-                // 애니메이션과 API 호출 병렬 처리
-                return .merge(
-                    // 1. 애니메이션 (3초 고정)
-                    .run { send in
-                        await send(.updateProgress)
-                    },
-                    // 2. API 호출
-                    .send(.submitOnboardingData)
-                )
-                
+                if state.isFileUpload {
+                    return .send(.submitOnboardingData)
+                } else {
+                    return .merge(
+                        .run { send in await send(.updateProgress) },
+                        .send(.submitOnboardingData)
+                    )
+                }
+
+            // MARK: - 카테고리 애니메이션
             case .updateProgress:
                 guard state.currentStepIndex < state.loadingSteps.count else {
                     return .send(.animationCompleted)
                 }
-                
                 state.loadingSteps[state.currentStepIndex].isCompleted = true
                 state.currentStepIndex += 1
-                
-                let delay = state.animationDelay
-                
                 return .run { send in
-                    try await Task.sleep(for: .seconds(delay))
+                    try await Task.sleep(for: .seconds(1.0))
                     await send(.updateProgress)
                 }
-                
+
             case .animationCompleted:
                 state.animationCompleted = true
                 return .send(.checkCompletion)
-                
+
+            // MARK: - API 호출
             case .submitOnboardingData:
                 let data = state.onboardingData
                 let isOnboarding = state.isOnboarding
-                
+
                 return .run { send in
                     do {
-                        // 온보딩일 때만 유저 정보 업데이트
                         if isOnboarding {
-                            // Step 1 & 2: 유저 이름 + 출퇴근 정보 병렬 처리
                             try await withThrowingTaskGroup(of: Void.self) { group in
-                                // Task 1: 이름 수정
                                 group.addTask {
                                     try await apiClient.updateUserName(name: data.userName)
                                 }
-                                
-                                // Task 2: 출퇴근 정보 수정
                                 group.addTask {
                                     guard let leaveTime = data.leaveHomeTime,
                                           let returnTime = data.returnHomeTime else {
@@ -141,234 +163,302 @@ struct OnboardingLoadingFeature {
                                             details: nil
                                         )
                                     }
-                                    
-                                    let startTimeString = leaveTime.toString(format: "HH:mm:ss")
-                                    let endTimeString = returnTime.toString(format: "HH:mm:ss")
-                                    
                                     try await apiClient.updateCommuteInfo(
-                                        startTime: startTimeString,
-                                        endTime: endTimeString,
+                                        startTime: leaveTime.toString(format: "HH:mm:ss"),
+                                        endTime: returnTime.toString(format: "HH:mm:ss"),
                                         usageTime: data.dailyUsageMinutes
                                     )
                                 }
-                                
-                                // 모든 Task 완료 대기
                                 try await group.waitForAll()
                             }
-                            
-                            print("User info updated (parallel) - Onboarding")
-                        } else {
-                            print("Skipping user info update - Adding subject")
+                            print("User info updated - Onboarding")
                         }
-                        
-                        // Step 3-7: contentType에 따라 분기 (공통)
+
                         if data.contentType == .fileUpload {
-                            // 파일 업로드 플로우
-                            try await handleFileUploadFlow(data: data)
+                            guard let fileURL = data.uploadedFileURL else {
+                                throw APIError.serverError(
+                                    code: "CLIENT-002",
+                                    message: "업로드할 파일이 선택되지 않았습니다.",
+                                    details: nil
+                                )
+                            }
+                            let fileName = fileURL.lastPathComponent
+
+                            // Step 1: Presigned URL + S3 업로드
+                            print("[UPLOAD] Step1: presigned URL 요청")
+                            let presignedData = try await apiClient.getPresignedURL(fileName: fileName)
+                            print("[UPLOAD] Step1: S3 업로드 시작")
+                            try await apiClient.uploadFileToS3(
+                                fileURL: fileURL,
+                                presignedURL: presignedData.presignedUrl
+                            )
+                            print("[UPLOAD] Step1: S3 업로드 완료")
+                            await send(.uploadStepCompleted)
+
+                            // Step 2: 목표 생성 + 문서 등록
+                            let difficulty = mapDifficulty(data.difficulty)
+                            let prompt = data.customPrompt.isEmpty ? nil : data.customPrompt
+                            print("[UPLOAD] Step2: 목표 생성")
+                            try await apiClient.createGoal(
+                                type: .document,
+                                studyPeriod: "\(data.programWeeks)주",
+                                difficulty: difficulty,
+                                prompt: prompt,
+                                categoryId: nil
+                            )
+
+                            print("[UPLOAD] Step2: 목표 조회")
+                            let goals = try await apiClient.fetchGoals()
+                            guard let latestGoal = goals
+                                .filter({ $0.type == "DOCUMENT" })
+                                .max(by: { $0.goalId < $1.goalId }) else {
+                                throw APIError.serverError(
+                                    code: "CLIENT-003",
+                                    message: "생성된 목표를 찾을 수 없습니다.",
+                                    details: nil
+                                )
+                            }
+                            print("[UPLOAD] Step2: latestGoal.goalId=\(latestGoal.goalId)")
+
+                            print("[UPLOAD] Step3: 문서 등록")
+                            try await apiClient.registerDocument(
+                                goalId: latestGoal.goalId,
+                                fileName: fileName,
+                                fileKey: presignedData.key
+                            )
+                            print("[UPLOAD] Step3: 현재 목표 조회")
+                            let currentGoal = try await apiClient.fetchCurrentGoal()
+                            guard let documentId = currentGoal.documentId else {
+                                throw APIError.serverError(
+                                    code: "CLIENT-005",
+                                    message: "문서 ID를 찾을 수 없습니다.",
+                                    details: nil
+                                )
+                            }
+                            print("[UPLOAD] Step3: documentId=\(documentId), SSE 시작")
+                            await send(.sseStartRequested(goalId: latestGoal.goalId, documentId: documentId))
+
                         } else {
-                            // 카테고리 선택 플로우
                             try await handleCategoryFlow(data: data)
+                            await send(.apiSuccess)
                         }
-                        
-                        await send(.apiSuccess)
-                        
+
                     } catch let error as APIError {
                         await send(.apiFailure(error))
                     } catch {
                         await send(.apiFailure(.networkError(error)))
                     }
                 }
-                
+
+            // MARK: - 파일 업로드 진행 단계
+            case .uploadStepCompleted:
+                state.loadingSteps[0].isCompleted = true
+                return .none
+
+            case .sseStartRequested(let goalId, let documentId):
+                state.sseGoalId = goalId
+                state.sseDocumentId = documentId
+                state.loadingSteps[1].isCompleted = true
+                print("[SSE] 연결 시작 - goalId: \(goalId), documentId: \(documentId)")
+
+                return .run { send in
+                    do {
+                        for try await event in apiClient.connectDocumentSSE(
+                            goalId: goalId,
+                            documentId: documentId
+                        ) {
+                            await send(.sseEventReceived(event))
+                            if case .completed = event { break }
+                            if case .failed = event { break }
+                        }
+                    } catch {
+                        await send(.sseConnectionFailed(error.localizedDescription))
+                    }
+                }
+                .cancellable(id: CancelID.sseStream)
+
+            case .sseEventReceived(let event):
+                switch event {
+                case .connected:
+                    print("[SSE] 연결됨")
+
+                case .pending:
+                    print("[SSE] 처리 대기 중")
+                    state.sseProgress = 0.05
+
+                case .processing(let remainMs):
+                    print("[SSE] 처리 중 - 남은 시간: \(remainMs)ms")
+                    if state.totalInitialMs == nil {
+                        state.totalInitialMs = remainMs
+                    }
+                    let total = state.totalInitialMs ?? remainMs
+                    state.remainingSeconds = max(0, remainMs / 1000)
+                    state.sseProgress = total > 0
+                        ? max(0.05, Double(total - remainMs) / Double(total))
+                        : 0.1
+
+                    let secondsToCount = remainMs / 1000
+                    return .run { send in
+                        for _ in 0..<secondsToCount {
+                            try await Task.sleep(for: .seconds(1))
+                            await send(.tickTimer)
+                        }
+                    }
+                    .cancellable(id: CancelID.timer, cancelInFlight: true)
+
+                case .completed:
+                    print("[SSE] 완료")
+                    state.sseProgress = 1.0
+                    state.remainingSeconds = 0
+                    state.loadingSteps[2].isCompleted = true
+                    state.apiCompleted = true
+                    return .merge(
+                        .cancel(id: CancelID.timer),
+                        .send(.checkCompletion)
+                    )
+
+                case .failed(let reason):
+                    print("[SSE] 실패 - \(reason.userMessage)")
+                    return .merge(
+                        .cancel(id: CancelID.timer),
+                        .cancel(id: CancelID.sseStream),
+                        .send(.apiFailure(.serverError(
+                            code: "SSE-FAILED",
+                            message: reason.userMessage,
+                            details: nil
+                        )))
+                    )
+                }
+                return .none
+
+            case .sseConnectionFailed(let message):
+                print("[SSE] 연결 실패: \(message)")
+                return .send(.apiFailure(.serverError(
+                    code: "SSE-CONNECTION",
+                    message: message,
+                    details: nil
+                )))
+
+            case .tickTimer:
+                guard let remaining = state.remainingSeconds, remaining > 0 else { return .none }
+                state.remainingSeconds = remaining - 1
+                if let total = state.totalInitialMs, total > 0 {
+                    let remainingMs = (remaining - 1) * 1000
+                    state.sseProgress = max(0.05, min(0.95, Double(total - remainingMs) / Double(total)))
+                }
+                return .none
+
+            // MARK: - 공통 완료 / 에러
             case .apiSuccess:
                 state.apiCompleted = true
                 state.apiError = nil
                 return .send(.checkCompletion)
-                
+
             case .apiFailure(let error):
-                       state.apiCompleted = false
-                       state.apiError = error
-                       print(" API Error: \(error.localizedDescription)")
-                       
-                       // 1차 Alert - 에러 표시
-                       state.errorAlert = AlertState {
-                           TextState("오류가 발생했습니다")
-                       } actions: {
-                           ButtonState(action: .retry) {
-                               TextState("다시 시도")
-                           }
-                           ButtonState(role: .cancel, action: .cancel) {
-                               TextState("취소")
-                           }
-                       } message: {
-                           TextState(error.userFriendlyMessage)
-                       }
-                       
-                       return .none
-                
-                
+                state.apiCompleted = false
+                state.apiError = error
+                print("API Error: \(error.localizedDescription)")
+
+                state.errorAlert = AlertState {
+                    TextState("오류가 발생했습니다")
+                } actions: {
+                    ButtonState(action: .retry) { TextState("다시 시도") }
+                    ButtonState(role: .cancel, action: .cancel) { TextState("취소") }
+                } message: {
+                    TextState(error.userFriendlyMessage)
+                }
+                return .none
+
             case .errorAlert(.presented(.retry)):
-                     // 전체 재시도
-                     state.errorAlert = nil
-                     state.apiError = nil
-                     state.apiCompleted = false
-                     
-                     // 애니메이션 초기화
-                     state.currentStepIndex = 0
-                     state.animationCompleted = false
-                     for index in state.loadingSteps.indices {
-                         state.loadingSteps[index].isCompleted = false
-                     }
-                     
-                     // 다시 시작
-                     return .merge(
-                         .run { send in
-                             await send(.updateProgress)
-                         },
-                         .send(.submitOnboardingData)
-                     )
-                
+                state.errorAlert = nil
+                state.apiError = nil
+                state.apiCompleted = false
+
+                for index in state.loadingSteps.indices {
+                    state.loadingSteps[index].isCompleted = false
+                }
+
+                if state.isFileUpload {
+                    state.sseProgress = 0.0
+                    state.remainingSeconds = nil
+                    state.totalInitialMs = nil
+                    state.sseGoalId = nil
+                    state.sseDocumentId = nil
+                    return .merge(
+                        .cancel(id: CancelID.sseStream),
+                        .cancel(id: CancelID.timer),
+                        .send(.submitOnboardingData)
+                    )
+                } else {
+                    state.currentStepIndex = 0
+                    state.animationCompleted = false
+                    return .merge(
+                        .run { send in await send(.updateProgress) },
+                        .send(.submitOnboardingData)
+                    )
+                }
+
             case .errorAlert(.presented(.cancel)):
-                        // 2차 Alert 표시 - 취소 확인
-                        state.errorAlert = nil
-                        state.confirmCancelAlert = AlertState {
-                            TextState("정말 취소하시겠어요?")
-                        } actions: {
-                            ButtonState(role: .destructive, action: .confirmCancel) {
-                                TextState("취소")
-                            }
-                            ButtonState(action: .goBack) {
-                                TextState("돌아가기")
-                            }
-                        } message: {
-                            TextState("처음부터 다시 입력해야 합니다.")
-                        }
-                        
-                        return .none
-                        
-                    case .errorAlert:
-                        return .none
-                
+                state.errorAlert = nil
+                state.confirmCancelAlert = AlertState {
+                    TextState("정말 취소하시겠어요?")
+                } actions: {
+                    ButtonState(role: .destructive, action: .confirmCancel) { TextState("취소") }
+                    ButtonState(action: .goBack) { TextState("돌아가기") }
+                } message: {
+                    TextState("처음부터 다시 입력해야 합니다.")
+                }
+                return .none
+
+            case .errorAlert:
+                return .none
+
             case .confirmCancelAlert(.presented(.confirmCancel)):
-                     // 정말 취소 → Delegate로 Parent에게 알림
-                     state.confirmCancelAlert = nil
-                     return .send(.delegate(.onboardingCancelled))
-                     
-                 case .confirmCancelAlert(.presented(.goBack)):
-                     // 돌아가기 → 1차 Alert로 다시
-                     state.confirmCancelAlert = nil
-                     
-                     // 다시 에러 Alert 표시
-                     if let error = state.apiError {
-                         state.errorAlert = AlertState {
-                             TextState("오류가 발생했습니다")
-                         } actions: {
-                             ButtonState(action: .retry) {
-                                 TextState("다시 시도")
-                             }
-                             ButtonState(role: .cancel, action: .cancel) {
-                                 TextState("취소")
-                             }
-                         } message: {
-                             TextState(error.userFriendlyMessage)
-                         }
-                     }
-                     
-                     return .none
-                     
-                 case .confirmCancelAlert:
-                     return .none
-                     
-                 case .delegate:
-                     return .none
-                
+                state.confirmCancelAlert = nil
+                return .send(.delegate(.onboardingCancelled))
+
+            case .confirmCancelAlert(.presented(.goBack)):
+                state.confirmCancelAlert = nil
+                if let error = state.apiError {
+                    state.errorAlert = AlertState {
+                        TextState("오류가 발생했습니다")
+                    } actions: {
+                        ButtonState(action: .retry) { TextState("다시 시도") }
+                        ButtonState(role: .cancel, action: .cancel) { TextState("취소") }
+                    } message: {
+                        TextState(error.userFriendlyMessage)
+                    }
+                }
+                return .none
+
+            case .confirmCancelAlert:
+                return .none
+
+            case .delegate:
+                return .none
+
             case .checkCompletion:
                 if state.canProceed {
                     return .send(.loadingCompleted)
                 }
                 return .none
-                
+
             case .loadingCompleted:
-                print("온보딩 완료! Complete 화면으로 이동")
-                
-                // 디바이스 토큰 전송 체크
+                print("로딩 완료 - Complete 화면으로 이동")
                 if UserDefaults.standard.bool(forKey: "shouldRegisterDeviceToken") {
-                    print("디바이스 토큰 등록 요청")
-                    
-                    return .run { send in
-                        // iOS에 디바이스 토큰 요청
+                    return .run { _ in
                         await MainActor.run {
                             UIApplication.shared.registerForRemoteNotifications()
                         }
-                        // AppDelegate에서 토큰 받으면 서버 전송됨
                     }
                 }
-                
                 return .none
             }
         }
         .ifLet(\.$errorAlert, action: \.errorAlert)
-            .ifLet(\.$confirmCancelAlert, action: \.confirmCancelAlert)
+        .ifLet(\.$confirmCancelAlert, action: \.confirmCancelAlert)
     }
-    
-    // MARK: - Helper Methods
-    
-    /// 파일 업로드 플로우
-    private func handleFileUploadFlow(data: OnboardingData) async throws {
-        guard let fileURL = data.uploadedFileURL else {
-            throw APIError.serverError(
-                code: "CLIENT-002",
-                message: "업로드할 파일이 선택되지 않았습니다.",
-                details: nil
-            )
-        }
-        
-        let fileName = fileURL.lastPathComponent
-        
-        // Step 3: presignedURL 요청
-        let presignedData = try await apiClient.getPresignedURL(fileName: fileName)
-        
-        // Step 4: S3에 파일 업로드
-        try await apiClient.uploadFileToS3(
-            fileURL: fileURL,
-            presignedURL: presignedData.presignedUrl
-        )
-        
-        // Step 5: 목표 생성 (DOCUMENT)
-        let difficulty = mapDifficulty(data.difficulty)
-        let prompt = data.customPrompt.isEmpty ? nil : data.customPrompt
-        
-        try await apiClient.createGoal(
-            type: .document,
-            studyPeriod: "\(data.programWeeks)주",
-            difficulty: difficulty,
-            prompt: prompt,
-            categoryId: nil  // DOCUMENT 타입은 categoryId 없음
-        )
-        
-        // Step 6: 전체 목표 조회 → goalId 가져오기
-        let goals = try await apiClient.fetchGoals()
-        guard let latestGoal = goals
-            .filter({ $0.type == "DOCUMENT" })     // DOCUMENT만 필터링
-            .max(by: { $0.goalId < $1.goalId })    // goalId가 가장 큰 것
-        else {
-            throw APIError.serverError(
-                code: "CLIENT-003",
-                message: "생성된 목표를 찾을 수 없습니다.",
-                details: nil
-            )
-        }
-        
-        print("Latest DOCUMENT goal found - goalId: \(latestGoal.goalId)")
-        
-        // Step 7: 문서 등록
-        try await apiClient.registerDocument(
-            goalId: latestGoal.goalId,
-            fileName: fileName,
-            fileKey: presignedData.key
-        )
-    }
-    
-    /// 카테고리 선택 플로우
+
     private func handleCategoryFlow(data: OnboardingData) async throws {
         guard let categoryId = data.selectedDetailCategory?.id else {
             throw APIError.serverError(
@@ -377,11 +467,8 @@ struct OnboardingLoadingFeature {
                 details: nil
             )
         }
-        
         let difficulty = mapDifficulty(data.difficulty)
         let prompt = data.customPrompt.isEmpty ? nil : data.customPrompt
-        
-        // Step 3: 목표 생성 (CATEGORY)
         try await apiClient.createGoal(
             type: .category,
             studyPeriod: "\(data.programWeeks)주",
@@ -390,8 +477,7 @@ struct OnboardingLoadingFeature {
             categoryId: categoryId
         )
     }
-    
-    /// 난이도 매핑
+
     private func mapDifficulty(_ difficulty: String?) -> CreateGoalRequest.Difficulty {
         switch difficulty {
         case "쉬움": return .easy

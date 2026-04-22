@@ -17,23 +17,23 @@ struct CouponModalView: View {
 
             // MARK: - 타이틀
             VStack(spacing: 6) {
-                Text("30초 후 퀴즈 풀기")
-                    .font(.system(size: 20, weight: .bold))
+                Text("광고 보고 퀴즈 더 풀기")
+                    .font(.t_bold_22)
                     .foregroundColor(.black)
 
                 Text("사용 가능 쿠폰 \(couponCount)/\(maxCouponCount)")
-                    .font(.system(size: 14))
-                    .foregroundColor(.gray)
+                    .font(.c_regular_14)
+                    .foregroundColor(.gray600)
             }
             .padding(.top, 28)
             .padding(.bottom, 20)
 
             // MARK: - 안내 카드
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "ticket.fill")
-                    .foregroundColor(.blue500)
-                    .font(.system(size: 18))
-                    .padding(.top, 1)
+                Image("coupon")
+                    .resizable()
+                    .frame(width: 24, height: 24)
+                    .padding(.top, 6)
 
                 (
                     Text("퀴즈 쿠폰")
@@ -51,13 +51,12 @@ struct CouponModalView: View {
             .padding(.horizontal, 20)
 
             // MARK: - 안내 문구
-            VStack(alignment: .leading, spacing: 10) {
-                bulletRow("다른 퀴즈를 더 풀 수 있는 쿠폰입니다.")
-                bulletRow("하루 최대 10번 사용 가능해요.")
-                bulletRow("광고로 받은 쿠폰은 당일까지만 사용가능")
+            VStack(alignment: .leading, spacing: 6) {
+                bulletRow("하루 최대 10번 사용할 수 있어요.")
+                bulletRow("광고로 받은 쿠폰은 당일까지 사용할 수 있어요.")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 28)
             .padding(.top, 16)
             .padding(.bottom, 28)
 
@@ -91,7 +90,7 @@ struct CouponModalView: View {
         .background(Color.white)
         .cornerRadius(20)
         .shadow(color: .black.opacity(0.15), radius: 20, x: 0, y: 4)
-        .padding(.horizontal, 24)
+        .padding(.horizontal, 36)
     }
 
     private func bulletRow(_ text: String) -> some View {
@@ -103,6 +102,8 @@ struct CouponModalView: View {
                 .font(.system(size: 13))
                 .foregroundColor(.gray600)
                 .lineSpacing(2)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
     }
 }
