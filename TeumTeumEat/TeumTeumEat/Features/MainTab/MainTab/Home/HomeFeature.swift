@@ -523,8 +523,6 @@ struct HomeFeature {
 
 struct HomeView: View {
     let store: StoreOf<HomeFeature>
-    @State private var showAdTest = false
-
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -624,22 +622,6 @@ struct HomeView: View {
                 }
             }
             .animation(.spring(response: 0.3, dampingFraction: 0.85), value: store.showExpiredAlert)
-            // TODO: 광고 테스트 확인 후 삭제
-            .overlay(alignment: .bottomTrailing) {
-                Button("AD\n테스트") {
-                    showAdTest = true
-                }
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(.white)
-                .frame(width: 52, height: 52)
-                .background(Color.red)
-                .clipShape(Circle())
-                .padding(.bottom, 100)
-                .padding(.trailing, 16)
-            }
-            .sheet(isPresented: $showAdTest) {
-                AdTestView()
-            }
         }
     }
 }
