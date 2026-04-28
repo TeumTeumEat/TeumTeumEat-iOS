@@ -47,7 +47,7 @@ struct TimeSettingView: View {
                                 .stSemibold16()
                                 .foregroundColor(.gray900)
                             HStack(spacing: 12) {
-                                ForEach([TimeSettingFeature.State.Duration.five, .seven], id: \.self) { duration in
+                                ForEach([TimeSettingFeature.State.Duration.three, .five], id: \.self) { duration in
                                     DurationSelectButton(
                                         text: duration.displayText,
                                         isSelected: store.selectedDuration == duration
@@ -57,7 +57,7 @@ struct TimeSettingView: View {
                                 }
                             }
                             HStack(spacing: 12) {
-                                ForEach([TimeSettingFeature.State.Duration.ten, .fifteenPlus], id: \.self) { duration in
+                                ForEach([TimeSettingFeature.State.Duration.seven, .ten], id: \.self) { duration in
                                     DurationSelectButton(
                                         text: duration.displayText,
                                         isSelected: store.selectedDuration == duration

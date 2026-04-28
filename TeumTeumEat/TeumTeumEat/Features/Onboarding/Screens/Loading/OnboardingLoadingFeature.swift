@@ -150,27 +150,19 @@ struct OnboardingLoadingFeature {
                 return .run { send in
                     do {
                         if isOnboarding {
-                            try await withThrowingTaskGroup(of: Void.self) { group in
-                                group.addTask {
-                                    try await apiClient.updateUserName(name: data.userName)
-                                }
-                                group.addTask {
-                                    guard let leaveTime = data.leaveHomeTime,
-                                          let returnTime = data.returnHomeTime else {
-                                        throw APIError.serverError(
-                                            code: "CLIENT-001",
-                                            message: "출퇴근 시간이 설정되지 않았습니다.",
-                                            details: nil
-                                        )
-                                    }
-                                    try await apiClient.updateCommuteInfo(
-                                        startTime: leaveTime.toString(format: "HH:mm:ss"),
-                                        endTime: returnTime.toString(format: "HH:mm:ss"),
-                                        usageTime: data.dailyUsageMinutes
-                                    )
-                                }
-                                try await group.waitForAll()
+                            guard let leaveTime = data.leaveHomeTime,
+                                  let returnTime = data.returnHomeTime else {
+                                throw APIError.serverError(
+                                    code: "CLIENT-001",
+                                    message: "출퇴근 시간이 설정되지 않았습니다.",
+                                    details: nil
+                                )
                             }
+                            try await apiClient.updateCommuteInfo(
+                                startTime: leaveTime.toString(format: "HH:mm:ss"),
+                                endTime: returnTime.toString(format: "HH:mm:ss"),
+                                usageTime: data.dailyUsageMinutes
+                            )
                             print("User info updated - Onboarding")
                         }
 

@@ -47,17 +47,17 @@ struct TimeSettingFeature {
         }
 
         enum Duration: Int, CaseIterable {
+            case three = 3
             case five = 5
             case seven = 7
             case ten = 10
-            case fifteenPlus = 15
 
             var displayText: String {
                 switch self {
-                case .five: return "5분"
-                case .seven: return "7분"
-                case .ten: return "10분"
-                case .fifteenPlus: return "15분+"
+                case .three: return "3문제"
+                case .five: return "5문제"
+                case .seven: return "7문제"
+                case .ten: return "10문제"
                 }
             }
         }

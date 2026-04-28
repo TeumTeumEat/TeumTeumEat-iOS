@@ -37,7 +37,7 @@ struct OnboardingSummaryFeature {
         }
         
         var usageTimeText: String {
-            "\(dailyUsageMinutes)분"
+            "\(dailyUsageMinutes)문제"
         }
         
         var durationText: String {
