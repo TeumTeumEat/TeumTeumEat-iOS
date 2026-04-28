@@ -26,7 +26,7 @@ struct TimeSettingView: View {
                     }
                     
                     TTEProgressBar(
-                        currentStep: 2,
+                        currentStep: 1,
                         totalSteps: 5,
                         height: 15
                     )
