@@ -20,9 +20,26 @@ struct TimeSettingFeature {
         var isReturnTimePickerPresented = false
         var enableAlarm: Bool = false
         var showSettingsAlert = false
-        
+        var selectedDuration: Duration?
+
         var canProceed: Bool {
-            leaveTime != nil && returnTime != nil && enableAlarm
+            leaveTime != nil && returnTime != nil && enableAlarm && selectedDuration != nil
+        }
+
+        enum Duration: Int, CaseIterable {
+            case five = 5
+            case seven = 7
+            case ten = 10
+            case fifteenPlus = 15
+
+            var displayText: String {
+                switch self {
+                case .five: return "5분"
+                case .seven: return "7분"
+                case .ten: return "10분"
+                case .fifteenPlus: return "15분+"
+                }
+            }
         }
         
         var leaveTimeText: String {
@@ -50,6 +67,7 @@ struct TimeSettingFeature {
         case returnTimeChanged(Date)
         case leaveTimePickerDismissed
         case returnTimePickerDismissed
+        case durationSelected(State.Duration)
         case nextTapped
         case backTapped
         case alarmToggleTapped
@@ -87,12 +105,16 @@ struct TimeSettingFeature {
                 state.isReturnTimePickerPresented = false
                 return .none
                 
+            case let .durationSelected(duration):
+                state.selectedDuration = duration
+                return .none
+
             case .nextTapped:
                 return .none
-                
+
             case .backTapped:
                 return .none
-                
+
             case .alarmToggleTapped:
                 if !state.enableAlarm {
                     // 켜려고 할 때

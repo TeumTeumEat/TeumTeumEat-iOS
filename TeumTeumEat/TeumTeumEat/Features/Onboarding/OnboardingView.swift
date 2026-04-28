@@ -17,8 +17,6 @@ struct OnboardingView: View {
                 WelcomeView(store: welcomeStore)
             } else if let timeStore = store.scope(state: \.timeSetting, action: \.timeSetting) {
                 TimeSettingView(store: timeStore)
-            } else if let durationStore = store.scope(state: \.usageDuration, action: \.usageDuration) {
-                UsageDurationView(store: durationStore)
             } else if let contentStore = store.scope(state: \.contentSelection, action: \.contentSelection) {
                 ContentSelectionView(store: contentStore)
             } else if let fileUploadStore = store.scope(state: \.fileUpload, action: \.fileUpload) {

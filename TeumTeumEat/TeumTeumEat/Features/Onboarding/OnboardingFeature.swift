@@ -17,7 +17,6 @@ struct OnboardingFeature {
         
         var welcome: WelcomeFeature.State?
         var timeSetting: TimeSettingFeature.State?
-        var usageDuration: UsageDurationFeature.State?
         var contentSelection: ContentSelectionFeature.State?
         var fileUpload: FileUploadFeature.State?
         var categorySelection: CategorySelectionFeature.State?
@@ -30,8 +29,7 @@ struct OnboardingFeature {
         enum Step: Int {
             case welcome = 0
             case timeSetting = 1
-            case usageDuration = 2
-            case contentSelection = 4
+            case contentSelection = 2
             case fileUpload = 5
             case categorySelection = 6
             case difficultySelection = 7
@@ -49,7 +47,6 @@ struct OnboardingFeature {
     enum Action {
         case welcome(WelcomeFeature.Action)
         case timeSetting(TimeSettingFeature.Action)
-        case usageDuration(UsageDurationFeature.Action)
         case contentSelection(ContentSelectionFeature.Action)
         case fileUpload(FileUploadFeature.Action)
         case categorySelection(CategorySelectionFeature.Action)
@@ -75,9 +72,6 @@ struct OnboardingFeature {
             }
             .ifLet(\.timeSetting, action: \.timeSetting) {
                 TimeSettingFeature()
-            }
-            .ifLet(\.usageDuration, action: \.usageDuration) {
-                UsageDurationFeature()
             }
             .ifLet(\.contentSelection, action: \.contentSelection) {
                 ContentSelectionFeature()
@@ -119,19 +113,12 @@ struct OnboardingFeature {
             if let returnTime = state.timeSetting?.returnTime {
                 state.onboardingData.returnHomeTime = returnTime
             }
-            return .send(.nextStep)
-            
-        case .timeSetting(.backTapped):
-            return .send(.previousStep)
-            
-        // UsageDuration
-        case .usageDuration(.nextTapped):
-            if let duration = state.usageDuration?.selectedDuration {
+            if let duration = state.timeSetting?.selectedDuration {
                 state.onboardingData.dailyUsageMinutes = duration.rawValue
             }
             return .send(.nextStep)
             
-        case .usageDuration(.backTapped):
+        case .timeSetting(.backTapped):
             return .send(.previousStep)
             
         // ContentSelection
@@ -401,20 +388,9 @@ struct OnboardingFeature {
                 
             case .timeSetting:
                 state.timeSetting = nil
-                state.currentStep = .usageDuration
-                
-                // UsageDuration State 생성 (복원)
-                var usageDurationState = UsageDurationFeature.State()
-                if let duration = UsageDurationFeature.State.Duration(rawValue: state.onboardingData.dailyUsageMinutes) {
-                    usageDurationState.selectedDuration = duration
-                }
-                state.usageDuration = usageDurationState
-                
-            case .usageDuration:
-                state.usageDuration = nil
                 state.currentStep = .contentSelection
                 state.contentSelection = ContentSelectionFeature.State()
-                
+
             case .contentSelection, .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary, .loading, .complete:
                 break
             }
@@ -431,26 +407,13 @@ struct OnboardingFeature {
                 state.currentStep = .welcome
                 state.welcome = WelcomeFeature.State()
                 
-            case .usageDuration:
-                state.usageDuration = nil
+            case .contentSelection:
+                state.contentSelection = nil
                 state.currentStep = .timeSetting
-                
-                // TimeSetting State 생성 (복원)
                 state.timeSetting = TimeSettingFeature.State(
                     leaveTime: state.onboardingData.leaveHomeTime,
                     returnTime: state.onboardingData.returnHomeTime
                 )
-                
-            case .contentSelection:
-                state.contentSelection = nil
-                state.currentStep = .usageDuration
-                
-                // UsageDuration State 생성 (복원)
-                var usageDurationState = UsageDurationFeature.State()
-                if let duration = UsageDurationFeature.State.Duration(rawValue: state.onboardingData.dailyUsageMinutes) {
-                    usageDurationState.selectedDuration = duration
-                }
-                state.usageDuration = usageDurationState
                 
             case .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary, .loading, .complete:
                 break
@@ -458,7 +421,7 @@ struct OnboardingFeature {
             return .none
             
         // Default
-        case .welcome, .timeSetting, .usageDuration, .contentSelection, .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary, .loading, .complete:
+        case .welcome, .timeSetting, .contentSelection, .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary, .loading, .complete:
             return .none
         }
     }

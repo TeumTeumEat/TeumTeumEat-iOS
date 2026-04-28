@@ -43,6 +43,35 @@ struct TimeSettingView: View {
                                 .padding(.horizontal, 32)
                                 .padding(.top, 21)
                             
+                            // 일일 사용 시간
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("학습분량")
+                                    .stSemibold16()
+                                    .foregroundColor(.gray900)
+                                HStack(spacing: 12) {
+                                    ForEach([TimeSettingFeature.State.Duration.five, .seven], id: \.self) { duration in
+                                        DurationSelectButton(
+                                            text: duration.displayText,
+                                            isSelected: store.selectedDuration == duration
+                                        ) {
+                                            store.send(.durationSelected(duration))
+                                        }
+                                    }
+                                }
+                                HStack(spacing: 12) {
+                                    ForEach([TimeSettingFeature.State.Duration.ten, .fifteenPlus], id: \.self) { duration in
+                                        DurationSelectButton(
+                                            text: duration.displayText,
+                                            isSelected: store.selectedDuration == duration
+                                        ) {
+                                            store.send(.durationSelected(duration))
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 30)
+                            .padding(.top, 18)
+
                             // 집을 나오는 시간
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("집에서 나오는 시간")
