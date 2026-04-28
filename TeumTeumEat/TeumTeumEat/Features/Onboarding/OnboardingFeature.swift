@@ -412,7 +412,8 @@ struct OnboardingFeature {
                 state.currentStep = .timeSetting
                 state.timeSetting = TimeSettingFeature.State(
                     leaveTime: state.onboardingData.leaveHomeTime,
-                    returnTime: state.onboardingData.returnHomeTime
+                    returnTime: state.onboardingData.returnHomeTime,
+                    selectedDuration: TimeSettingFeature.State.Duration(rawValue: state.onboardingData.dailyUsageMinutes)
                 )
                 
             case .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary, .loading, .complete:

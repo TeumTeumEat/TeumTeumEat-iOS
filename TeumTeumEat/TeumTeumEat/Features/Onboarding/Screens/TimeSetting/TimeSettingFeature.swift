@@ -22,9 +22,10 @@ struct TimeSettingFeature {
         var showSettingsAlert = false
         var selectedDuration: Duration?
 
-        init(leaveTime: Date? = nil, returnTime: Date? = nil) {
+        init(leaveTime: Date? = nil, returnTime: Date? = nil, selectedDuration: Duration? = nil) {
             self.leaveTime = leaveTime ?? State.defaultLeaveTime
             self.returnTime = returnTime ?? State.defaultReturnTime
+            self.selectedDuration = selectedDuration
         }
 
         static var defaultLeaveTime: Date {
