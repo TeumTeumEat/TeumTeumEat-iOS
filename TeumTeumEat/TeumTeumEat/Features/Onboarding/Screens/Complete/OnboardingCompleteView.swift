@@ -22,9 +22,10 @@ struct OnboardingCompleteView: View {
                 .padding(.horizontal, 32)
                 .padding(.top, 119)
             
-            Text("'\(store.userName)'님 환영합니다")
+            Text("준비 완료!\n매일 조금씩, 틈틈이 성장해봐요")
                 .titleSemibold18()
                 .foregroundColor(.gray900)
+                .multilineTextAlignment(.center)
                 .padding(.top, 20)
             
             Spacer()
