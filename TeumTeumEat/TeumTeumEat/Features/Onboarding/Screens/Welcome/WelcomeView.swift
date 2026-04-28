@@ -31,7 +31,8 @@ struct WelcomeView: View {
                 store.send(.startOnboardingTapped)
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 32)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
         }
         .background(.white)
     }
