@@ -16,7 +16,6 @@ struct OnboardingFeature {
         var onboardingData = OnboardingData()
         
         var welcome: WelcomeFeature.State?
-        var nameInput: NameInputFeature.State?
         var timeSetting: TimeSettingFeature.State?
         var usageDuration: UsageDurationFeature.State?
         var contentSelection: ContentSelectionFeature.State?
@@ -30,9 +29,8 @@ struct OnboardingFeature {
         
         enum Step: Int {
             case welcome = 0
-            case nameInput = 1
-            case timeSetting = 2
-            case usageDuration = 3
+            case timeSetting = 1
+            case usageDuration = 2
             case contentSelection = 4
             case fileUpload = 5
             case categorySelection = 6
@@ -50,7 +48,6 @@ struct OnboardingFeature {
     
     enum Action {
         case welcome(WelcomeFeature.Action)
-        case nameInput(NameInputFeature.Action)
         case timeSetting(TimeSettingFeature.Action)
         case usageDuration(UsageDurationFeature.Action)
         case contentSelection(ContentSelectionFeature.Action)
@@ -75,9 +72,6 @@ struct OnboardingFeature {
             }
             .ifLet(\.welcome, action: \.welcome) {
                 WelcomeFeature()
-            }
-            .ifLet(\.nameInput, action: \.nameInput) {
-                NameInputFeature()
             }
             .ifLet(\.timeSetting, action: \.timeSetting) {
                 TimeSettingFeature()
@@ -116,16 +110,6 @@ struct OnboardingFeature {
         // Welcome
         case .welcome(.startOnboardingTapped):
             return .send(.nextStep)
-            
-        // NameInput
-        case .nameInput(.nextTapped):
-            if let name = state.nameInput?.name {
-                state.onboardingData.userName = name
-            }
-            return .send(.nextStep)
-            
-        case .nameInput(.backTapped):
-            return .send(.previousStep)
             
         // TimeSetting
         case .timeSetting(.nextTapped):
@@ -409,16 +393,11 @@ struct OnboardingFeature {
             switch state.currentStep {
             case .welcome:
                 state.welcome = nil
-                state.currentStep = .nameInput
-                state.nameInput = NameInputFeature.State()
-                
-            case .nameInput:
-                state.nameInput = nil
                 state.currentStep = .timeSetting
                 state.timeSetting = TimeSettingFeature.State(
-                           leaveTime: state.onboardingData.leaveHomeTime,
-                           returnTime: state.onboardingData.returnHomeTime
-                       )
+                    leaveTime: state.onboardingData.leaveHomeTime,
+                    returnTime: state.onboardingData.returnHomeTime
+                )
                 
             case .timeSetting:
                 state.timeSetting = nil
@@ -447,18 +426,10 @@ struct OnboardingFeature {
             case .welcome:
                 break
                 
-            case .nameInput:
-                state.nameInput = nil
-                state.currentStep = .welcome
-                state.welcome = WelcomeFeature.State()
-                state.onboardingData = OnboardingData()
-                
             case .timeSetting:
                 state.timeSetting = nil
-                state.currentStep = .nameInput
-                state.nameInput = NameInputFeature.State(
-                    name: state.onboardingData.userName
-                )
+                state.currentStep = .welcome
+                state.welcome = WelcomeFeature.State()
                 
             case .usageDuration:
                 state.usageDuration = nil
@@ -487,7 +458,7 @@ struct OnboardingFeature {
             return .none
             
         // Default
-        case .welcome, .nameInput, .timeSetting, .usageDuration, .contentSelection, .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary, .loading, .complete:
+        case .welcome, .timeSetting, .usageDuration, .contentSelection, .fileUpload, .categorySelection, .difficultySelection, .durationSelection, .summary, .loading, .complete:
             return .none
         }
     }
