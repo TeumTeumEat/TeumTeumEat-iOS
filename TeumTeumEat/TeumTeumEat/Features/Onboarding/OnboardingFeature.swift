@@ -406,6 +406,7 @@ struct OnboardingFeature {
                 state.timeSetting = nil
                 state.currentStep = .welcome
                 state.welcome = WelcomeFeature.State()
+                state.onboardingData = OnboardingData()
                 
             case .contentSelection:
                 state.contentSelection = nil
