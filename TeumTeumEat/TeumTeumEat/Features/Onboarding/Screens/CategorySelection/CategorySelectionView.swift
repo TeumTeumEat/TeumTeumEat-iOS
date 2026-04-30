@@ -115,7 +115,7 @@ struct RootCategoryStepView: View {
                     
                     if showProgressBar {
                         TTEProgressBar(
-                            currentStep: 4,
+                            currentStep: 2,
                             totalSteps: 5,
                             height: 15
                         )
@@ -204,7 +204,7 @@ struct MainCategoryStepView: View {
                     
                     if showProgressBar {
                         TTEProgressBar(
-                            currentStep: 4,
+                            currentStep: 2,
                             totalSteps: 5,
                             height: 15
                         )
@@ -293,7 +293,7 @@ struct SubCategoryStepView: View {
                     
                     if showProgressBar {
                         TTEProgressBar(
-                            currentStep: 4,
+                            currentStep: 2,
                             totalSteps: 5,
                             height: 15
                         )

@@ -25,7 +25,7 @@ struct DurationSelectionView: View {
                     }
                     
                     TTEProgressBar(
-                        currentStep: 5,
+                        currentStep: 4,
                         totalSteps: 5,
                         height: 15
                     )

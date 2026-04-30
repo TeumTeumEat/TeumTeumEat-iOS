@@ -27,7 +27,7 @@ struct FileUploadView: View {
                     
                     if showProgressBar {
                         TTEProgressBar(
-                            currentStep: 4,
+                            currentStep: 2,
                             totalSteps: 5,
                             height: 15
                         )

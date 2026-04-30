@@ -24,7 +24,7 @@ struct DifficultySelectionView: View {
                 }
 
                 TTEProgressBar(
-                    currentStep: 4,
+                    currentStep: 3,
                     totalSteps: 5,
                     height: 15
                 )
