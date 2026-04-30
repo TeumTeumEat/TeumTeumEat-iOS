@@ -35,7 +35,7 @@ struct OnboardingSummaryView: View {
                     
                     ScrollView {
                         VStack(spacing: 0) {
-                            Image("character_summary")
+                            Image("character_finish")
                                 .resizable()
                                 .scaledToFit()
                                 .frame(height: 263)

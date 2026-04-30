@@ -35,7 +35,7 @@ struct DurationSelectionView: View {
                 GeometryReader { scrollGeometry in
                     ScrollView {
                         VStack(spacing: 0) {
-                            Image("character_duration")
+                            Image("character_period")
                                 .resizable()
                                 .scaledToFit()
                                 .frame(height: 283)

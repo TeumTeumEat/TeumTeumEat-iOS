@@ -33,7 +33,7 @@ struct ContentSelectionView: View {
 
             ScrollView {
                 VStack(spacing: 0) {
-                    Image("character_study")
+                    Image("character_select")
                         .resizable()
                         .scaledToFit()
                         .frame(height: 283)

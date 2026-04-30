@@ -33,7 +33,7 @@ struct DifficultySelectionView: View {
 
             ScrollView {
                 VStack(spacing: 0) {
-                    Image("character_difficulty")
+                    Image("character_pencil")
                         .resizable()
                         .scaledToFit()
                         .frame(height: 263)

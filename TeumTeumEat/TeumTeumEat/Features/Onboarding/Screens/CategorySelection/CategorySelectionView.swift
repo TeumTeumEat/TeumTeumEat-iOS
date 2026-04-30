@@ -132,7 +132,7 @@ struct RootCategoryStepView: View {
                 GeometryReader { scrollGeometry in
                     ScrollView {
                         VStack(spacing: 0) {
-                            Image("character_glass")
+                            Image("character_category")
                                 .resizable()
                                 .scaledToFit()
                                 .frame(height: 264)
@@ -221,7 +221,7 @@ struct MainCategoryStepView: View {
                 GeometryReader { scrollGeometry in
                     ScrollView {
                         VStack(spacing: 0) {
-                            Image("character_glass")
+                            Image("character_category")
                                 .resizable()
                                 .scaledToFit()
                                 .frame(height: 264)
@@ -310,7 +310,7 @@ struct SubCategoryStepView: View {
                 GeometryReader { scrollGeometry in
                     ScrollView {
                         VStack(spacing: 0) {
-                            Image("character_glass")
+                            Image("character_category")
                                 .resizable()
                                 .scaledToFit()
                                 .frame(height: 264)
@@ -393,7 +393,7 @@ struct DetailCategoryStepView: View {
             GeometryReader { scrollGeometry in
                 ScrollView {
                     VStack(spacing: 0) {
-                        Image("character_glass")
+                        Image("character_category")
                             .resizable()
                             .scaledToFit()
                             .frame(height: 264)
