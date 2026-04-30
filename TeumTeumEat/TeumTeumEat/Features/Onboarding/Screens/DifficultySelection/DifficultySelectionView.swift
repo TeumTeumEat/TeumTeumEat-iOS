@@ -166,42 +166,20 @@ struct PromptPickerModal: View {
             .padding(.bottom, 16)
 
             ScrollView {
-                VStack(spacing: 8) {
-                    // 선택 안함
-                    Button(action: { tempSelection = nil }) {
-                        HStack {
-                            Text("선택 안함")
-                                .bdMedium14_20()
-                                .foregroundColor(tempSelection == nil ? .blue500 : .gray600)
-                            Spacer()
-                            if tempSelection == nil {
-                                Image(systemName: "checkmark")
-                                    .foregroundColor(.blue500)
-                                    .font(.system(size: 14, weight: .semibold))
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
-                        .background(Color.gray100)
-                        .cornerRadius(10)
-                    }
-
+                VStack(spacing: 12) {
                     ForEach(options, id: \.self) { option in
-                        Button(action: { tempSelection = option }) {
+                        Button(action: {
+                            tempSelection = tempSelection == option ? nil : option
+                        }) {
                             HStack {
                                 Text(option)
                                     .bdMedium14_20()
                                     .foregroundColor(tempSelection == option ? .blue500 : .gray900)
                                 Spacer()
-                                if tempSelection == option {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(.blue500)
-                                        .font(.system(size: 14, weight: .semibold))
-                                }
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 14)
-                            .background(Color.gray100)
+                            .background(tempSelection == option ? Color.blue100 : Color.gray100)
                             .cornerRadius(10)
                         }
                     }
