@@ -25,7 +25,7 @@ struct TimeSettingFeature {
         init(leaveTime: Date? = nil, returnTime: Date? = nil, selectedDuration: Duration? = nil) {
             self.leaveTime = leaveTime ?? State.defaultLeaveTime
             self.returnTime = returnTime ?? State.defaultReturnTime
-            self.selectedDuration = selectedDuration
+            self.selectedDuration = selectedDuration ?? .five
         }
 
         static var defaultLeaveTime: Date {
@@ -47,10 +47,10 @@ struct TimeSettingFeature {
         }
 
         enum Duration: Int, CaseIterable {
-            case three = 3
-            case five = 5
-            case seven = 7
-            case ten = 10
+            case three = 5    // 3문제 → API: 5
+            case five = 7     // 5문제 → API: 7
+            case seven = 10   // 7문제 → API: 10
+            case ten = 15     // 10문제 → API: 15
 
             var displayText: String {
                 switch self {

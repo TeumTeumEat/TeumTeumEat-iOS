@@ -37,7 +37,13 @@ struct OnboardingSummaryFeature {
         }
         
         var usageTimeText: String {
-            "\(dailyUsageMinutes)문제"
+            switch dailyUsageMinutes {
+            case 5: return "3문제"
+            case 7: return "5문제"
+            case 10: return "7문제"
+            case 15: return "10문제"
+            default: return "\(dailyUsageMinutes)분"
+            }
         }
         
         var durationText: String {
