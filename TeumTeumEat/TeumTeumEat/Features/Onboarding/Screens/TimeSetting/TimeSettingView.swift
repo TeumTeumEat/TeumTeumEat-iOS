@@ -216,7 +216,8 @@ struct TimeSettingView: View {
                 ),
                 onDismiss: {
                     store.send(.leaveTimePickerDismissed)
-                }
+                },
+                minuteInterval: 10
             )
         }
         .sheet(isPresented: Binding(
