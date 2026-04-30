@@ -91,12 +91,22 @@ struct AppSettingsFeature {
             formatter.locale = Locale(identifier: "ko_KR")
             return formatter.string(from: leaveTime)
         }
-        
+
         var returnTimeText: String {
             let formatter = DateFormatter()
             formatter.dateFormat = "a hh:mm"
             formatter.locale = Locale(identifier: "ko_KR")
             return formatter.string(from: returnTime)
+        }
+
+        var usageMinutesText: String {
+            switch usageMinutes {
+            case 5: return "3문제"
+            case 7: return "5문제"
+            case 10: return "7문제"
+            case 15: return "10문제"
+            default: return "\(usageMinutes)분"
+            }
         }
     }
     
@@ -357,8 +367,6 @@ extension AppSettingsFeature.State {
     var textFieldState: TextFieldState {
         if let error = nicknameValidationError {
             return .error(error)
-        } else if !nickname.isEmpty && isNicknameValid {
-            return .valid
         } else {
             return .default
         }
