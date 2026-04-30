@@ -98,7 +98,7 @@ struct TimeSettingView: View {
                                 .background(Color.white)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .strokeBorder(Color.blue500, lineWidth: 2)
+                                        .strokeBorder(Color.gray300, lineWidth: 2)
                                 )
                                 .cornerRadius(12)
                             }
@@ -121,7 +121,7 @@ struct TimeSettingView: View {
                                 .background(Color.white)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .strokeBorder(Color.blue500, lineWidth: 2)
+                                        .strokeBorder(Color.gray300, lineWidth: 2)
                                 )
                                 .cornerRadius(12)
                             }
@@ -232,7 +232,8 @@ struct TimeSettingView: View {
                 ),
                 onDismiss: {
                     store.send(.returnTimePickerDismissed)
-                }
+                },
+                minuteInterval: 10
             )
         }
     }
