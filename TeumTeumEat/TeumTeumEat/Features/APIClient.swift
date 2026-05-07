@@ -418,11 +418,11 @@ extension APIClient {
         print("Document registered successfully - GoalId: \(goalId), FileName: \(fileName)")
     }
     
-    func getPresignedURL(fileName: String) async throws -> PresignedURLData {
+    func getPresignedURL(fileName: String, fileSize: Int64) async throws -> PresignedURLData {
          let response: APIResponse<PresignedURLData> = try await request(
              endpoint: "/api/v1/s3/presigned",
              method: .post,
-             body: PresignedURLRequest(fileName: fileName),
+             body: PresignedURLRequest(fileName: fileName, fileSize: fileSize),
              requiresAuth: true
          )
          
