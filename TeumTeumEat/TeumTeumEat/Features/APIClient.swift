@@ -655,25 +655,50 @@ extension APIClient {
         return data
     }
     
-    /// PDF(요약글) 조회하기
+    /// PDF 요약글 조회 (없으면 생성 후 재조회)
     func fetchDailyPDFSummary(goalId: Int, documentId: Int) async throws -> PDFSummaryData {
+        let endpoint = "/api/v1/goals/\(goalId)/documents/\(documentId)/summary"
+
+        // Step 1: GET으로 요약글 조회 시도
+        do {
+            let summaryData = try await fetchPDFSummaryGET(endpoint: endpoint)
+            print("[PDFSummary] GET 성공 - documentId: \(summaryData.documentId)")
+            return summaryData
+        } catch let apiError as APIError {
+            if case .serverError(let code, _, _) = apiError, code == "COMMON-005" {
+                print("[PDFSummary] COMMON-005 - 요약글 없음, 생성 시작")
+            } else {
+                throw apiError
+            }
+        }
+
+        // Step 2: 요약글 없음 → POST로 생성
+        let _: APIResponse<EmptyData> = try await request(
+            endpoint: endpoint,
+            method: .post,
+            requiresAuth: true
+        )
+        print("[PDFSummary] POST 생성 완료")
+
+        // Step 3: 생성 후 GET으로 재조회
+        let summaryData = try await fetchPDFSummaryGET(endpoint: endpoint)
+        print("[PDFSummary] GET 재조회 성공 - documentId: \(summaryData.documentId)")
+        return summaryData
+    }
+
+    private func fetchPDFSummaryGET(endpoint: String) async throws -> PDFSummaryData {
         let response: APIResponse<PDFSummaryData> = try await request(
-            endpoint: "/api/v1/goals/\(goalId)/documents/\(documentId)/summary",
+            endpoint: endpoint,
             method: .get,
             requiresAuth: true
         )
-        
-        guard response.code == "OK",
-              let summaryData = response.data else {
+        guard response.code == "OK", let summaryData = response.data else {
             throw APIError.serverError(
                 code: response.code,
                 message: response.message,
                 details: response.details
             )
         }
-
-        print("[PDFSummary] documentId: \(summaryData.documentId), hasSolvedToday: \(summaryData.hasSolvedToday), isFirstTime: \(summaryData.isFirstTime)")
-        
         return summaryData
     }
     
@@ -1140,6 +1165,7 @@ extension APIClient {
                     print("[SSE DEBUG] 이벤트 루프 시작")
 
                     for try await line in bytes.lines {
+                        print("[SSE RAW] \(line)")
                         // 빈 줄 또는 새 id: 가 오면 이전 이벤트 dispatch
                         if line.isEmpty || line.hasPrefix("id:") {
                             if !eventData.isEmpty,
@@ -1160,7 +1186,29 @@ extension APIClient {
                             } else {
                                 eventData += "\n" + value
                             }
+                            // 서버가 COMPLETED/FAILED 후 trailing separator 없이 연결을 유지하는 경우를 대비해
+                            // 데이터가 쌓일 때마다 파싱 시도 → 완성된 JSON이면 즉시 dispatch
+                            if let event = parseSSEEvent(type: eventType, data: eventData) {
+                                if case .completed = event {
+                                    print("[SSE DEBUG] 이벤트 dispatch (즉시): \(eventType) COMPLETED")
+                                    continuation.yield(event)
+                                    continuation.finish()
+                                    return
+                                }
+                                if case .failed = event {
+                                    print("[SSE DEBUG] 이벤트 dispatch (즉시): \(eventType) FAILED")
+                                    continuation.yield(event)
+                                    continuation.finish()
+                                    return
+                                }
+                            }
                         }
+                    }
+                    // 연결 종료 후 버퍼에 남은 이벤트 dispatch (COMPLETED가 마지막일 때)
+                    if !eventData.isEmpty,
+                       let event = parseSSEEvent(type: eventType, data: eventData) {
+                        print("[SSE DEBUG] 이벤트 dispatch (연결 종료 후): \(eventType) / \(eventData.prefix(80))")
+                        continuation.yield(event)
                     }
                     continuation.finish()
                 } catch {
