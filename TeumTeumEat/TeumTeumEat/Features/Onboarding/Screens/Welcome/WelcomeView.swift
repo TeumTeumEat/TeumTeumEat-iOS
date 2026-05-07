@@ -13,30 +13,17 @@ struct WelcomeView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 0) {
-                Text("매일 소모되는 이동 시간,")
-                    .btSemiBold18_24()
-                    .foregroundStyle(.gray800)
-                
-                Text("틈틈잇과 함께 성장하는 시간으로 바꿔봐요!")
-                    .btSemiBold18_24()
-                    .foregroundStyle(.gray800)
-            }
-            .multilineTextAlignment(.center)
-            .padding(.top, 70)
-            
-            
+            Image("character_onboarding")
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 30)
+                .padding(.top, 70)
+
             Image("logo_login")
                 .resizable()
-                .frame(width: 177,height: 54)
+                .frame(width: 131, height: 40)
                 .padding(.top, 21)
-
-            
-            Image("pose=front")
-                .frame(maxWidth: .infinity)
-                .frame(height: 244)
-                .padding(.horizontal, 30)
-                .padding(.top, 25)
             
             Spacer()
             
@@ -44,7 +31,8 @@ struct WelcomeView: View {
                 store.send(.startOnboardingTapped)
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 32)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
         }
         .background(.white)
     }

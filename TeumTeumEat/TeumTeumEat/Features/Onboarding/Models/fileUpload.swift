@@ -9,6 +9,7 @@ import Foundation
 
 struct PresignedURLRequest: Encodable {
     let fileName: String
+    let fileSize: Int64
 }
 
 struct PresignedURLData: Decodable {

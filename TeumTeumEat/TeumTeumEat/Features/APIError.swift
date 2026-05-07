@@ -108,11 +108,20 @@ enum APIError: Error, LocalizedError, Equatable {
         // FILE 에러
         case "FILE-001": return "지원되지 않는 파일 형식입니다."
         case "FILE-002": return "업로드된 문서가 아닙니다."
+        case "FILE-003": return "파일 크기가 허용 용량(50MB)을 초과했습니다."
             
         default: return nil
         }
     }
     
+    // 재시도해도 동일하게 실패하는 에러인지 확인 (파일 자체의 문제)
+    var isNonRetryable: Bool {
+        if case .serverError(let code, _, _) = self {
+            return code == "FILE-003" || code.hasPrefix("S3-4")
+        }
+        return false
+    }
+
     // 재로그인이 필요한 에러인지 확인
     var requiresRelogin: Bool {
         if case .serverError(let code, _, _) = self {

@@ -35,7 +35,7 @@ struct OnboardingSummaryView: View {
                     
                     ScrollView {
                         VStack(spacing: 0) {
-                            Image("character_summary")
+                            Image("character_finish")
                                 .resizable()
                                 .scaledToFit()
                                 .frame(height: 263)
@@ -44,25 +44,49 @@ struct OnboardingSummaryView: View {
                             
                             VStack(spacing: 16) {
                                 SummaryRow(
-                                    title: "이름",
-                                    value: store.userName
-                                )
-                                
-                                SummaryRow(
-                                    title: "집에서 나오는 시간",
-                                    value: store.leaveTimeText
-                                )
-                                
-                                SummaryRow(
-                                    title: "집에 돌아가는 시간",
-                                    value: store.returnTimeText
-                                )
-                                
-                                SummaryRow(
-                                    title: "틈틈잇 사용 시간",
+                                    title: "학습분량",
                                     value: store.usageTimeText
                                 )
-                                
+
+                                // 알림시간
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("알림시간")
+                                        .stSemibold16()
+                                        .foregroundColor(.gray900)
+
+                                    HStack(spacing: 8) {
+                                        Spacer()
+                                        Text("1번째 알림")
+                                            .bodyRegular14()
+                                            .foregroundColor(.gray600)
+                                        Text(store.leaveTimeText)
+                                            .btMedium18_24()
+                                            .foregroundColor(.gray900)
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 16)
+                                    .background(Color.white)
+                                    .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.gray300, lineWidth: 2))
+                                    .cornerRadius(12)
+
+                                    HStack(spacing: 8) {
+                                        Spacer()
+                                        Text("2번째 알림")
+                                            .bodyRegular14()
+                                            .foregroundColor(.gray600)
+                                        Text(store.returnTimeText)
+                                            .btMedium18_24()
+                                            .foregroundColor(.gray900)
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 16)
+                                    .background(Color.white)
+                                    .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.gray300, lineWidth: 2))
+                                    .cornerRadius(12)
+                                }
+
                                 if store.contentType == .category {
                                     SummaryRow(
                                         title: "관심 분야",
@@ -74,19 +98,17 @@ struct OnboardingSummaryView: View {
                                         value: store.fileNameText
                                     )
                                 }
-                                
+
                                 SummaryRow(
                                     title: "난이도",
                                     value: store.difficultyText
                                 )
-                                
-                                if !store.customPrompt.isEmpty {
-                                    SummaryRow(
-                                        title: "요청 프롬프트",
-                                        value: store.customPrompt
-                                    )
-                                }
-                                
+
+                                SummaryRow(
+                                    title: "요청 프롬프트",
+                                    value: store.customPrompt.isEmpty ? "미선택" : store.customPrompt
+                                )
+
                                 SummaryRow(
                                     title: "공부기간",
                                     value: store.durationText
@@ -127,7 +149,7 @@ struct OnboardingSummaryView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 20)
                     }
-                    .padding(.bottom, 32)
+                    .padding(.bottom, 12)
                     .background(Color(UIColor.systemBackground))
                 }
             }

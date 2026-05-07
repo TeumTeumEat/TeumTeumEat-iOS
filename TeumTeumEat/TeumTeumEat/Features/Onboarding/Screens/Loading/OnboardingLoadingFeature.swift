@@ -92,6 +92,7 @@ struct OnboardingLoadingFeature {
         enum ErrorAlert: Equatable {
             case retry
             case cancel
+            case confirmNonRetryable
         }
 
         enum ConfirmCancelAlert: Equatable {
@@ -150,27 +151,19 @@ struct OnboardingLoadingFeature {
                 return .run { send in
                     do {
                         if isOnboarding {
-                            try await withThrowingTaskGroup(of: Void.self) { group in
-                                group.addTask {
-                                    try await apiClient.updateUserName(name: data.userName)
-                                }
-                                group.addTask {
-                                    guard let leaveTime = data.leaveHomeTime,
-                                          let returnTime = data.returnHomeTime else {
-                                        throw APIError.serverError(
-                                            code: "CLIENT-001",
-                                            message: "출퇴근 시간이 설정되지 않았습니다.",
-                                            details: nil
-                                        )
-                                    }
-                                    try await apiClient.updateCommuteInfo(
-                                        startTime: leaveTime.toString(format: "HH:mm:ss"),
-                                        endTime: returnTime.toString(format: "HH:mm:ss"),
-                                        usageTime: data.dailyUsageMinutes
-                                    )
-                                }
-                                try await group.waitForAll()
+                            guard let leaveTime = data.leaveHomeTime,
+                                  let returnTime = data.returnHomeTime else {
+                                throw APIError.serverError(
+                                    code: "CLIENT-001",
+                                    message: "출퇴근 시간이 설정되지 않았습니다.",
+                                    details: nil
+                                )
                             }
+                            try await apiClient.updateCommuteInfo(
+                                startTime: leaveTime.toString(format: "HH:mm:ss"),
+                                endTime: returnTime.toString(format: "HH:mm:ss"),
+                                usageTime: data.dailyUsageMinutes
+                            )
                             print("User info updated - Onboarding")
                         }
 
@@ -183,10 +176,11 @@ struct OnboardingLoadingFeature {
                                 )
                             }
                             let fileName = fileURL.lastPathComponent
+                            let fileSize = (try? fileURL.fileSize()) ?? 0
 
                             // Step 1: Presigned URL + S3 업로드
                             print("[UPLOAD] Step1: presigned URL 요청")
-                            let presignedData = try await apiClient.getPresignedURL(fileName: fileName)
+                            let presignedData = try await apiClient.getPresignedURL(fileName: fileName, fileSize: fileSize)
                             print("[UPLOAD] Step1: S3 업로드 시작")
                             try await apiClient.uploadFileToS3(
                                 fileURL: fileURL,
@@ -359,13 +353,23 @@ struct OnboardingLoadingFeature {
                 state.apiError = error
                 print("API Error: \(error.localizedDescription)")
 
-                state.errorAlert = AlertState {
-                    TextState("오류가 발생했습니다")
-                } actions: {
-                    ButtonState(action: .retry) { TextState("다시 시도") }
-                    ButtonState(role: .cancel, action: .cancel) { TextState("취소") }
-                } message: {
-                    TextState(error.userFriendlyMessage)
+                if error.isNonRetryable {
+                    state.errorAlert = AlertState {
+                        TextState("파일 업로드 실패")
+                    } actions: {
+                        ButtonState(action: .confirmNonRetryable) { TextState("확인") }
+                    } message: {
+                        TextState(error.userFriendlyMessage)
+                    }
+                } else {
+                    state.errorAlert = AlertState {
+                        TextState("오류가 발생했습니다")
+                    } actions: {
+                        ButtonState(action: .retry) { TextState("다시 시도") }
+                        ButtonState(role: .cancel, action: .cancel) { TextState("취소") }
+                    } message: {
+                        TextState(error.userFriendlyMessage)
+                    }
                 }
                 return .none
 
@@ -397,6 +401,10 @@ struct OnboardingLoadingFeature {
                         .send(.submitOnboardingData)
                     )
                 }
+
+            case .errorAlert(.presented(.confirmNonRetryable)):
+                state.errorAlert = nil
+                return .send(.delegate(.onboardingCancelled))
 
             case .errorAlert(.presented(.cancel)):
                 state.errorAlert = nil

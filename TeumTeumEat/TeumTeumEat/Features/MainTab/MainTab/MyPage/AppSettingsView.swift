@@ -26,9 +26,8 @@ struct AppSettingsView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         nicknameSection
-                        leaveTimeSection
-                        returnTimeSection
                         usageTimeSection
+                        alarmTimeSection
                         
                         // 에러 메시지
                         if let errorMessage = store.errorMessage {
@@ -153,7 +152,7 @@ struct AppSettingsView: View {
     
     private var nicknameSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("닉네임 설정")
+            Text("닉네임")
                 .titleSemibold16()
                 .foregroundColor(.black)
             
@@ -172,32 +171,22 @@ struct AppSettingsView: View {
         .padding(.top, 20)
     }
     
-    private var leaveTimeSection: some View {
+    private var alarmTimeSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("집에서 나오는 시간")
+            Text("알림시간")
                 .titleSemibold16()
                 .foregroundColor(.black)
-            
+
             Button(action: {
                 store.send(.leaveTimeButtonTapped)
             }) {
-                timeButtonContent(text: store.leaveTimeText)
+                alarmTimeButtonContent(label: "1번째 알림", time: store.leaveTimeText)
             }
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 20)
-    }
-    
-    private var returnTimeSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("집에 돌아오는 시간")
-                .titleSemibold16()
-                .foregroundColor(.black)
-            
+
             Button(action: {
                 store.send(.returnTimeButtonTapped)
             }) {
-                timeButtonContent(text: store.returnTimeText)
+                alarmTimeButtonContent(label: "2번째 알림", time: store.returnTimeText)
             }
         }
         .padding(.horizontal, 20)
@@ -206,20 +195,41 @@ struct AppSettingsView: View {
     
     private var usageTimeSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("틈틈잇 사용 시간")
+            Text("학습분량")
                 .titleSemibold16()
                 .foregroundColor(.black)
-            
+
             Button(action: {
                 store.send(.usageTimeButtonTapped)
             }) {
-                timeButtonContent(text: "\(store.usageMinutes)분")
+                timeButtonContent(text: store.usageMinutesText)
             }
         }
         .padding(.horizontal, 20)
         .padding(.top, 20)
     }
     
+    private func alarmTimeButtonContent(label: String, time: String) -> some View {
+        HStack(spacing: 8) {
+            Spacer()
+            Text(label)
+                .bodyRegular14()
+                .foregroundColor(.gray600)
+            Text(time)
+                .btMedium18_24()
+                .foregroundColor(.gray900)
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .background(Color.white)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(Color.gray300, lineWidth: 2)
+        )
+        .cornerRadius(12)
+    }
+
     private func timeButtonContent(text: String) -> some View {
         HStack {
             Spacer()
@@ -233,7 +243,7 @@ struct AppSettingsView: View {
         .background(Color.white)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .strokeBorder(.blue500, lineWidth: 2)
+                .strokeBorder(Color.gray300, lineWidth: 2)
         )
         .cornerRadius(16)
     }

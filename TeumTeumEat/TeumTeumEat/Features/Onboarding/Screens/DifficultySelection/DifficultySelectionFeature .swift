@@ -10,23 +10,33 @@ import ComposableArchitecture
 
 @Reducer
 struct DifficultySelectionFeature {
+    static let promptOptions: [String] = [
+        "출퇴근길에 가볍게 풀 수 있게 만들어주세요",
+        "기초부터 차근차근 개념을 익히고 싶어요",
+        "최신 트렌드나 뉴스 위주로 구성해주세요",
+        "면접에 도움이 되는 내용으로 만들어주세요",
+        "시험 대비용 문제 위주로 만들어주세요",
+        "실무에서 바로 쓸 수 있게 구성해주세요",
+        "이론보다 예시 중심으로 배우고 싶어요",
+        "헷갈리기 쉬운 개념을 비교/정리해주세요",
+        "짧고 핵심만 담긴 상식 위주로 구성해주세요",
+        "심화 개념까지 깊이 있게 다뤄주세요"
+    ]
+
     @ObservableState
     struct State: Equatable {
         var selectedDifficulty: Difficulty?
         var isDifficultyPickerPresented = false
+        var isPromptPickerPresented = false
         var customPrompt: String = ""
-        
+
         var canProceed: Bool {
             selectedDifficulty != nil
         }
-        
+
         var difficultyText: String {
             guard let difficulty = selectedDifficulty else { return "난이도 선택" }
             return difficulty.rawValue
-        }
-        
-        var characterCount: Int {
-            customPrompt.count
         }
         
         enum Difficulty: String, CaseIterable, Codable, Equatable {
@@ -57,7 +67,9 @@ struct DifficultySelectionFeature {
         case difficultyButtonTapped
         case difficultySelected(State.Difficulty)
         case difficultyPickerDismissed
-        case customPromptChanged(String)
+        case promptButtonTapped
+        case promptOptionSelected(String?)
+        case promptPickerDismissed
         case nextTapped
     }
     
@@ -80,14 +92,19 @@ struct DifficultySelectionFeature {
                 state.isDifficultyPickerPresented = false
                 return .none
                 
-            case let .customPromptChanged(text):
-                // 30자 제한
-                let cleanedText = text.replacingOccurrences(of: "\n", with: "")
-                if text.count <= 30 {
-                    state.customPrompt = text
-                }
+            case .promptButtonTapped:
+                state.isPromptPickerPresented = true
                 return .none
-                
+
+            case let .promptOptionSelected(prompt):
+                state.customPrompt = prompt ?? ""
+                state.isPromptPickerPresented = false
+                return .none
+
+            case .promptPickerDismissed:
+                state.isPromptPickerPresented = false
+                return .none
+
             case .nextTapped:
                 return .none
             }

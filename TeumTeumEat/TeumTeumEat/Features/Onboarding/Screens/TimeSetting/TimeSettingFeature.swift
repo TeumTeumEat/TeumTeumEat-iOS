@@ -14,25 +14,60 @@ import UIKit
 struct TimeSettingFeature {
     @ObservableState
     struct State: Equatable {
-        var leaveTime: Date?
-        var returnTime: Date?
+        var leaveTime: Date
+        var returnTime: Date
         var isLeaveTimePickerPresented = false
         var isReturnTimePickerPresented = false
         var enableAlarm: Bool = false
         var showSettingsAlert = false
-        
+        var selectedDuration: Duration?
+
+        init(leaveTime: Date? = nil, returnTime: Date? = nil, selectedDuration: Duration? = nil) {
+            self.leaveTime = leaveTime ?? State.defaultLeaveTime
+            self.returnTime = returnTime ?? State.defaultReturnTime
+            self.selectedDuration = selectedDuration ?? .five
+        }
+
+        static var defaultLeaveTime: Date {
+            var components = DateComponents()
+            components.hour = 8
+            components.minute = 0
+            return Calendar.current.date(from: components) ?? Date()
+        }
+
+        static var defaultReturnTime: Date {
+            var components = DateComponents()
+            components.hour = 18
+            components.minute = 0
+            return Calendar.current.date(from: components) ?? Date()
+        }
+
         var canProceed: Bool {
-            leaveTime != nil && returnTime != nil && enableAlarm
+            enableAlarm && selectedDuration != nil
+        }
+
+        enum Duration: Int, CaseIterable {
+            case three = 5    // 3문제 → API: 5
+            case five = 7     // 5문제 → API: 7
+            case seven = 10   // 7문제 → API: 10
+            case ten = 15     // 10문제 → API: 15
+
+            var displayText: String {
+                switch self {
+                case .three: return "3문제"
+                case .five: return "5문제"
+                case .seven: return "7문제"
+                case .ten: return "10문제"
+                }
+            }
         }
         
         var leaveTimeText: String {
-            guard let time = leaveTime else { return "오전 00시 00분" }
-            return formatTime(time)
+            return formatTime(leaveTime)
         }
-        
+
         var returnTimeText: String {
-            guard let time = returnTime else { return "오전 00시 00분" }
-            return formatTime(time)
+            return formatTime(returnTime)
         }
         
         private func formatTime(_ date: Date) -> String {
@@ -50,6 +85,7 @@ struct TimeSettingFeature {
         case returnTimeChanged(Date)
         case leaveTimePickerDismissed
         case returnTimePickerDismissed
+        case durationSelected(State.Duration)
         case nextTapped
         case backTapped
         case alarmToggleTapped
@@ -87,12 +123,16 @@ struct TimeSettingFeature {
                 state.isReturnTimePickerPresented = false
                 return .none
                 
+            case let .durationSelected(duration):
+                state.selectedDuration = duration
+                return .none
+
             case .nextTapped:
                 return .none
-                
+
             case .backTapped:
                 return .none
-                
+
             case .alarmToggleTapped:
                 if !state.enableAlarm {
                     // 켜려고 할 때
