@@ -225,36 +225,10 @@ struct HomeFeature {
                 
                 // Step 3: Goal Type에 따라 요약글 조회
                 if goal.type == "CATEGORY" {
-                    if let categoryDoc = state.categoryDocument {
-                        return .run { [docId = categoryDoc.documentId] send in
-                            do {
-                                let quizzes = try await apiClient.fetchUserQuizzes(
-                                    documentId: docId,
-                                    documentType: .category
-                                )
-                                await send(.fetchQuizzesResponse(.success(quizzes)))
-                            } catch {
-                                await send(.fetchQuizzesResponse(.failure(error)))
-                            }
-                        }
-                    }
-                    
-                    // 카테고리 문서 조회
-                    guard let categoryId = goal.category?.categoryId else {
-                        state.errorMessage = "카테고리 ID가 없습니다"
-                        state.isLoading = false
-                        return .none
-                    }
-                    
-                    return .run { send in
-                        do {
-                            let document = try await apiClient.fetchDailyCategoryDocument(categoryId: categoryId)
-                            await send(.fetchCategoryDocumentResponse(.success(document)))
-                        } catch {
-                            await send(.fetchCategoryDocumentResponse(.failure(error)))
-                        }
-                    }
-                    
+                    // 카테고리는 ContentSummaryFeature가 SSE로 직접 처리
+                    state.isLoading = false
+                    return .none
+
                 } else if goal.type == "DOCUMENT" {
                     if let pdfSum = state.pdfSummary {
                         return .run { [docId = pdfSum.documentId] send in
@@ -328,10 +302,20 @@ struct HomeFeature {
                 
             case .fetchCategoryDocumentResponse(.failure(let error)):
                 if let apiError = error as? APIError,
-                   case .serverError(let code, _, _) = apiError, code == "GOAL-002" {
-                    state.isExpired = true
-                    state.isLoading = false
-                    return .none
+                   case .serverError(let code, _, _) = apiError {
+                    if code == "GOAL-002" {
+                        state.isExpired = true
+                        state.isLoading = false
+                        return .none
+                    }
+                    if code == "COMMON-005" {
+                        // 오늘 문서가 아직 없음 — ContentSummaryFeature가 SSE로 생성
+                        print("[Home] Step3 - 카테고리 문서 없음, SSE에서 생성 예정")
+                        state.categoryDocument = nil
+                        state.quizzes = []
+                        state.isLoading = false
+                        return .none
+                    }
                 }
                 state.isLoading = false
                 state.errorMessage = "카테고리 문서 조회 실패: \(error.localizedDescription)"
@@ -477,22 +461,25 @@ struct HomeFeature {
                     return .none
                 }
                 
-                if let categoryDoc = state.categoryDocument {
+                if let goal = state.currentGoal,
+                   goal.type == "CATEGORY",
+                   let categoryId = goal.category?.categoryId {
+                    // SSE 스트리밍은 ContentSummaryFeature가 전담
                     let summaryData = ContentSummaryFeature.State(
-                        documentId: categoryDoc.documentId,
-                        summaryText: categoryDoc.content,
-                        hasSolvedToday: categoryDoc.hasSolvedToday,
-                        isFirstTime: categoryDoc.isFirstTime,
+                        documentId: 0,
+                        summaryText: "",
+                        hasSolvedToday: state.quizStatus?.hasSolvedToday ?? false,
+                        isFirstTime: true,
                         documentType: .category,
-                        quizzes: state.quizzes
+                        quizzes: [],
+                        categoryId: categoryId
                     )
-                    
                     return .send(.delegate(.startQuizFlow(
-                        quizzes: state.quizzes,
+                        quizzes: [],
                         summaryData: summaryData,
-                        isFirstTime: categoryDoc.isFirstTime
+                        isFirstTime: true
                     )))
-                    
+
                 } else if let pdfSum = state.pdfSummary {
                     let summaryData = ContentSummaryFeature.State(
                         documentId: pdfSum.documentId,

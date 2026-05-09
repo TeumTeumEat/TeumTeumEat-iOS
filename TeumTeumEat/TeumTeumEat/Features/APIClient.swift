@@ -585,6 +585,23 @@ extension APIClient {
         return statusData
     }
     
+    /// 카테고리 요약글 조회 (GET only — 없으면 COMMON-005 throw, 생성하지 않음)
+    func fetchCategoryDocumentIfExists(categoryId: Int) async throws -> CategoryDocumentData {
+        let response: APIResponse<CategoryDocumentData> = try await request(
+            endpoint: "/api/v1/categories/\(categoryId)/documents/daily",
+            method: .get,
+            requiresAuth: true
+        )
+        guard response.code == "OK", let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        return data
+    }
+
     /// 오늘의 카테고리 자료(요약글) 조회 (없으면 생성 후 재조회)
     func fetchDailyCategoryDocument(categoryId: Int) async throws -> CategoryDocumentData {
         let dailyEndpoint = "/api/v1/categories/\(categoryId)/documents/daily"
@@ -1216,6 +1233,119 @@ extension APIClient {
                 }
             }
             continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    func streamCategoryDocument(categoryId: Int) -> AsyncThrowingStream<CategoryStreamEvent, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                let endpoint = "/api/v1/categories/\(categoryId)/documents/daily/stream"
+                print("[SSE Category] POST 요청 시작: \(Config.baseURL + endpoint)")
+                guard let url = URL(string: Config.baseURL + endpoint) else {
+                    continuation.finish(throwing: APIError.invalidURL); return
+                }
+                var request = URLRequest(url: url)
+                request.httpMethod = "POST"
+                request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+                request.setValue("0", forHTTPHeaderField: "Content-Length")
+                guard let token = KeyChainManager.shared.getAccessToken() else {
+                    continuation.finish(throwing: APIError.noAccessToken); return
+                }
+                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+                do {
+                    let config = URLSessionConfiguration.default
+                    config.timeoutIntervalForRequest = 300
+                    config.timeoutIntervalForResource = 300
+                    let session = URLSession(configuration: config)
+                    let (bytes, response) = try await session.bytes(for: request)
+                    guard let http = response as? HTTPURLResponse else {
+                        continuation.finish(throwing: APIError.invalidResponse); return
+                    }
+                    if http.statusCode != 200 {
+                        print("[SSE Category] HTTP 오류: \(http.statusCode)")
+                        var data = Data()
+                        for try await byte in bytes { data.append(byte) }
+                        if let err = try? JSONDecoder().decode(SSEErrorResponse.self, from: data) {
+                            print("[SSE Category] 서버 에러: code=\(err.code) message=\(err.message)")
+                            continuation.finish(throwing: APIError.serverError(
+                                code: err.code, message: err.message, details: nil))
+                        } else {
+                            let rawBody = String(data: data, encoding: .utf8) ?? "(decode fail)"
+                            print("[SSE Category] 에러 바디 파싱 실패, raw=\(rawBody.prefix(200))")
+                            continuation.finish(throwing: APIError.serverError(
+                                code: "SSE-\(http.statusCode)",
+                                message: "카테고리 스트림 연결 실패", details: nil))
+                        }
+                        return
+                    }
+
+                    print("[SSE Category] 연결 성공 (status \(http.statusCode)), 라인 수신 시작")
+                    var eventType = ""
+                    var eventData = ""
+                    var rawBuffer: [String] = []
+
+                    for try await line in bytes.lines {
+                        if line.isEmpty {
+                            // 표준 SSE 빈줄 구분자
+                            if !eventType.isEmpty {
+                                if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
+                                    continuation.yield(event)
+                                }
+                                eventType = ""; eventData = ""
+                            }
+                        } else if line.hasPrefix("event:") {
+                            // 새 event: 라인 도착 → 이전 이벤트를 먼저 flush
+                            // 서버가 빈줄 없이 event:/data: 를 연속으로 전송하는 경우 대응
+                            if !eventType.isEmpty {
+                                if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
+                                    continuation.yield(event)
+                                }
+                            }
+                            eventType = String(line.dropFirst(6)).trimmingCharacters(in: .whitespaces)
+                            eventData = ""
+                        } else if line.hasPrefix("data:") {
+                            // leading space 보존: 서버가 단어 앞 공백을 "data: word" 형태로 전송
+                            let value = String(line.dropFirst(5))
+                            eventData = eventData.isEmpty ? value : eventData + "\n" + value
+                        } else {
+                            // SSE 형식이 아닌 raw 라인 — JSON 에러 본문일 수 있음
+                            rawBuffer.append(line)
+                        }
+                    }
+                    // 마지막 이벤트 처리 (빈줄 없이 스트림이 종료된 경우)
+                    if !eventType.isEmpty {
+                        if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
+                            continuation.yield(event)
+                        }
+                    }
+                    // 스트림 본문에 raw JSON 에러가 섞여있는지 확인 (서버가 HTTP 200으로 에러 반환하는 케이스)
+                    let rawBody = rawBuffer.joined(separator: "\n")
+                    if !rawBody.isEmpty,
+                       let bodyData = rawBody.data(using: .utf8),
+                       let err = try? JSONDecoder().decode(SSEErrorResponse.self, from: bodyData) {
+                        print("[SSE Category] 스트림 내 JSON 에러 감지: code=\(err.code) message=\(err.message)")
+                        continuation.finish(throwing: APIError.serverError(
+                            code: err.code, message: err.message, details: nil))
+                    } else {
+                        print("[SSE Category] 스트림 EOF → .completed yield")
+                        continuation.yield(.completed)
+                        continuation.finish()
+                    }
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    private func parseCategorySSEEvent(type: String, data: String) -> CategoryStreamEvent? {
+        switch type.lowercased() {
+        case "connect": return .connected
+        case "message": return data.isEmpty ? nil : .textChunk(data)
+        case "title":   return data.isEmpty ? nil : .titleChunk(data)
+        default:        return nil
         }
     }
 

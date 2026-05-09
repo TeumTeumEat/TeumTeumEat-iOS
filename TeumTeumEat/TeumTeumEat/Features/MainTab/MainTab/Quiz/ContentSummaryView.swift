@@ -47,17 +47,44 @@ struct ContentSummaryView: View {
                     .background(Color.white)
                     
                     // Markdown 콘텐츠
-                    ScrollView {
-                        Markdown(store.summaryText)
-//                            .markdownTheme(.custom)
-                            .markdownTheme(.gitHub)
-                            .colorScheme(.light)
-                            .padding(.horizontal, 20)
-                            .padding(.top, 24)
-                            .padding(.bottom, 180)
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            if store.isStreaming && store.streamingText.isEmpty {
+                                // 연결/로딩 중
+                                VStack {
+                                    ProgressView()
+                                        .scaleEffect(1.2)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.top, 80)
+                            } else if store.isStreaming {
+                                // 스트리밍 텍스트 수신 중 — Markdown 실시간 렌더링
+                                Markdown(store.streamingText)
+                                    .markdownTheme(.gitHub)
+                                    .colorScheme(.light)
+                                    .padding(.horizontal, 20)
+                                    .padding(.top, 24)
+                                    .padding(.bottom, 180)
+                            } else {
+                                // 완료 — Markdown 렌더링
+                                Markdown(store.summaryText)
+                                    .markdownTheme(.gitHub)
+                                    .colorScheme(.light)
+                                    .padding(.horizontal, 20)
+                                    .padding(.top, 24)
+                                    .padding(.bottom, 180)
+                            }
+
+                            Color.clear
+                                .frame(height: 1)
+                                .id("streamingBottom")
+                        }
+                        .onChange(of: store.streamingText) { _ in
+                            proxy.scrollTo("streamingBottom", anchor: .bottom)
+                        }
+                        .scrollDismissesKeyboard(.interactively)
+                        .background(Color.white)
                     }
-                    .scrollDismissesKeyboard(.interactively)
-                    .background(Color.white)
                 }
                 .background(Color.white)
                 
@@ -88,6 +115,8 @@ struct ContentSummaryView: View {
                                 .background(Color.blue500)
                                 .cornerRadius(12)
                         }
+                        .disabled(store.isStreaming || store.isQuizLoading)
+                        .opacity(store.isStreaming || store.isQuizLoading ? 0.5 : 1.0)
                         .padding(.horizontal, 20)
                     }
                     .padding(.bottom, 34)
@@ -103,6 +132,7 @@ struct ContentSummaryView: View {
         }
     }
 }
+
 
 extension Theme {
     static let custom = Theme()
