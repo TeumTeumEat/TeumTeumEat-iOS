@@ -78,6 +78,7 @@ struct QuizFlowFeature {
         Reduce { state, action in
             switch action {
             case .contentSummary(.delegate(.startQuiz(let quizzes, let isFirstTime))):
+                state.quizzes = quizzes  // ContentSummary에서 로드한 실제 퀴즈 목록 저장
                 if isFirstTime {
                     state.currentStep = .quizGuide
                     state.quizGuide = QuizGuideFeature.State()
