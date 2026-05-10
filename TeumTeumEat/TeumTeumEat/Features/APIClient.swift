@@ -1343,7 +1343,7 @@ extension APIClient {
     private func parseCategorySSEEvent(type: String, data: String) -> CategoryStreamEvent? {
         switch type.lowercased() {
         case "connect": return .connected
-        case "message": return data.isEmpty ? nil : .textChunk(data)
+        case "message": return .textChunk(data.isEmpty ? "\n" : data)  // 빈 data = 줄바꿈
         case "title":   return data.isEmpty ? nil : .titleChunk(data)
         default:        return nil
         }
