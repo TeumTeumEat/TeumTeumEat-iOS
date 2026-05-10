@@ -180,13 +180,14 @@ struct ContentSummaryFeature {
                         await send(.fetchDocumentMetaCompleted(result))
                     }
                 } else if state.documentType == .document {
-                    // PDF: documentId 이미 알고있으므로 바로 퀴즈 조회
+                    // PDF: SSE는 텍스트만 스트리밍, 퀴즈는 POST /summary 로 생성 필요
                     guard state.quizzes.isEmpty else { return .none }
                     state.isQuizLoading = true
+                    guard let goalId = state.goalId else { return .none }
                     let docId = state.documentId
                     return .run { send in
                         let result = await Result {
-                            try await apiClient.fetchUserQuizzes(documentId: docId, documentType: .document)
+                            try await apiClient.createAndFetchPDFQuizzes(goalId: goalId, documentId: docId)
                         }
                         await send(.fetchQuizzesCompleted(result))
                     }
@@ -232,6 +233,7 @@ struct ContentSummaryFeature {
                 state.isStreaming = true
                 // quizzes가 없으면 타이핑 중에 병렬로 조회
                 let needsQuizzesC = state.quizzes.isEmpty
+                if needsQuizzesC { state.isQuizLoading = true }
                 let docIdC = doc.documentId
                 return .run { send in
                     let chars = Array(doc.content)
@@ -271,6 +273,7 @@ struct ContentSummaryFeature {
                 state.streamingText = ""
                 state.isStreaming = true
                 let needsQuizzesP = state.quizzes.isEmpty
+                if needsQuizzesP { state.isQuizLoading = true }
                 let docIdP = summary.documentId
                 return .run { send in
                     let chars = Array(summary.summary)

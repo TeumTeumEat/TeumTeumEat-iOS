@@ -708,6 +708,27 @@ extension APIClient {
         return try await fetchPDFSummaryGET(endpoint: "/api/v1/goals/\(goalId)/documents/\(documentId)/summary")
     }
 
+    /// PDF SSE 이후 퀴즈 생성 보장 후 조회
+    /// SSE는 요약글 텍스트만 스트리밍하고 퀴즈는 생성하지 않으므로
+    /// POST /summary 로 퀴즈 생성을 트리거한 뒤 GET quizzes 반환
+    func createAndFetchPDFQuizzes(goalId: Int, documentId: Int) async throws -> [UserQuiz] {
+        let endpoint = "/api/v1/goals/\(goalId)/documents/\(documentId)/summary"
+        do {
+            let _: APIResponse<EmptyData> = try await request(
+                endpoint: endpoint, method: .post, requiresAuth: true
+            )
+            print("[PDFQuizzes] POST 성공 - 퀴즈 생성 완료")
+        } catch let apiError as APIError {
+            if case .serverError(let code, _, _) = apiError, code == "QUIZ-003" {
+                // 이미 생성됨
+                print("[PDFQuizzes] QUIZ-003 - 기존 요약/퀴즈 존재")
+            } else {
+                throw apiError
+            }
+        }
+        return try await fetchUserQuizzes(documentId: documentId, documentType: .document)
+    }
+
     private func fetchPDFSummaryGET(endpoint: String) async throws -> PDFSummaryData {
         let response: APIResponse<PDFSummaryData> = try await request(
             endpoint: endpoint,
