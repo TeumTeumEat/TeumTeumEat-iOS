@@ -23,7 +23,6 @@ struct HomeFeature {
         var currentGoal: GoalResponse?
         var quizStatus: UserQuizStatusData?
         var categoryDocument: CategoryDocumentData?
-        var pdfSummary: PDFSummaryData?
         var quizzes: [UserQuiz] = []
         var calendarData: CalendarHistoryData?
         
@@ -46,12 +45,18 @@ struct HomeFeature {
             guard !isTodayQuizCompleted else { return "done" }
             guard let goal = currentGoal else { return "burger" }
 
-            if goal.type == "CATEGORY", let categoryDoc = categoryDocument {
-                return SnackImageMapper.snackImage(for: categoryDoc.documentId, createdAt: categoryDoc.createdAt)
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            let today = formatter.string(from: Date())
+
+            if goal.type == "CATEGORY" {
+                let id = goal.category?.categoryId ?? goal.goalId
+                return SnackImageMapper.snackImage(for: id, createdAt: today)
             }
 
-            if goal.type == "DOCUMENT", let pdfSum = pdfSummary {
-                return SnackImageMapper.snackImage(for: pdfSum.documentId, createdAt: pdfSum.createdAt)
+            if goal.type == "DOCUMENT" {
+                let id = goal.documentId ?? goal.goalId
+                return SnackImageMapper.snackImage(for: id, createdAt: today)
             }
 
             return "burger"
@@ -69,10 +74,9 @@ struct HomeFeature {
         // Step 2: 퀴즈 상태 확인
         case fetchQuizStatusResponse(Result<UserQuizStatusData, Error>)
         
-        // Step 3: 요약글 조회 (Goal Type에 따라)
+        // Step 3: 요약글 조회 (카테고리만, PDF는 ContentSummaryFeature가 SSE로 처리)
         case fetchCategoryDocumentResponse(Result<CategoryDocumentData, Error>)
-        case fetchPDFSummaryResponse(Result<PDFSummaryData, Error>)
-        
+
         // Step 4: 퀴즈 조회
         case fetchQuizzesResponse(Result<[UserQuiz], Error>)
         
@@ -171,7 +175,6 @@ struct HomeFeature {
 
                 if isNewGoal {
                     state.categoryDocument = nil
-                    state.pdfSummary = nil
                     state.quizzes = []
                 }
 
@@ -213,7 +216,6 @@ struct HomeFeature {
 
                 if wasCompletedYesterday && !status.hasSolvedToday {
                     state.categoryDocument = nil
-                    state.pdfSummary = nil
                     state.quizzes = []
                 }
                 
@@ -223,52 +225,9 @@ struct HomeFeature {
                     return .none
                 }
                 
-                // Step 3: Goal Type에 따라 요약글 조회
-                if goal.type == "CATEGORY" {
-                    // 카테고리는 ContentSummaryFeature가 SSE로 직접 처리
-                    state.isLoading = false
-                    return .none
-
-                } else if goal.type == "DOCUMENT" {
-                    if let pdfSum = state.pdfSummary {
-                        return .run { [docId = pdfSum.documentId] send in
-                            do {
-                                let quizzes = try await apiClient.fetchUserQuizzes(
-                                    documentId: docId,
-                                    documentType: .document
-                                )
-                                await send(.fetchQuizzesResponse(.success(quizzes)))
-                            } catch {
-                                await send(.fetchQuizzesResponse(.failure(error)))
-                            }
-                        }
-                    }
-                    
-                    // PDF 문서 조회
-                    guard let documentId = goal.documentId else {
-                        state.errorMessage = "문서 ID가 없습니다"
-                        state.isLoading = false
-                        return .none
-                    }
-                    
-                    return .run { [goalId = goal.goalId] send in
-                        do {
-                            let summary = try await apiClient.fetchDailyPDFSummary(
-                                goalId: goalId,
-                                documentId: documentId
-                            )
-                            await send(.fetchPDFSummaryResponse(.success(summary)))
-                        } catch {
-                            await send(.fetchPDFSummaryResponse(.failure(error)))
-                        }
-                    }
-                    
-                } else {
-                    // 알 수 없는 타입
-                    state.errorMessage = "알 수 없는 Goal Type: \(goal.type)"
-                    state.isLoading = false
-                    return .none
-                }
+                // Step 3: CATEGORY/DOCUMENT 모두 ContentSummaryFeature가 SSE로 직접 처리
+                state.isLoading = false
+                return .none
                 
             case .fetchQuizStatusResponse(.failure(let error)):
                 if let apiError = error as? APIError,
@@ -320,36 +279,6 @@ struct HomeFeature {
                 state.isLoading = false
                 state.errorMessage = "카테고리 문서 조회 실패: \(error.localizedDescription)"
                 print("[Home] Step3 실패 (CATEGORY): \(error)")
-                return .none
-                
-            // Step 3-B 완료 (PDF) → Step 4 시작
-            case .fetchPDFSummaryResponse(.success(let summary)):
-                state.pdfSummary = summary
-                print("[Home] Step3 완료 - PDF documentId: \(summary.documentId)")
-                
-                // Step 4: 퀴즈 조회
-                return .run { send in
-                    do {
-                        let quizzes = try await apiClient.fetchUserQuizzes(
-                            documentId: summary.documentId,
-                            documentType: .document
-                        )
-                        await send(.fetchQuizzesResponse(.success(quizzes)))
-                    } catch {
-                        await send(.fetchQuizzesResponse(.failure(error)))
-                    }
-                }
-                
-            case .fetchPDFSummaryResponse(.failure(let error)):
-                if let apiError = error as? APIError,
-                   case .serverError(let code, _, _) = apiError, code == "GOAL-002" {
-                    state.isExpired = true
-                    state.isLoading = false
-                    return .none
-                }
-                state.isLoading = false
-                state.errorMessage = "PDF 요약 조회 실패: \(error.localizedDescription)"
-                print("[Home] Step3 실패 (PDF): \(error)")
                 return .none
                 
             // Step 4 완료
@@ -484,21 +413,19 @@ struct HomeFeature {
                           goal.type == "DOCUMENT",
                           let documentId = goal.documentId {
                     // SSE 스트리밍은 ContentSummaryFeature가 전담
-                    let hasSolvedToday = state.pdfSummary?.hasSolvedToday ?? (state.quizStatus?.hasSolvedToday ?? false)
-                    let isFirstTime = state.pdfSummary?.isFirstTime ?? true
                     let summaryData = ContentSummaryFeature.State(
                         documentId: documentId,
                         summaryText: "",
-                        hasSolvedToday: hasSolvedToday,
-                        isFirstTime: isFirstTime,
+                        hasSolvedToday: state.quizStatus?.hasSolvedToday ?? false,
+                        isFirstTime: true,
                         documentType: .document,
-                        quizzes: state.quizzes,
+                        quizzes: [],
                         goalId: goal.goalId
                     )
                     return .send(.delegate(.startQuizFlow(
-                        quizzes: state.quizzes,
+                        quizzes: [],
                         summaryData: summaryData,
-                        isFirstTime: isFirstTime
+                        isFirstTime: true
                     )))
 
                 } else {
