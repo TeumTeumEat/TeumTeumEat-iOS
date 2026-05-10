@@ -480,22 +480,27 @@ struct HomeFeature {
                         isFirstTime: true
                     )))
 
-                } else if let pdfSum = state.pdfSummary {
+                } else if let goal = state.currentGoal,
+                          goal.type == "DOCUMENT",
+                          let documentId = goal.documentId {
+                    // SSE 스트리밍은 ContentSummaryFeature가 전담
+                    let hasSolvedToday = state.pdfSummary?.hasSolvedToday ?? (state.quizStatus?.hasSolvedToday ?? false)
+                    let isFirstTime = state.pdfSummary?.isFirstTime ?? true
                     let summaryData = ContentSummaryFeature.State(
-                        documentId: pdfSum.documentId,
-                        summaryText: pdfSum.summary,
-                        hasSolvedToday: pdfSum.hasSolvedToday,
-                        isFirstTime: pdfSum.isFirstTime,
+                        documentId: documentId,
+                        summaryText: "",
+                        hasSolvedToday: hasSolvedToday,
+                        isFirstTime: isFirstTime,
                         documentType: .document,
-                        quizzes: state.quizzes
+                        quizzes: state.quizzes,
+                        goalId: goal.goalId
                     )
-                    
                     return .send(.delegate(.startQuizFlow(
                         quizzes: state.quizzes,
                         summaryData: summaryData,
-                        isFirstTime: pdfSum.isFirstTime
+                        isFirstTime: isFirstTime
                     )))
-                    
+
                 } else {
                     print("요약 데이터가 아직 없습니다")
                     return .none

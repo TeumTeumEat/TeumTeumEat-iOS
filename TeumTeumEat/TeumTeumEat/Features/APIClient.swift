@@ -703,6 +703,11 @@ extension APIClient {
         return summaryData
     }
 
+    /// PDF 요약글 GET only (이미 생성된 것만 반환, 없으면 에러)
+    func fetchPDFSummaryOnly(goalId: Int, documentId: Int) async throws -> PDFSummaryData {
+        return try await fetchPDFSummaryGET(endpoint: "/api/v1/goals/\(goalId)/documents/\(documentId)/summary")
+    }
+
     private func fetchPDFSummaryGET(endpoint: String) async throws -> PDFSummaryData {
         let response: APIResponse<PDFSummaryData> = try await request(
             endpoint: endpoint,
@@ -1329,6 +1334,103 @@ extension APIClient {
                             code: err.code, message: err.message, details: nil))
                     } else {
                         print("[SSE Category] 스트림 EOF → .completed yield")
+                        continuation.yield(.completed)
+                        continuation.finish()
+                    }
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    func streamPDFSummary(goalId: Int, documentId: Int) -> AsyncThrowingStream<CategoryStreamEvent, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                let endpoint = "/api/v1/goals/\(goalId)/documents/\(documentId)/summary/stream"
+                print("[SSE PDF] POST 요청 시작: \(Config.baseURL + endpoint)")
+                guard let url = URL(string: Config.baseURL + endpoint) else {
+                    continuation.finish(throwing: APIError.invalidURL); return
+                }
+                var request = URLRequest(url: url)
+                request.httpMethod = "POST"
+                request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+                request.setValue("0", forHTTPHeaderField: "Content-Length")
+                guard let token = KeyChainManager.shared.getAccessToken() else {
+                    continuation.finish(throwing: APIError.noAccessToken); return
+                }
+                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+                do {
+                    let config = URLSessionConfiguration.default
+                    config.timeoutIntervalForRequest = 300
+                    config.timeoutIntervalForResource = 300
+                    let session = URLSession(configuration: config)
+                    let (bytes, response) = try await session.bytes(for: request)
+                    guard let http = response as? HTTPURLResponse else {
+                        continuation.finish(throwing: APIError.invalidResponse); return
+                    }
+                    if http.statusCode != 200 {
+                        print("[SSE PDF] HTTP 오류: \(http.statusCode)")
+                        var data = Data()
+                        for try await byte in bytes { data.append(byte) }
+                        if let err = try? JSONDecoder().decode(SSEErrorResponse.self, from: data) {
+                            print("[SSE PDF] 서버 에러: code=\(err.code) message=\(err.message)")
+                            continuation.finish(throwing: APIError.serverError(
+                                code: err.code, message: err.message, details: nil))
+                        } else {
+                            let rawBody = String(data: data, encoding: .utf8) ?? "(decode fail)"
+                            print("[SSE PDF] 에러 바디 파싱 실패, raw=\(rawBody.prefix(200))")
+                            continuation.finish(throwing: APIError.serverError(
+                                code: "SSE-\(http.statusCode)",
+                                message: "PDF 스트림 연결 실패", details: nil))
+                        }
+                        return
+                    }
+
+                    print("[SSE PDF] 연결 성공 (status \(http.statusCode)), 라인 수신 시작")
+                    var eventType = ""
+                    var eventData = ""
+                    var rawBuffer: [String] = []
+
+                    for try await line in bytes.lines {
+                        if line.isEmpty {
+                            if !eventType.isEmpty {
+                                if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
+                                    continuation.yield(event)
+                                }
+                                eventType = ""; eventData = ""
+                            }
+                        } else if line.hasPrefix("event:") {
+                            if !eventType.isEmpty {
+                                if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
+                                    continuation.yield(event)
+                                }
+                            }
+                            eventType = String(line.dropFirst(6)).trimmingCharacters(in: .whitespaces)
+                            eventData = ""
+                        } else if line.hasPrefix("data:") {
+                            let value = String(line.dropFirst(5))
+                            eventData = eventData.isEmpty ? value : eventData + "\n" + value
+                        } else {
+                            rawBuffer.append(line)
+                        }
+                    }
+                    if !eventType.isEmpty {
+                        if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
+                            continuation.yield(event)
+                        }
+                    }
+                    let rawBody = rawBuffer.joined(separator: "\n")
+                    if !rawBody.isEmpty,
+                       let bodyData = rawBody.data(using: .utf8),
+                       let err = try? JSONDecoder().decode(SSEErrorResponse.self, from: bodyData) {
+                        print("[SSE PDF] 스트림 내 JSON 에러 감지: code=\(err.code) message=\(err.message)")
+                        continuation.finish(throwing: APIError.serverError(
+                            code: err.code, message: err.message, details: nil))
+                    } else {
+                        print("[SSE PDF] 스트림 EOF → .completed yield")
                         continuation.yield(.completed)
                         continuation.finish()
                     }
