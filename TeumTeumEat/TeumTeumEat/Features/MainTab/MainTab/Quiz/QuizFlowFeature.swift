@@ -104,6 +104,10 @@ struct QuizFlowFeature {
                 return .send(.delegate(.cancelled))
 
             case .quizGuide(.delegate(.startQuiz)):
+                guard !state.quizzes.isEmpty else {
+                    print("[QuizFlow] 퀴즈가 없어 시작 불가 - completeQuizSet 호출 건너뜀")
+                    return .none
+                }
                 state.currentStep = .quiz
                 let convertedQuizzes = state.quizzes.map { Quiz(from: $0) }
                 state.quiz = QuizFeature.State(quizzes: convertedQuizzes)

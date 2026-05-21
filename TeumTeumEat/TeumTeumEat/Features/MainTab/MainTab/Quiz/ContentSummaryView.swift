@@ -130,6 +130,17 @@ struct ContentSummaryView: View {
         .onAppear {
             store.send(.onAppear)
         }
+        .alert(
+            "퀴즈를 시작할 수 없어요",
+            isPresented: Binding(
+                get: { store.errorMessage != nil },
+                set: { _ in store.send(.errorAlertDismissed) }
+            )
+        ) {
+            Button("확인") { store.send(.errorAlertDismissed) }
+        } message: {
+            Text(store.errorMessage ?? "")
+        }
     }
 }
 

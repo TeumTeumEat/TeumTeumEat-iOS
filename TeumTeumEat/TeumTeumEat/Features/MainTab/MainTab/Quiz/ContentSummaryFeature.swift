@@ -27,6 +27,7 @@ struct ContentSummaryFeature {
         var isQuizLoading: Bool = false
         var typingFullText: String = ""
         var typingIndex: Int = 0
+        var errorMessage: String? = nil
 
         init(
             documentId: Int,
@@ -56,6 +57,7 @@ struct ContentSummaryFeature {
         case onAppear
         case startQuizButtonTapped
         case closeButtonTapped
+        case errorAlertDismissed
         case delegate(Delegate)
 
         case startStreaming
@@ -196,6 +198,13 @@ struct ContentSummaryFeature {
 
             case .streamFailed(let error):
                 print("[ContentSummary] streamFailed: \(error)")
+                // QUIZ-002: 퀴즈 횟수 소진
+                if let api = error as? APIError,
+                   case .serverError(let code, let message, _) = api, code == "QUIZ-002" {
+                    state.isStreaming = false
+                    state.errorMessage = message.isEmpty ? "오늘의 퀴즈 횟수를 모두 소진했어요." : message
+                    return .none
+                }
                 // QUIZ-003: 이미 생성된 문서 → GET fallback + 타이핑 애니메이션
                 if let api = error as? APIError,
                    case .serverError(let code, _, _) = api, code == "QUIZ-003" {
@@ -319,8 +328,7 @@ struct ContentSummaryFeature {
                 state.documentId = doc.documentId
                 state.isFirstTime = doc.isFirstTime
                 state.hasSolvedToday = doc.hasSolvedToday
-                // SSE로 이어붙인 텍스트 대신 서버에 저장된 원본으로 교체
-                state.summaryText = doc.content
+                // summaryText는 SSE로 이미 완성된 상태 — 서버 저장본으로 덮어쓰지 않음
                 return .run { [docId = doc.documentId] send in
                     let result = await Result {
                         try await apiClient.fetchUserQuizzes(documentId: docId, documentType: .category)
@@ -343,6 +351,10 @@ struct ContentSummaryFeature {
                 print("[ContentSummary] 퀴즈 로딩 실패: \(error)")
                 state.isQuizLoading = false
                 return .none
+
+            case .errorAlertDismissed:
+                state.errorMessage = nil
+                return .send(.delegate(.cancelled))
 
             case .startQuizButtonTapped:
                 return .send(.delegate(.startQuiz(

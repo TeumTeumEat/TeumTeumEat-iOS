@@ -1307,14 +1307,20 @@ extension APIClient {
                     }
 
                     print("[SSE Category] 연결 성공 (status \(http.statusCode)), 라인 수신 시작")
+                    print("[SSE Category] Response Headers: \(http.allHeaderFields)")
                     var eventType = ""
                     var eventData = ""
                     var rawBuffer: [String] = []
+                    var lineCount = 0
 
                     for try await line in bytes.lines {
+                        lineCount += 1
+                        print("[SSE Category RAW #\(lineCount)] repr=\(line.debugDescription) bytes=\(line.utf8.count)")
                         if line.isEmpty {
                             // 표준 SSE 빈줄 구분자
+                            print("[SSE Category] --- 빈줄(이벤트 구분자) ---")
                             if !eventType.isEmpty {
+                                print("[SSE Category] dispatch event=\(eventType) data=\(eventData.prefix(120))")
                                 if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
                                     continuation.yield(event)
                                 }
@@ -1324,6 +1330,7 @@ extension APIClient {
                             // 새 event: 라인 도착 → 이전 이벤트를 먼저 flush
                             // 서버가 빈줄 없이 event:/data: 를 연속으로 전송하는 경우 대응
                             if !eventType.isEmpty {
+                                print("[SSE Category] flush (no empty line) event=\(eventType) data=\(eventData.prefix(120))")
                                 if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
                                     continuation.yield(event)
                                 }
@@ -1336,9 +1343,11 @@ extension APIClient {
                             eventData = eventData.isEmpty ? value : eventData + "\n" + value
                         } else {
                             // SSE 형식이 아닌 raw 라인 — JSON 에러 본문일 수 있음
+                            print("[SSE Category] non-SSE line: \(line.prefix(200))")
                             rawBuffer.append(line)
                         }
                     }
+                    print("[SSE Category] 루프 종료 - 수신된 총 라인 수: \(lineCount)")
                     // 마지막 이벤트 처리 (빈줄 없이 스트림이 종료된 경우)
                     if !eventType.isEmpty {
                         if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
@@ -1411,13 +1420,19 @@ extension APIClient {
                     }
 
                     print("[SSE PDF] 연결 성공 (status \(http.statusCode)), 라인 수신 시작")
+                    print("[SSE PDF] Response Headers: \(http.allHeaderFields)")
                     var eventType = ""
                     var eventData = ""
                     var rawBuffer: [String] = []
+                    var lineCount = 0
 
                     for try await line in bytes.lines {
+                        lineCount += 1
+                        print("[SSE PDF RAW #\(lineCount)] repr=\(line.debugDescription) bytes=\(line.utf8.count)")
                         if line.isEmpty {
+                            print("[SSE PDF] --- 빈줄(이벤트 구분자) ---")
                             if !eventType.isEmpty {
+                                print("[SSE PDF] dispatch event=\(eventType) data=\(eventData.prefix(120))")
                                 if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
                                     continuation.yield(event)
                                 }
@@ -1425,6 +1440,7 @@ extension APIClient {
                             }
                         } else if line.hasPrefix("event:") {
                             if !eventType.isEmpty {
+                                print("[SSE PDF] flush (no empty line) event=\(eventType) data=\(eventData.prefix(120))")
                                 if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
                                     continuation.yield(event)
                                 }
@@ -1435,9 +1451,11 @@ extension APIClient {
                             let value = String(line.dropFirst(5))
                             eventData = eventData.isEmpty ? value : eventData + "\n" + value
                         } else {
+                            print("[SSE PDF] non-SSE line: \(line.prefix(200))")
                             rawBuffer.append(line)
                         }
                     }
+                    print("[SSE PDF] 루프 종료 - 수신된 총 라인 수: \(lineCount)")
                     if !eventType.isEmpty {
                         if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
                             continuation.yield(event)
