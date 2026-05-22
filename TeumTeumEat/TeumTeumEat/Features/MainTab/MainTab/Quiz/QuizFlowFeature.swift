@@ -78,6 +78,7 @@ struct QuizFlowFeature {
         Reduce { state, action in
             switch action {
             case .contentSummary(.delegate(.startQuiz(let quizzes, let isFirstTime))):
+                state.quizzes = quizzes  // ContentSummary에서 로드한 실제 퀴즈 목록 저장
                 if isFirstTime {
                     state.currentStep = .quizGuide
                     state.quizGuide = QuizGuideFeature.State()
@@ -103,6 +104,10 @@ struct QuizFlowFeature {
                 return .send(.delegate(.cancelled))
 
             case .quizGuide(.delegate(.startQuiz)):
+                guard !state.quizzes.isEmpty else {
+                    print("[QuizFlow] 퀴즈가 없어 시작 불가 - completeQuizSet 호출 건너뜀")
+                    return .none
+                }
                 state.currentStep = .quiz
                 let convertedQuizzes = state.quizzes.map { Quiz(from: $0) }
                 state.quiz = QuizFeature.State(quizzes: convertedQuizzes)

@@ -76,3 +76,10 @@ enum SSEFailureReason: String, Equatable {
         }
     }
 }
+
+enum CategoryStreamEvent: Equatable {
+    case connected
+    case textChunk(String)   // event:message data
+    case titleChunk(String)  // event:title data
+    case completed           // 스트림 EOF
+}

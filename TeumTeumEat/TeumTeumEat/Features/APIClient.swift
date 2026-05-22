@@ -585,6 +585,23 @@ extension APIClient {
         return statusData
     }
     
+    /// 카테고리 요약글 조회 (GET only — 없으면 COMMON-005 throw, 생성하지 않음)
+    func fetchCategoryDocumentIfExists(categoryId: Int) async throws -> CategoryDocumentData {
+        let response: APIResponse<CategoryDocumentData> = try await request(
+            endpoint: "/api/v1/categories/\(categoryId)/documents/daily",
+            method: .get,
+            requiresAuth: true
+        )
+        guard response.code == "OK", let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        return data
+    }
+
     /// 오늘의 카테고리 자료(요약글) 조회 (없으면 생성 후 재조회)
     func fetchDailyCategoryDocument(categoryId: Int) async throws -> CategoryDocumentData {
         let dailyEndpoint = "/api/v1/categories/\(categoryId)/documents/daily"
@@ -655,25 +672,76 @@ extension APIClient {
         return data
     }
     
-    /// PDF(요약글) 조회하기
+    /// PDF 요약글 조회 (없으면 생성 후 재조회)
     func fetchDailyPDFSummary(goalId: Int, documentId: Int) async throws -> PDFSummaryData {
+        let endpoint = "/api/v1/goals/\(goalId)/documents/\(documentId)/summary"
+
+        // Step 1: GET으로 요약글 조회 시도
+        do {
+            let summaryData = try await fetchPDFSummaryGET(endpoint: endpoint)
+            print("[PDFSummary] GET 성공 - documentId: \(summaryData.documentId)")
+            return summaryData
+        } catch let apiError as APIError {
+            if case .serverError(let code, _, _) = apiError, code == "COMMON-005" {
+                print("[PDFSummary] COMMON-005 - 요약글 없음, 생성 시작")
+            } else {
+                throw apiError
+            }
+        }
+
+        // Step 2: 요약글 없음 → POST로 생성
+        let _: APIResponse<EmptyData> = try await request(
+            endpoint: endpoint,
+            method: .post,
+            requiresAuth: true
+        )
+        print("[PDFSummary] POST 생성 완료")
+
+        // Step 3: 생성 후 GET으로 재조회
+        let summaryData = try await fetchPDFSummaryGET(endpoint: endpoint)
+        print("[PDFSummary] GET 재조회 성공 - documentId: \(summaryData.documentId)")
+        return summaryData
+    }
+
+    /// PDF 요약글 GET only (이미 생성된 것만 반환, 없으면 에러)
+    func fetchPDFSummaryOnly(goalId: Int, documentId: Int) async throws -> PDFSummaryData {
+        return try await fetchPDFSummaryGET(endpoint: "/api/v1/goals/\(goalId)/documents/\(documentId)/summary")
+    }
+
+    /// PDF SSE 이후 퀴즈 생성 보장 후 조회
+    /// SSE는 요약글 텍스트만 스트리밍하고 퀴즈는 생성하지 않으므로
+    /// POST /summary 로 퀴즈 생성을 트리거한 뒤 GET quizzes 반환
+    func createAndFetchPDFQuizzes(goalId: Int, documentId: Int) async throws -> [UserQuiz] {
+        let endpoint = "/api/v1/goals/\(goalId)/documents/\(documentId)/summary"
+        do {
+            let _: APIResponse<EmptyData> = try await request(
+                endpoint: endpoint, method: .post, requiresAuth: true
+            )
+            print("[PDFQuizzes] POST 성공 - 퀴즈 생성 완료")
+        } catch let apiError as APIError {
+            if case .serverError(let code, _, _) = apiError, code == "QUIZ-003" {
+                // 이미 생성됨
+                print("[PDFQuizzes] QUIZ-003 - 기존 요약/퀴즈 존재")
+            } else {
+                throw apiError
+            }
+        }
+        return try await fetchUserQuizzes(documentId: documentId, documentType: .document)
+    }
+
+    private func fetchPDFSummaryGET(endpoint: String) async throws -> PDFSummaryData {
         let response: APIResponse<PDFSummaryData> = try await request(
-            endpoint: "/api/v1/goals/\(goalId)/documents/\(documentId)/summary",
+            endpoint: endpoint,
             method: .get,
             requiresAuth: true
         )
-        
-        guard response.code == "OK",
-              let summaryData = response.data else {
+        guard response.code == "OK", let summaryData = response.data else {
             throw APIError.serverError(
                 code: response.code,
                 message: response.message,
                 details: response.details
             )
         }
-
-        print("[PDFSummary] documentId: \(summaryData.documentId), hasSolvedToday: \(summaryData.hasSolvedToday), isFirstTime: \(summaryData.isFirstTime)")
-        
         return summaryData
     }
     
@@ -1140,6 +1208,7 @@ extension APIClient {
                     print("[SSE DEBUG] 이벤트 루프 시작")
 
                     for try await line in bytes.lines {
+                        print("[SSE RAW] \(line)")
                         // 빈 줄 또는 새 id: 가 오면 이전 이벤트 dispatch
                         if line.isEmpty || line.hasPrefix("id:") {
                             if !eventData.isEmpty,
@@ -1160,7 +1229,29 @@ extension APIClient {
                             } else {
                                 eventData += "\n" + value
                             }
+                            // 서버가 COMPLETED/FAILED 후 trailing separator 없이 연결을 유지하는 경우를 대비해
+                            // 데이터가 쌓일 때마다 파싱 시도 → 완성된 JSON이면 즉시 dispatch
+                            if let event = parseSSEEvent(type: eventType, data: eventData) {
+                                if case .completed = event {
+                                    print("[SSE DEBUG] 이벤트 dispatch (즉시): \(eventType) COMPLETED")
+                                    continuation.yield(event)
+                                    continuation.finish()
+                                    return
+                                }
+                                if case .failed = event {
+                                    print("[SSE DEBUG] 이벤트 dispatch (즉시): \(eventType) FAILED")
+                                    continuation.yield(event)
+                                    continuation.finish()
+                                    return
+                                }
+                            }
                         }
+                    }
+                    // 연결 종료 후 버퍼에 남은 이벤트 dispatch (COMPLETED가 마지막일 때)
+                    if !eventData.isEmpty,
+                       let event = parseSSEEvent(type: eventType, data: eventData) {
+                        print("[SSE DEBUG] 이벤트 dispatch (연결 종료 후): \(eventType) / \(eventData.prefix(80))")
+                        continuation.yield(event)
                     }
                     continuation.finish()
                 } catch {
@@ -1168,6 +1259,234 @@ extension APIClient {
                 }
             }
             continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    func streamCategoryDocument(categoryId: Int) -> AsyncThrowingStream<CategoryStreamEvent, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                let endpoint = "/api/v1/categories/\(categoryId)/documents/daily/stream"
+                print("[SSE Category] POST 요청 시작: \(Config.baseURL + endpoint)")
+                guard let url = URL(string: Config.baseURL + endpoint) else {
+                    continuation.finish(throwing: APIError.invalidURL); return
+                }
+                var request = URLRequest(url: url)
+                request.httpMethod = "POST"
+                request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+                request.setValue("0", forHTTPHeaderField: "Content-Length")
+                guard let token = KeyChainManager.shared.getAccessToken() else {
+                    continuation.finish(throwing: APIError.noAccessToken); return
+                }
+                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+                do {
+                    let config = URLSessionConfiguration.default
+                    config.timeoutIntervalForRequest = 300
+                    config.timeoutIntervalForResource = 300
+                    let session = URLSession(configuration: config)
+                    let (bytes, response) = try await session.bytes(for: request)
+                    guard let http = response as? HTTPURLResponse else {
+                        continuation.finish(throwing: APIError.invalidResponse); return
+                    }
+                    if http.statusCode != 200 {
+                        print("[SSE Category] HTTP 오류: \(http.statusCode)")
+                        var data = Data()
+                        for try await byte in bytes { data.append(byte) }
+                        if let err = try? JSONDecoder().decode(SSEErrorResponse.self, from: data) {
+                            print("[SSE Category] 서버 에러: code=\(err.code) message=\(err.message)")
+                            continuation.finish(throwing: APIError.serverError(
+                                code: err.code, message: err.message, details: nil))
+                        } else {
+                            let rawBody = String(data: data, encoding: .utf8) ?? "(decode fail)"
+                            print("[SSE Category] 에러 바디 파싱 실패, raw=\(rawBody.prefix(200))")
+                            continuation.finish(throwing: APIError.serverError(
+                                code: "SSE-\(http.statusCode)",
+                                message: "카테고리 스트림 연결 실패", details: nil))
+                        }
+                        return
+                    }
+
+                    print("[SSE Category] 연결 성공 (status \(http.statusCode)), 라인 수신 시작")
+                    print("[SSE Category] Response Headers: \(http.allHeaderFields)")
+                    var eventType = ""
+                    var eventData = ""
+                    var rawBuffer: [String] = []
+                    var lineCount = 0
+
+                    for try await line in bytes.lines {
+                        lineCount += 1
+                        print("[SSE Category RAW #\(lineCount)] repr=\(line.debugDescription) bytes=\(line.utf8.count)")
+                        if line.isEmpty {
+                            // 표준 SSE 빈줄 구분자
+                            print("[SSE Category] --- 빈줄(이벤트 구분자) ---")
+                            if !eventType.isEmpty {
+                                print("[SSE Category] dispatch event=\(eventType) data=\(eventData.prefix(120))")
+                                if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
+                                    continuation.yield(event)
+                                }
+                                eventType = ""; eventData = ""
+                            }
+                        } else if line.hasPrefix("event:") {
+                            // 새 event: 라인 도착 → 이전 이벤트를 먼저 flush
+                            // 서버가 빈줄 없이 event:/data: 를 연속으로 전송하는 경우 대응
+                            if !eventType.isEmpty {
+                                print("[SSE Category] flush (no empty line) event=\(eventType) data=\(eventData.prefix(120))")
+                                if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
+                                    continuation.yield(event)
+                                }
+                            }
+                            eventType = String(line.dropFirst(6)).trimmingCharacters(in: .whitespaces)
+                            eventData = ""
+                        } else if line.hasPrefix("data:") {
+                            // leading space 보존: 서버가 단어 앞 공백을 "data: word" 형태로 전송
+                            let value = String(line.dropFirst(5))
+                            eventData = eventData.isEmpty ? value : eventData + "\n" + value
+                        } else {
+                            // SSE 형식이 아닌 raw 라인 — JSON 에러 본문일 수 있음
+                            print("[SSE Category] non-SSE line: \(line.prefix(200))")
+                            rawBuffer.append(line)
+                        }
+                    }
+                    print("[SSE Category] 루프 종료 - 수신된 총 라인 수: \(lineCount)")
+                    // 마지막 이벤트 처리 (빈줄 없이 스트림이 종료된 경우)
+                    if !eventType.isEmpty {
+                        if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
+                            continuation.yield(event)
+                        }
+                    }
+                    // 스트림 본문에 raw JSON 에러가 섞여있는지 확인 (서버가 HTTP 200으로 에러 반환하는 케이스)
+                    let rawBody = rawBuffer.joined(separator: "\n")
+                    if !rawBody.isEmpty,
+                       let bodyData = rawBody.data(using: .utf8),
+                       let err = try? JSONDecoder().decode(SSEErrorResponse.self, from: bodyData) {
+                        print("[SSE Category] 스트림 내 JSON 에러 감지: code=\(err.code) message=\(err.message)")
+                        continuation.finish(throwing: APIError.serverError(
+                            code: err.code, message: err.message, details: nil))
+                    } else {
+                        print("[SSE Category] 스트림 EOF → .completed yield")
+                        continuation.yield(.completed)
+                        continuation.finish()
+                    }
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    func streamPDFSummary(goalId: Int, documentId: Int) -> AsyncThrowingStream<CategoryStreamEvent, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                let endpoint = "/api/v1/goals/\(goalId)/documents/\(documentId)/summary/stream"
+                print("[SSE PDF] POST 요청 시작: \(Config.baseURL + endpoint)")
+                guard let url = URL(string: Config.baseURL + endpoint) else {
+                    continuation.finish(throwing: APIError.invalidURL); return
+                }
+                var request = URLRequest(url: url)
+                request.httpMethod = "POST"
+                request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+                request.setValue("0", forHTTPHeaderField: "Content-Length")
+                guard let token = KeyChainManager.shared.getAccessToken() else {
+                    continuation.finish(throwing: APIError.noAccessToken); return
+                }
+                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+                do {
+                    let config = URLSessionConfiguration.default
+                    config.timeoutIntervalForRequest = 300
+                    config.timeoutIntervalForResource = 300
+                    let session = URLSession(configuration: config)
+                    let (bytes, response) = try await session.bytes(for: request)
+                    guard let http = response as? HTTPURLResponse else {
+                        continuation.finish(throwing: APIError.invalidResponse); return
+                    }
+                    if http.statusCode != 200 {
+                        print("[SSE PDF] HTTP 오류: \(http.statusCode)")
+                        var data = Data()
+                        for try await byte in bytes { data.append(byte) }
+                        if let err = try? JSONDecoder().decode(SSEErrorResponse.self, from: data) {
+                            print("[SSE PDF] 서버 에러: code=\(err.code) message=\(err.message)")
+                            continuation.finish(throwing: APIError.serverError(
+                                code: err.code, message: err.message, details: nil))
+                        } else {
+                            let rawBody = String(data: data, encoding: .utf8) ?? "(decode fail)"
+                            print("[SSE PDF] 에러 바디 파싱 실패, raw=\(rawBody.prefix(200))")
+                            continuation.finish(throwing: APIError.serverError(
+                                code: "SSE-\(http.statusCode)",
+                                message: "PDF 스트림 연결 실패", details: nil))
+                        }
+                        return
+                    }
+
+                    print("[SSE PDF] 연결 성공 (status \(http.statusCode)), 라인 수신 시작")
+                    print("[SSE PDF] Response Headers: \(http.allHeaderFields)")
+                    var eventType = ""
+                    var eventData = ""
+                    var rawBuffer: [String] = []
+                    var lineCount = 0
+
+                    for try await line in bytes.lines {
+                        lineCount += 1
+                        print("[SSE PDF RAW #\(lineCount)] repr=\(line.debugDescription) bytes=\(line.utf8.count)")
+                        if line.isEmpty {
+                            print("[SSE PDF] --- 빈줄(이벤트 구분자) ---")
+                            if !eventType.isEmpty {
+                                print("[SSE PDF] dispatch event=\(eventType) data=\(eventData.prefix(120))")
+                                if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
+                                    continuation.yield(event)
+                                }
+                                eventType = ""; eventData = ""
+                            }
+                        } else if line.hasPrefix("event:") {
+                            if !eventType.isEmpty {
+                                print("[SSE PDF] flush (no empty line) event=\(eventType) data=\(eventData.prefix(120))")
+                                if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
+                                    continuation.yield(event)
+                                }
+                            }
+                            eventType = String(line.dropFirst(6)).trimmingCharacters(in: .whitespaces)
+                            eventData = ""
+                        } else if line.hasPrefix("data:") {
+                            let value = String(line.dropFirst(5))
+                            eventData = eventData.isEmpty ? value : eventData + "\n" + value
+                        } else {
+                            print("[SSE PDF] non-SSE line: \(line.prefix(200))")
+                            rawBuffer.append(line)
+                        }
+                    }
+                    print("[SSE PDF] 루프 종료 - 수신된 총 라인 수: \(lineCount)")
+                    if !eventType.isEmpty {
+                        if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
+                            continuation.yield(event)
+                        }
+                    }
+                    let rawBody = rawBuffer.joined(separator: "\n")
+                    if !rawBody.isEmpty,
+                       let bodyData = rawBody.data(using: .utf8),
+                       let err = try? JSONDecoder().decode(SSEErrorResponse.self, from: bodyData) {
+                        print("[SSE PDF] 스트림 내 JSON 에러 감지: code=\(err.code) message=\(err.message)")
+                        continuation.finish(throwing: APIError.serverError(
+                            code: err.code, message: err.message, details: nil))
+                    } else {
+                        print("[SSE PDF] 스트림 EOF → .completed yield")
+                        continuation.yield(.completed)
+                        continuation.finish()
+                    }
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    private func parseCategorySSEEvent(type: String, data: String) -> CategoryStreamEvent? {
+        switch type.lowercased() {
+        case "connect": return .connected
+        case "message": return .textChunk(data.isEmpty ? "\n" : data)  // 빈 data = 줄바꿈
+        case "title":   return data.isEmpty ? nil : .titleChunk(data)
+        default:        return nil
         }
     }
 

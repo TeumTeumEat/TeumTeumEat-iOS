@@ -282,14 +282,21 @@ struct OnboardingLoadingFeature {
 
                 case .processing(let remainMs):
                     print("[SSE] 처리 중 - 남은 시간: \(remainMs)ms")
+
+                    // remain: 0 → 서버가 잔여 시간을 모르는 경우, indeterminate 처리
+                    guard remainMs > 0 else {
+                        if state.sseProgress < 0.85 {
+                            state.sseProgress = min(state.sseProgress + 0.05, 0.85)
+                        }
+                        return .none
+                    }
+
                     if state.totalInitialMs == nil {
                         state.totalInitialMs = remainMs
                     }
                     let total = state.totalInitialMs ?? remainMs
                     state.remainingSeconds = max(0, remainMs / 1000)
-                    state.sseProgress = total > 0
-                        ? max(0.05, Double(total - remainMs) / Double(total))
-                        : 0.1
+                    state.sseProgress = max(0.05, Double(total - remainMs) / Double(total))
 
                     let secondsToCount = remainMs / 1000
                     return .run { send in

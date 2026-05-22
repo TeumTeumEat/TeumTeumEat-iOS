@@ -47,17 +47,44 @@ struct ContentSummaryView: View {
                     .background(Color.white)
                     
                     // Markdown 콘텐츠
-                    ScrollView {
-                        Markdown(store.summaryText)
-//                            .markdownTheme(.custom)
-                            .markdownTheme(.gitHub)
-                            .colorScheme(.light)
-                            .padding(.horizontal, 20)
-                            .padding(.top, 24)
-                            .padding(.bottom, 180)
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            if store.isStreaming && store.streamingText.isEmpty {
+                                // 연결/로딩 중
+                                VStack {
+                                    ProgressView()
+                                        .scaleEffect(1.2)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.top, 80)
+                            } else if store.isStreaming {
+                                // 스트리밍 텍스트 수신 중 — Markdown 실시간 렌더링
+                                Markdown(store.streamingText)
+                                    .markdownTheme(.gitHub)
+                                    .colorScheme(.light)
+                                    .padding(.horizontal, 20)
+                                    .padding(.top, 24)
+                                    .padding(.bottom, 180)
+                            } else {
+                                // 완료 — Markdown 렌더링
+                                Markdown(store.summaryText)
+                                    .markdownTheme(.gitHub)
+                                    .colorScheme(.light)
+                                    .padding(.horizontal, 20)
+                                    .padding(.top, 24)
+                                    .padding(.bottom, 180)
+                            }
+
+                            Color.clear
+                                .frame(height: 1)
+                                .id("streamingBottom")
+                        }
+                        .onChange(of: store.streamingText) { _ in
+                            proxy.scrollTo("streamingBottom", anchor: .bottom)
+                        }
+                        .scrollDismissesKeyboard(.interactively)
+                        .background(Color.white)
                     }
-                    .scrollDismissesKeyboard(.interactively)
-                    .background(Color.white)
                 }
                 .background(Color.white)
                 
@@ -77,18 +104,37 @@ struct ContentSummaryView: View {
                     
                     // 버튼 영역
                     VStack(spacing: 0) {
-                        Button(action: {
-                            store.send(.startQuizButtonTapped)
-                        }) {
-                            Text("퀴즈 풀기")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 56)
-                                .background(Color.blue500)
-                                .cornerRadius(12)
+                        if !store.isStreaming && store.isQuizLoading {
+                            // SSE 완료 후 퀴즈 로딩 중
+                            HStack(spacing: 10) {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(0.9)
+                                Text("문제 불러오는 중")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(Color.blue500.opacity(0.6))
+                            .cornerRadius(12)
+                            .padding(.horizontal, 20)
+                        } else {
+                            Button(action: {
+                                store.send(.startQuizButtonTapped)
+                            }) {
+                                Text("퀴즈 풀기")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 56)
+                                    .background(Color.blue500)
+                                    .cornerRadius(12)
+                            }
+                            .disabled(store.isStreaming)
+                            .opacity(store.isStreaming ? 0.5 : 1.0)
+                            .padding(.horizontal, 20)
                         }
-                        .padding(.horizontal, 20)
                     }
                     .padding(.bottom, 34)
                     .background(Color.white)
@@ -101,8 +147,20 @@ struct ContentSummaryView: View {
         .onAppear {
             store.send(.onAppear)
         }
+        .alert(
+            "퀴즈를 시작할 수 없어요",
+            isPresented: Binding(
+                get: { store.errorMessage != nil },
+                set: { _ in store.send(.errorAlertDismissed) }
+            )
+        ) {
+            Button("확인") { store.send(.errorAlertDismissed) }
+        } message: {
+            Text(store.errorMessage ?? "")
+        }
     }
 }
+
 
 extension Theme {
     static let custom = Theme()
