@@ -25,8 +25,6 @@ struct ContentSummaryFeature {
         var streamingText: String = ""
         var isStreaming: Bool = false
         var isQuizLoading: Bool = false
-        var typingFullText: String = ""
-        var typingIndex: Int = 0
         var errorMessage: String? = nil
 
         init(
@@ -66,7 +64,6 @@ struct ContentSummaryFeature {
         case streamFailed(Error)
         case fallbackResponse(Result<CategoryDocumentData, Error>)
         case pdfFallbackResponse(Result<PDFSummaryData, Error>)
-        case typingTick
 
         // 스트리밍 완료 후 quizzes 로딩 (신규 문서 케이스 - 카테고리)
         case fetchDocumentMetaCompleted(Result<CategoryDocumentData, Error>)
@@ -78,7 +75,7 @@ struct ContentSummaryFeature {
         case cancelled
     }
 
-    private enum CancelID { case streaming, typing }
+    private enum CancelID { case streaming }
 
     @Dependency(\.apiClient) var apiClient
 
@@ -236,37 +233,19 @@ struct ContentSummaryFeature {
                 state.documentId = doc.documentId
                 state.isFirstTime = doc.isFirstTime
                 state.hasSolvedToday = doc.hasSolvedToday
-                state.typingFullText = doc.content
-                state.typingIndex = 0
+                state.summaryText = doc.content
                 state.streamingText = ""
-                state.isStreaming = true
-                // quizzes가 없으면 타이핑 중에 병렬로 조회
+                state.isStreaming = false
                 let needsQuizzesC = state.quizzes.isEmpty
                 if needsQuizzesC { state.isQuizLoading = true }
                 let docIdC = doc.documentId
+                guard needsQuizzesC else { return .none }
                 return .run { send in
-                    let chars = Array(doc.content)
-                    if needsQuizzesC {
-                        let quizTask = Task {
-                            try await apiClient.fetchUserQuizzes(
-                                documentId: docIdC, documentType: .category
-                            )
-                        }
-                        for _ in chars {
-                            try await Task.sleep(for: .milliseconds(15))
-                            await send(.typingTick)
-                        }
-                        await send(.typingTick)
-                        let quizResult = await Result { try await quizTask.value }
-                        await send(.fetchQuizzesCompleted(quizResult))
-                    } else {
-                        for _ in chars {
-                            try await Task.sleep(for: .milliseconds(15))
-                            await send(.typingTick)
-                        }
-                        await send(.typingTick)
+                    let quizResult = await Result {
+                        try await apiClient.fetchUserQuizzes(documentId: docIdC, documentType: .category)
                     }
-                }.cancellable(id: CancelID.typing, cancelInFlight: true)
+                    await send(.fetchQuizzesCompleted(quizResult))
+                }
 
             case .fallbackResponse(.failure):
                 state.isStreaming = false
@@ -277,51 +256,22 @@ struct ContentSummaryFeature {
                 state.documentId = summary.documentId
                 state.isFirstTime = summary.isFirstTime
                 state.hasSolvedToday = summary.hasSolvedToday
-                state.typingFullText = summary.summary
-                state.typingIndex = 0
+                state.summaryText = summary.summary
                 state.streamingText = ""
-                state.isStreaming = true
+                state.isStreaming = false
                 let needsQuizzesP = state.quizzes.isEmpty
                 if needsQuizzesP { state.isQuizLoading = true }
                 let docIdP = summary.documentId
+                guard needsQuizzesP else { return .none }
                 return .run { send in
-                    let chars = Array(summary.summary)
-                    if needsQuizzesP {
-                        let quizTask = Task {
-                            try await apiClient.fetchUserQuizzes(
-                                documentId: docIdP, documentType: .document
-                            )
-                        }
-                        for _ in chars {
-                            try await Task.sleep(for: .milliseconds(15))
-                            await send(.typingTick)
-                        }
-                        await send(.typingTick)
-                        let quizResult = await Result { try await quizTask.value }
-                        await send(.fetchQuizzesCompleted(quizResult))
-                    } else {
-                        for _ in chars {
-                            try await Task.sleep(for: .milliseconds(15))
-                            await send(.typingTick)
-                        }
-                        await send(.typingTick)
+                    let quizResult = await Result {
+                        try await apiClient.fetchUserQuizzes(documentId: docIdP, documentType: .document)
                     }
-                }.cancellable(id: CancelID.typing, cancelInFlight: true)
+                    await send(.fetchQuizzesCompleted(quizResult))
+                }
 
             case .pdfFallbackResponse(.failure):
                 state.isStreaming = false
-                return .none
-
-            case .typingTick:
-                let chars = Array(state.typingFullText)
-                guard state.typingIndex < chars.count else {
-                    state.summaryText = state.typingFullText
-                    state.streamingText = ""   // Markdown 렌더링으로 전환
-                    state.isStreaming = false
-                    return .none
-                }
-                state.streamingText += String(chars[state.typingIndex])
-                state.typingIndex += 1
                 return .none
 
             case .fetchDocumentMetaCompleted(.success(let doc)):
@@ -365,7 +315,6 @@ struct ContentSummaryFeature {
             case .closeButtonTapped:
                 return .merge(
                     .cancel(id: CancelID.streaming),
-                    .cancel(id: CancelID.typing),
                     .send(.delegate(.cancelled))
                 )
 
