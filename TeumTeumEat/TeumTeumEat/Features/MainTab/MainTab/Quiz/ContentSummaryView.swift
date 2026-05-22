@@ -104,20 +104,37 @@ struct ContentSummaryView: View {
                     
                     // 버튼 영역
                     VStack(spacing: 0) {
-                        Button(action: {
-                            store.send(.startQuizButtonTapped)
-                        }) {
-                            Text("퀴즈 풀기")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 56)
-                                .background(Color.blue500)
-                                .cornerRadius(12)
+                        if !store.isStreaming && store.isQuizLoading {
+                            // SSE 완료 후 퀴즈 로딩 중
+                            HStack(spacing: 10) {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(0.9)
+                                Text("문제 불러오는 중")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(Color.blue500.opacity(0.6))
+                            .cornerRadius(12)
+                            .padding(.horizontal, 20)
+                        } else {
+                            Button(action: {
+                                store.send(.startQuizButtonTapped)
+                            }) {
+                                Text("퀴즈 풀기")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 56)
+                                    .background(Color.blue500)
+                                    .cornerRadius(12)
+                            }
+                            .disabled(store.isStreaming)
+                            .opacity(store.isStreaming ? 0.5 : 1.0)
+                            .padding(.horizontal, 20)
                         }
-                        .disabled(store.isStreaming || store.isQuizLoading)
-                        .opacity(store.isStreaming || store.isQuizLoading ? 0.5 : 1.0)
-                        .padding(.horizontal, 20)
                     }
                     .padding(.bottom, 34)
                     .background(Color.white)
