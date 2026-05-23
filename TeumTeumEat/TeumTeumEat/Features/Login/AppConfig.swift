@@ -29,10 +29,17 @@ enum Config  {
     }
     
     static var baseURL: String {
+        #if DEBUG
+        guard let url = Bundle.main.object(forInfoDictionaryKey: "DEV_BASE_URL") as? String else {
+            fatalError("DEV_BASE_URL not found")
+        }
+        return url
+        #else
         guard let url = Bundle.main.object(forInfoDictionaryKey: "BASE_URL") as? String else {
             fatalError("API_BASE_URL not found")
         }
         return url
+        #endif
     }
 
     static var admobAppID: String {
