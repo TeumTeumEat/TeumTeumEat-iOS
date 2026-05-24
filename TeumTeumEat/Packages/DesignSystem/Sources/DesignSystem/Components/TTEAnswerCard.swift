@@ -7,25 +7,25 @@
 
 import SwiftUI
 
-enum AnswerStatus {
+public enum AnswerStatus {
     case correct   // 정답
     case wrong     // 오답
-    
-    var text: String {
+
+    public var text: String {
         switch self {
         case .correct: return "정답"
         case .wrong: return "오답"
         }
     }
     
-    var backgroundColor: Color {
+    public var backgroundColor: Color {
         switch self {
         case .correct: return Color(hex: "EDF0FF")
         case .wrong: return Color(hex: "FFEBEE")
         }
     }
-    
-    var textColor: Color {
+
+    public var textColor: Color {
         switch self {
         case .correct: return Color(hex: "2B8FFF")
         case .wrong: return Color(hex: "F44336")
@@ -33,20 +33,20 @@ enum AnswerStatus {
     }
 }
 
-struct TTEAnswerCard: View {
-    let questionNumber: Int
-    let question: String
-    let correctAnswer: String
-    let explanation: String
-    let status: AnswerStatus
-    
+public struct TTEAnswerCard: View {
+    public let questionNumber: Int
+    public let question: String
+    public let correctAnswer: String
+    public let explanation: String
+    public let status: AnswerStatus
+
     // 디자인 옵션
-    let backgroundColor: Color
-    let cornerRadius: CGFloat
-    let padding: CGFloat
-    let shadowRadius: CGFloat
-    
-    init(
+    public let backgroundColor: Color
+    public let cornerRadius: CGFloat
+    public let padding: CGFloat
+    public let shadowRadius: CGFloat
+
+    public init(
         questionNumber: Int,
         question: String,
         correctAnswer: String,
@@ -68,7 +68,7 @@ struct TTEAnswerCard: View {
         self.shadowRadius = shadowRadius
     }
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text("Q\(questionNumber)")

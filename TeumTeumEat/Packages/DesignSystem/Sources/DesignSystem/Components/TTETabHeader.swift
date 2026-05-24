@@ -7,26 +7,30 @@
 
 import SwiftUI
 
-struct TTETabItem: Identifiable, Equatable {
-    let id = UUID()
-    let title: String
-    
-    static func == (lhs: TTETabItem, rhs: TTETabItem) -> Bool {
+public struct TTETabItem: Identifiable, Equatable {
+    public let id = UUID()
+    public let title: String
+
+    public init(title: String) {
+        self.title = title
+    }
+
+    public static func == (lhs: TTETabItem, rhs: TTETabItem) -> Bool {
         lhs.id == rhs.id
     }
 }
 
 
-struct TTETabHeader: View {
-    @Binding var selectedTab: Int
-    let tabs: [TTETabItem]
-    let indicatorColor: Color
-    let selectedTextColor: Color
-    let unselectedTextColor: Color
-    let font: Font
-    let indicatorHeight: CGFloat
-    
-    init(
+public struct TTETabHeader: View {
+    @Binding public var selectedTab: Int
+    public let tabs: [TTETabItem]
+    public let indicatorColor: Color
+    public let selectedTextColor: Color
+    public let unselectedTextColor: Color
+    public let font: Font
+    public let indicatorHeight: CGFloat
+
+    public init(
         selectedTab: Binding<Int>,
         tabs: [TTETabItem],
         indicatorColor: Color = Color(hex: "2B8FFF"),
@@ -44,7 +48,7 @@ struct TTETabHeader: View {
         self.indicatorHeight = indicatorHeight
     }
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) {
             // 탭 버튼들
             HStack(spacing: 0) {
@@ -86,13 +90,13 @@ struct TTETabHeader: View {
     }
 }
 
-struct TTETabView<Content: View>: View {
+public struct TTETabView<Content: View>: View {
     @State private var selectedTab: Int = 0
-    let tabs: [TTETabItem]
-    let isSwipeEnabled: Bool
-    let content: (Int) -> Content
-    
-    init(
+    public let tabs: [TTETabItem]
+    public let isSwipeEnabled: Bool
+    public let content: (Int) -> Content
+
+    public init(
         tabs: [TTETabItem],
         isSwipeEnabled: Bool = true,
         @ViewBuilder content: @escaping (Int) -> Content
@@ -102,7 +106,7 @@ struct TTETabView<Content: View>: View {
         self.content = content
     }
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) {
             // Tab Header
             TTETabHeader(

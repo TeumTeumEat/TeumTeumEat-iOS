@@ -7,33 +7,33 @@
 
 import SwiftUI
 
-enum TTEAlertType {
+public enum TTEAlertType {
     case single    // 확인 버튼 1개
     case double    // 취소 + 확인 버튼 2개
 }
 
 
-enum TTEAlertButtonStyle {
+public enum TTEAlertButtonStyle {
     case confirm   // 확인
     case cancel    // 취소
 }
 
-struct TTEAlertView: View {
-    let type: TTEAlertType
-    let title: String
-    let message: String
-    let confirmTitle: String
-    let cancelTitle: String?
-    let confirmAction: () -> Void
-    let cancelAction: (() -> Void)?
-    
+public struct TTEAlertView: View {
+    public let type: TTEAlertType
+    public let title: String
+    public let message: String
+    public let confirmTitle: String
+    public let cancelTitle: String?
+    public let confirmAction: () -> Void
+    public let cancelAction: (() -> Void)?
+
     // 디자인 옵션
-    let backgroundColor: Color
-    let cornerRadius: CGFloat
-    let titleColor: Color
-    let messageColor: Color
-    
-    init(
+    public let backgroundColor: Color
+    public let cornerRadius: CGFloat
+    public let titleColor: Color
+    public let messageColor: Color
+
+    public init(
         type: TTEAlertType,
         title: String,
         message: String,
@@ -59,7 +59,7 @@ struct TTEAlertView: View {
         self.messageColor = messageColor
     }
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 20) {
             // Title & Message
             VStack(spacing: 12) {
@@ -129,17 +129,17 @@ struct TTEAlertView: View {
 
 
 
-struct TTEAlertModifier: ViewModifier {
-    @Binding var isPresented: Bool
-    let type: TTEAlertType
-    let title: String
-    let message: String
-    let confirmTitle: String
-    let cancelTitle: String?
-    let confirmAction: () -> Void
-    let cancelAction: (() -> Void)?
-    
-    func body(content: Content) -> some View {
+public struct TTEAlertModifier: ViewModifier {
+    @Binding public var isPresented: Bool
+    public let type: TTEAlertType
+    public let title: String
+    public let message: String
+    public let confirmTitle: String
+    public let cancelTitle: String?
+    public let confirmAction: () -> Void
+    public let cancelAction: (() -> Void)?
+
+    public func body(content: Content) -> some View {
         ZStack {
             content
             
@@ -175,7 +175,7 @@ struct TTEAlertModifier: ViewModifier {
     }
 }
 
-extension View {
+public extension View {
     func tteAlert(
         isPresented: Binding<Bool>,
         type: TTEAlertType,

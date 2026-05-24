@@ -8,8 +8,8 @@
 import UIKit
 
 public enum DesignGuide {
-    static let width: CGFloat = 375
-    static let height: CGFloat = 812
+    public static let width: CGFloat = 375
+    public static let height: CGFloat = 812
 }
 
 public extension CGFloat {

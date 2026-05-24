@@ -7,22 +7,22 @@
 
 import SwiftUI
 
-struct TTECategoryButton: View {
-    let icon: Image
-    let title: String
-    let subtitle: String
-    let isSelected: Bool
-    
-    let width: CGFloat?
-    let height: CGFloat
-    
-    let customIconTint: Color?
-    let customBorderColor: Color?
-    let customSelectedBorderColor: Color?
-    
-    let action: () -> Void
-    
-    init(
+public struct TTECategoryButton: View {
+    public let icon: Image
+    public let title: String
+    public let subtitle: String
+    public let isSelected: Bool
+
+    public let width: CGFloat?
+    public let height: CGFloat
+
+    public let customIconTint: Color?
+    public let customBorderColor: Color?
+    public let customSelectedBorderColor: Color?
+
+    public let action: () -> Void
+
+    public init(
         icon: Image,
         title: String,
         subtitle: String,
@@ -66,7 +66,7 @@ struct TTECategoryButton: View {
         }
     }
     
-    var body: some View {
+    public var body: some View {
         Button(action: action) {
             VStack(spacing: 20) {
                 // 아이콘

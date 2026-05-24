@@ -46,7 +46,7 @@ import Foundation
 //    }
 //}
 
-extension URL {
+public extension URL {
     func fileSize() throws -> Int64 {
         // 여기서 startAccessing 하지 않음
         // 파일 크기만 확인

@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct SnackImageMapper {
+public struct SnackImageMapper {
     private static let snackImages = [
         "burger",
         "pizza",
@@ -28,7 +28,7 @@ struct SnackImageMapper {
     
     /// documentId + createdAt 기반으로 간식 이미지 반환
 
-    static func snackImage(for documentId: Int, createdAt: String) -> String {
+    public static func snackImage(for documentId: Int, createdAt: String) -> String {
             let key = "\(documentId)-\(createdAt)"
             // 안정적인 해시 함수 (항상 같은 결과)
             var hash = 0

@@ -7,18 +7,18 @@
 
 import SwiftUI
 
-enum QuizAnswer: Equatable {
+public enum QuizAnswer: Equatable {
     case none       // 선택 안함 (default)
     case correct    // O 선택
     case wrong      // X 선택
     case choice(Int)
 }
 
-enum QuizButtonType {
+public enum QuizButtonType {
     case correct    // O 버튼
     case wrong      // X 버튼
-    
-    var icon: String {
+
+    public var icon: String {
         switch self {
         case .correct: return "o_bold"
         case .wrong: return "x_bold"
@@ -26,21 +26,21 @@ enum QuizButtonType {
     }
     
     // 선택된 아이콘 (두꺼운 버전)
-    var selectedIcon: String {
+    public var selectedIcon: String {
         switch self {
         case .correct: return "o_bold"
         case .wrong: return "x_bold"
         }
     }
     
-    var selectedBackgroundColor: Color {
+    public var selectedBackgroundColor: Color {
         switch self {
         case .correct: return .blue500
         case .wrong: return .red500
         }
     }
     
-    var backgroundColor: Color {
+    public var backgroundColor: Color {
         switch self {
         case .correct: return .blue100
         case .wrong: return .red100
@@ -49,15 +49,15 @@ enum QuizButtonType {
 }
 
 
-struct TTEQuizButton: View {
-    let type: QuizButtonType
-    let currentAnswer: QuizAnswer
-    let buttonWidth: CGFloat
-    let buttonHeight: CGFloat
-    let iconSize: CGFloat
-    let action: () -> Void
-    
-    init(
+public struct TTEQuizButton: View {
+    public let type: QuizButtonType
+    public let currentAnswer: QuizAnswer
+    public let buttonWidth: CGFloat
+    public let buttonHeight: CGFloat
+    public let iconSize: CGFloat
+    public let action: () -> Void
+
+    public init(
         type: QuizButtonType,
         currentAnswer: QuizAnswer,
         buttonWidth: CGFloat = 120,
@@ -73,7 +73,7 @@ struct TTEQuizButton: View {
         self.action = action
     }
     
-    var body: some View {
+    public var body: some View {
         Button(action: action) {
             Image(currentIcon)
                 .resizable()

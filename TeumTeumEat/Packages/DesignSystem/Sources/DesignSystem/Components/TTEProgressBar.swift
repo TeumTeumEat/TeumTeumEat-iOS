@@ -7,16 +7,16 @@
 
 import SwiftUI
 
-struct TTEProgressBar: View {
-    let currentStep: Int
-    let totalSteps: Int
-    let progressColor: Color
-    let backgroundColor: Color
-    let height: CGFloat
-    let showStepText: Bool
-    let cornerRadius: CGFloat
-    
-    init(
+public struct TTEProgressBar: View {
+    public let currentStep: Int
+    public let totalSteps: Int
+    public let progressColor: Color
+    public let backgroundColor: Color
+    public let height: CGFloat
+    public let showStepText: Bool
+    public let cornerRadius: CGFloat
+
+    public init(
         currentStep: Int,
         totalSteps: Int = 5,
         progressColor: Color = Color(hex: "2B8FFF"),
@@ -39,7 +39,7 @@ struct TTEProgressBar: View {
         return Double(currentStep) / Double(totalSteps)
     }
     
-    var body: some View {
+    public var body: some View {
         HStack(spacing: 16) {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {

@@ -7,15 +7,15 @@
 
 import SwiftUI
 
-enum ButtonSize {
+public enum ButtonSize {
     case large // 300 x 60
     case largeFull
     case medium // 300 x 50
     case regular // 144 x 50
     case small // 87 x 50
     case grid // 154 x 60
-    
-    var width: CGFloat? {
+
+    public var width: CGFloat? {
         switch self {
         case .large, .medium: return 320
         case .largeFull: return nil
@@ -25,7 +25,7 @@ enum ButtonSize {
         }
     }
     
-    var height: CGFloat? {
+    public var height: CGFloat? {
         switch self {
         case .large, .grid: return 60
         case .largeFull: return 60
@@ -34,8 +34,8 @@ enum ButtonSize {
         case .small:return 50
         }
     }
-    
-    func applyTypography(to text: Text) -> some View {
+
+    public func applyTypography(to text: Text) -> some View {
             switch self {
             case .large, .largeFull:
                 return AnyView(text.btBold20_24())
@@ -48,7 +48,7 @@ enum ButtonSize {
             }
         }
     
-    var typography: TypographyStyle {
+    public var typography: TypographyStyle {
         switch self {
         case .large, .largeFull:
             return .headBold20
@@ -62,12 +62,12 @@ enum ButtonSize {
     }
 }
 
-enum ButtonStyle {
+public enum ButtonStyle {
     case primary
     case secondary
-    
+
     // 텍스트 색상
-    func foregroundColor(isEnabled: Bool) -> Color {
+    public func foregroundColor(isEnabled: Bool) -> Color {
         switch self {
         case .primary:
             return .white
@@ -77,7 +77,7 @@ enum ButtonStyle {
     }
     
     // 배경 색상
-    func backgroundColor(isEnabled: Bool) -> Color {
+    public func backgroundColor(isEnabled: Bool) -> Color {
         switch self {
         case .primary:
             return isEnabled ? .blue500 : .gray600
@@ -87,7 +87,7 @@ enum ButtonStyle {
     }
     
     // 테두리 색상
-    func borderColor(isEnabled: Bool) -> Color {
+    public func borderColor(isEnabled: Bool) -> Color {
         switch self {
         case .primary:
             return .clear
@@ -97,7 +97,7 @@ enum ButtonStyle {
     }
     
     // 테두리 두께
-    var borderWidth: CGFloat {
+    public var borderWidth: CGFloat {
         switch self {
         case .primary:
             return 0

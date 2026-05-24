@@ -7,28 +7,28 @@
 
 import SwiftUI
 
-struct TTEButton: View {
-    let title: String
-    let size: ButtonSize
-    let style: ButtonStyle
-    let isEnabled: Bool
-    
+public struct TTEButton: View {
+    public let title: String
+    public let size: ButtonSize
+    public let style: ButtonStyle
+    public let isEnabled: Bool
+
     // 아이콘 관련 (optional)
-    let icon: Image?
-    let iconSize: CGFloat?
-    let iconTextSpacing: CGFloat?
-    let iconLeadingPadding: CGFloat?
-    
+    public let icon: Image?
+    public let iconSize: CGFloat?
+    public let iconTextSpacing: CGFloat?
+    public let iconLeadingPadding: CGFloat?
+
     // 커스텀 색상 (optional)
-    let customBackgroundColor: Color?
-    let customForegroundColor: Color?
-    let customBorderColor: Color?
-    let customBorderWidth: CGFloat?
-    let customIconTint: Color?
-    
-    let action: () -> Void
-    
-    init(
+    public let customBackgroundColor: Color?
+    public let customForegroundColor: Color?
+    public let customBorderColor: Color?
+    public let customBorderWidth: CGFloat?
+    public let customIconTint: Color?
+
+    public let action: () -> Void
+
+    public init(
         title: String,
         size: ButtonSize,
         style: ButtonStyle = .primary,
@@ -60,7 +60,7 @@ struct TTEButton: View {
         self.action = action
     }
     
-    var body: some View {
+    public var body: some View {
         Button(action: action) {
             if let icon = icon {
                 // 아이콘이 있을 때

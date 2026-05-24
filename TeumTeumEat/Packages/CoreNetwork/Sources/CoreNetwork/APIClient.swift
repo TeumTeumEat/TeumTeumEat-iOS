@@ -8,7 +8,7 @@
 import Foundation
 import Dependencies
 
-enum HTTPMethod: String {
+public enum HTTPMethod: String {
     case get = "GET"
     case post = "POST"
     case put = "PUT"
@@ -55,9 +55,11 @@ private actor TokenRefreshCoordinator {
     }
 }
 
-struct APIClient {
-    
-    func request<T: Decodable>(
+public struct APIClient {
+
+    public init() {}
+
+    public func request<T: Decodable>(
         endpoint: String,
         method: HTTPMethod = .get,
         body: Encodable? = nil,
@@ -185,7 +187,7 @@ struct APIClient {
 }
 
 extension APIClient: DependencyKey {
-    static let liveValue = APIClient()
+    public static let liveValue = APIClient()
 }
 
 // MARK: - Token Reissue
@@ -219,7 +221,7 @@ extension APIClient {
     }
 }
 
-extension DependencyValues {
+public extension DependencyValues {
     var apiClient: APIClient {
         get { self[APIClient.self] }
         set { self[APIClient.self] = newValue }
@@ -227,7 +229,7 @@ extension DependencyValues {
 }
 
 
-extension APIClient {
+public extension APIClient {
     func fetchCategories() async throws -> [CategoryResponse] {
         // APIResponse<CategoryData>로 디코딩
         let response: APIResponse<CategoryData> = try await request(
@@ -251,7 +253,7 @@ extension APIClient {
     }
 }
 
-extension APIClient {
+public extension APIClient {
     /// 유저 이름 수정
     func updateUserName(name: String) async throws {
         // APIResponse<EmptyData> 형태로 받기
@@ -302,7 +304,7 @@ extension APIClient {
        }
 }
 
-extension APIClient {
+public extension APIClient {
     /// 목표 생성
       func createGoal(
           type: CreateGoalRequest.GoalType,
@@ -496,7 +498,7 @@ extension APIClient {
     }
 }
 
-extension APIClient {
+public extension APIClient {
     /// 유저 계정정보 조회
     func fetchUserAccountInfo() async throws -> UserAccountInfoData {
         let response: APIResponse<UserAccountInfoData> = try await request(
@@ -519,7 +521,7 @@ extension APIClient {
     }
 }
 
-extension APIClient {
+public extension APIClient {
     // GET - 알림 설정 조회
     func fetchNotificationSettings() async throws -> UserNotificationSettingsData {
         let response: APIResponse<UserNotificationSettingsData> = try await request(
@@ -1061,7 +1063,7 @@ extension APIClient {
 }
 
 
-extension APIClient {
+public extension APIClient {
     /// 광고 시청 보상 처리
     func postAdReward() async throws {
         let response: APIResponse<EmptyData> = try await request(
@@ -1084,7 +1086,7 @@ extension APIClient {
     }
 }
 
-extension APIClient {
+public extension APIClient {
     /// 퀴즈 세트 풀이 완료 처리 (일일 퀴즈 횟수 차감)
     func completeQuizSet() async throws {
         let response: APIResponse<EmptyData> = try await request(
@@ -1105,7 +1107,7 @@ extension APIClient {
     }
 }
 
-extension APIClient {
+public extension APIClient {
     /// 퀴즈 가이드 본 것으로 표시
     func updateQuizGuideSeen() async throws {
         let response: APIResponse<QuizGuideSeenData> = try await request(
@@ -1141,7 +1143,7 @@ private struct SSEErrorResponse: Decodable {
     let message: String
 }
 
-extension APIClient {
+public extension APIClient {
     func connectDocumentSSE(
         goalId: Int,
         documentId: Int,

@@ -7,27 +7,27 @@
 
 import SwiftUI
 
-struct TTEMultipleChoiceCard: View {
-    let questionNumber: Int
-    let question: String
-    let choices: [String]
-    @Binding var selectedChoice: Int?
-    let onChoiceSelected: (Int) -> Void
-    
-    let backgroundColor: Color
-    let cornerRadius: CGFloat
-    let padding: CGFloat
-    let shadowRadius: CGFloat
-    let minHeight: CGFloat
-    
-    let choiceSpacing: CGFloat
-    let selectedChoiceColor: Color
-    let unselectedChoiceColor: Color
-    let selectedTextColor: Color
-    let unselectedTextColor: Color
-    let borderColor: Color
-    
-    init(
+public struct TTEMultipleChoiceCard: View {
+    public let questionNumber: Int
+    public let question: String
+    public let choices: [String]
+    @Binding public var selectedChoice: Int?
+    public let onChoiceSelected: (Int) -> Void
+
+    public let backgroundColor: Color
+    public let cornerRadius: CGFloat
+    public let padding: CGFloat
+    public let shadowRadius: CGFloat
+    public let minHeight: CGFloat
+
+    public let choiceSpacing: CGFloat
+    public let selectedChoiceColor: Color
+    public let unselectedChoiceColor: Color
+    public let selectedTextColor: Color
+    public let unselectedTextColor: Color
+    public let borderColor: Color
+
+    public init(
         questionNumber: Int,
         question: String,
         choices: [String],
@@ -63,7 +63,7 @@ struct TTEMultipleChoiceCard: View {
         self.borderColor = borderColor
     }
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Q\(questionNumber)")
                 .font(.system(size: 32, weight: .bold))

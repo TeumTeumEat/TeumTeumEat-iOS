@@ -7,20 +7,20 @@
 
 import SwiftUI
 
-struct TTEQuizCard: View {
-    let questionNumber: Int
-    let question: String
-    @Binding var selectedAnswer: QuizAnswer
-    let onAnswerSelected: (QuizAnswer) -> Void
-    
+public struct TTEQuizCard: View {
+    public let questionNumber: Int
+    public let question: String
+    @Binding public var selectedAnswer: QuizAnswer
+    public let onAnswerSelected: (QuizAnswer) -> Void
+
     // 디자인 옵션
-    let backgroundColor: Color
-    let cornerRadius: CGFloat
-    let padding: CGFloat
-    let shadowRadius: CGFloat
-    let minHeight: CGFloat
-    
-    init(
+    public let backgroundColor: Color
+    public let cornerRadius: CGFloat
+    public let padding: CGFloat
+    public let shadowRadius: CGFloat
+    public let minHeight: CGFloat
+
+    public init(
         questionNumber: Int,
         question: String,
         selectedAnswer: Binding<QuizAnswer>,
@@ -42,7 +42,7 @@ struct TTEQuizCard: View {
         self.minHeight = minHeight
     }
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Question Number
             Text("Q\(questionNumber)")

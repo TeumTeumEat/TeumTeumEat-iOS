@@ -8,18 +8,18 @@
 import Foundation
 import Security
 
-final class KeyChainManager {
-    static let shared = KeyChainManager()
+public final class KeyChainManager {
+    public static let shared = KeyChainManager()
     private init() {}
-    
+
     private let service = "com.teumtuemeat.app"
-    
-    enum KeyChainKey: String {
+
+    public enum KeyChainKey: String {
         case accessToken
         case refreshToken
     }
-    
-    func save(_ value: String, for key: KeyChainKey) {
+
+    public func save(_ value: String, for key: KeyChainKey) {
         let data = value.data(using: .utf8)!
         
         let query: [String: Any] = [
@@ -40,7 +40,7 @@ final class KeyChainManager {
         }
     }
     
-    func get(for key: KeyChainKey) -> String? {
+    public func get(for key: KeyChainKey) -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -63,7 +63,7 @@ final class KeyChainManager {
         }
     }
     
-    func delete(for key: KeyChainKey) {
+    public func delete(for key: KeyChainKey) {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -79,14 +79,14 @@ final class KeyChainManager {
         }
     }
     
-    func deleteAll() {
+    public func deleteAll() {
         delete(for: .accessToken)
         delete(for: .refreshToken)
         print("KeyChain All Deleted")
     }
 }
 
-extension KeyChainManager {
+public extension KeyChainManager {
     func saveAccessToken(_ token: String) {
         save(token, for: .accessToken)
     }

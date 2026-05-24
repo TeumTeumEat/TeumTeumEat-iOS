@@ -7,14 +7,20 @@
 
 import Foundation
 
-struct APIErrorResponse: Decodable {
-    let code: String
-    let message: String
-    let details: String?
+public struct APIErrorResponse: Decodable {
+    public let code: String
+    public let message: String
+    public let details: String?
+
+    public init(code: String, message: String, details: String?) {
+        self.code = code
+        self.message = message
+        self.details = details
+    }
 }
 
 
-enum APIError: Error, LocalizedError, Equatable {
+public enum APIError: Error, LocalizedError, Equatable {
     // 클라이언트 측 에러
     case invalidURL
     case noAccessToken
@@ -29,7 +35,7 @@ enum APIError: Error, LocalizedError, Equatable {
     case decodingError(Error)
     case invalidResponse
     
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .invalidURL:
             return "잘못된 URL입니다."
@@ -61,7 +67,7 @@ enum APIError: Error, LocalizedError, Equatable {
     }
     
     // 에러 코드별 사용자 메시지
-    var userFriendlyMessage: String {
+    public var userFriendlyMessage: String {
         switch self {
         case .serverError(let code, let message, _):
             return userFriendlyMessage(for: code) ?? message
@@ -115,7 +121,7 @@ enum APIError: Error, LocalizedError, Equatable {
     }
     
     // 재시도해도 동일하게 실패하는 에러인지 확인 (파일 자체의 문제)
-    var isNonRetryable: Bool {
+    public var isNonRetryable: Bool {
         if case .serverError(let code, _, _) = self {
             return code == "FILE-003" || code.hasPrefix("S3-4")
         }
@@ -123,7 +129,7 @@ enum APIError: Error, LocalizedError, Equatable {
     }
 
     // 재로그인이 필요한 에러인지 확인
-    var requiresRelogin: Bool {
+    public var requiresRelogin: Bool {
         if case .serverError(let code, _, _) = self {
             return ["AUTH-002", "AUTH-003", "AUTH-005"].contains(code)
         }
@@ -132,7 +138,7 @@ enum APIError: Error, LocalizedError, Equatable {
         return false
     }
     
-    static func == (lhs: APIError, rhs: APIError) -> Bool {
+    public static func == (lhs: APIError, rhs: APIError) -> Bool {
         switch (lhs, rhs) {
         case (.invalidURL, .invalidURL):
             return true

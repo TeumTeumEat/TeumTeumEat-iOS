@@ -7,18 +7,18 @@
 
 import SwiftUI
 
-struct TTETextField: View {
-    @Binding var text: String
-    let placeholder: String
-    let state: TextFieldState
-    let maxLength: Int
-    let height: CGFloat
-    let borderColor: Color
-    let borderWidth: CGFloat
-    let cornerRadius: CGFloat
-    let allowSpaces: Bool
-    
-    init(
+public struct TTETextField: View {
+    @Binding public var text: String
+    public let placeholder: String
+    public let state: TextFieldState
+    public let maxLength: Int
+    public let height: CGFloat
+    public let borderColor: Color
+    public let borderWidth: CGFloat
+    public let cornerRadius: CGFloat
+    public let allowSpaces: Bool
+
+    public init(
         text: Binding<String>,
         placeholder: String = "입력해주세요",
         state: TextFieldState = .default,
@@ -40,7 +40,7 @@ struct TTETextField: View {
         self.state = state
     }
     
-    var body: some View {
+    public var body: some View {
         HStack(spacing: 12) {
             // TextField - 중앙 정렬
             TextField(placeholder,
@@ -103,12 +103,12 @@ struct TTETextField: View {
     }
 }
 
-enum TextFieldState {
+public enum TextFieldState {
     case `default`
     case valid
     case error(String)
-    
-    var borderColor: Color {
+
+    public var borderColor: Color {
         switch self {
         case .default:
             return .gray300
@@ -119,7 +119,7 @@ enum TextFieldState {
         }
     }
     
-    var errorMessage: String? {
+    public var errorMessage: String? {
         switch self {
         case .error(let message):
             return message

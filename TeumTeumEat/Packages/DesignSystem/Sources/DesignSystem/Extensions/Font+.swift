@@ -18,33 +18,33 @@ private enum FontWeight {
     static let regular = "Regular"
 }
 
-extension Font {
+public extension Font {
     private static func custom(_ family: String, _ weight: String, size: CGFloat) -> Font {
         Font.custom("\(family)-\(weight)", size: size)
     }
-    
+
     //TODO: - 안쓰는 폰트 점진적 삭제
     static let head_bold_26 = custom(FontFamily.main, FontWeight.bold, size: 26)
     static let head_bold_20 = custom(FontFamily.main, FontWeight.bold, size: 20)
-       
+
     static let title_semibold_22 = custom(FontFamily.main, FontWeight.semibold, size: 22)
     static let title_semibold_20 = custom(FontFamily.main, FontWeight.semibold, size: 20)
     static let title_semibold_18 = custom(FontFamily.main, FontWeight.semibold, size: 18)
     static let title_semibold_16 = custom(FontFamily.main, FontWeight.semibold, size: 16)
-       
+
     static let body1_medium_18 = custom(FontFamily.main, FontWeight.medium, size: 18)
     static let body1_medium_14 = custom(FontFamily.main, FontWeight.medium, size: 14)
-       
+
     static let body2_regular_16 = custom(FontFamily.main, FontWeight.regular, size: 16)
     static let body2_regular_14 = custom(FontFamily.main, FontWeight.regular, size: 14)
-       
+
     static let caption_regular_12 = custom(FontFamily.main, FontWeight.regular, size: 12)
-    
+
     // title
     static let t_bold_24 = custom(FontFamily.main, FontWeight.bold, size: 24)
     static let t_bold_22 = custom(FontFamily.main, FontWeight.bold, size: 22)
     static let t_bold_20 = custom(FontFamily.main, FontWeight.bold, size: 20)
-    
+
     // subtitle
     static let st_semibold_20 = custom(FontFamily.main, FontWeight.semibold, size: 20)
     static let st_semibold_18 = custom(FontFamily.main, FontWeight.semibold, size: 18)
@@ -53,11 +53,11 @@ extension Font {
     // body
     static let bd_medium_16 = custom(FontFamily.main, FontWeight.medium, size: 16)
     static let bd_medium_14 = custom(FontFamily.main, FontWeight.medium, size: 14)
-    
+
     // caption
     static let c_regular_14 = custom(FontFamily.main, FontWeight.regular, size: 14)
     static let c_regular_12 = custom(FontFamily.main, FontWeight.regular, size: 12)
-    
+
     // button
     static let bt_bold_20 = custom(FontFamily.main, FontWeight.bold, size: 20)
     static let bt_semibold_20 = custom(FontFamily.main, FontWeight.semibold, size: 20)
@@ -67,14 +67,22 @@ extension Font {
     static let bt_medium_18 = custom(FontFamily.main, FontWeight.medium, size: 18)
 }
 
-struct TypographyStyle {
-    let font: Font
-    let fontSize: CGFloat
-    let weight: UIFont.Weight
-    let letterSpacingPercent: CGFloat
-    let lineHeightPercent: CGFloat
-    
-     static let headBold26 = TypographyStyle(
+public struct TypographyStyle {
+    public let font: Font
+    public let fontSize: CGFloat
+    public let weight: UIFont.Weight
+    public let letterSpacingPercent: CGFloat
+    public let lineHeightPercent: CGFloat
+
+    public init(font: Font, fontSize: CGFloat, weight: UIFont.Weight, letterSpacingPercent: CGFloat, lineHeightPercent: CGFloat) {
+        self.font = font
+        self.fontSize = fontSize
+        self.weight = weight
+        self.letterSpacingPercent = letterSpacingPercent
+        self.lineHeightPercent = lineHeightPercent
+    }
+
+     public static let headBold26 = TypographyStyle(
          font: .head_bold_26,
          fontSize: 26,
          weight: .bold,
@@ -82,7 +90,7 @@ struct TypographyStyle {
          lineHeightPercent: 130
      )
      
-     static let headBold20 = TypographyStyle(
+     public static let headBold20 = TypographyStyle(
          font: .head_bold_20,
          fontSize: 20,
          weight: .bold,
@@ -90,7 +98,7 @@ struct TypographyStyle {
          lineHeightPercent: 130
      )
      
-     static let titleSemibold22 = TypographyStyle(
+     public static let titleSemibold22 = TypographyStyle(
          font: .title_semibold_22,
          fontSize: 22,
          weight: .semibold,
@@ -98,7 +106,7 @@ struct TypographyStyle {
          lineHeightPercent: 150
      )
      
-     static let titleSemibold20 = TypographyStyle(
+     public static let titleSemibold20 = TypographyStyle(
          font: .title_semibold_20,
          fontSize: 20,
          weight: .semibold,
@@ -106,7 +114,7 @@ struct TypographyStyle {
          lineHeightPercent: 150
      )
      
-     static let titleSemibold18 = TypographyStyle(
+     public static let titleSemibold18 = TypographyStyle(
          font: .title_semibold_18,
          fontSize: 18,
          weight: .semibold,
@@ -114,7 +122,7 @@ struct TypographyStyle {
          lineHeightPercent: 150
      )
      
-     static let titleSemibold16 = TypographyStyle(
+     public static let titleSemibold16 = TypographyStyle(
          font: .title_semibold_16,
          fontSize: 16,
          weight: .semibold,
@@ -122,7 +130,7 @@ struct TypographyStyle {
          lineHeightPercent: 150
      )
      
-     static let bodyMedium18 = TypographyStyle(
+     public static let bodyMedium18 = TypographyStyle(
          font: .body1_medium_18,
          fontSize: 18,
          weight: .medium,
@@ -130,7 +138,7 @@ struct TypographyStyle {
          lineHeightPercent: 150
      )
      
-     static let bodyMedium14 = TypographyStyle(
+     public static let bodyMedium14 = TypographyStyle(
          font: .body1_medium_14,
          fontSize: 14,
          weight: .medium,
@@ -138,7 +146,7 @@ struct TypographyStyle {
          lineHeightPercent: 150
      )
      
-     static let bodyRegular16 = TypographyStyle(
+     public static let bodyRegular16 = TypographyStyle(
          font: .body2_regular_16,
          fontSize: 16,
          weight: .regular,
@@ -146,7 +154,7 @@ struct TypographyStyle {
          lineHeightPercent: 100
      )
      
-     static let bodyRegular14 = TypographyStyle(
+     public static let bodyRegular14 = TypographyStyle(
          font: .body2_regular_14,
          fontSize: 14,
          weight: .regular,
@@ -154,7 +162,7 @@ struct TypographyStyle {
          lineHeightPercent: 150
      )
      
-     static let captionRegular12 = TypographyStyle(
+     public static let captionRegular12 = TypographyStyle(
          font: .caption_regular_12,
          fontSize: 12,
          weight: .regular,
@@ -163,7 +171,7 @@ struct TypographyStyle {
      )
 }
 
-extension Text {
+public extension Text {
     private func applyTypography(_ style: TypographyStyle) -> some View {
         self.font(style.font)
             .kerning(TypographyHelper.customLetterSpacing(
@@ -383,12 +391,12 @@ extension Text {
     
 }
 
-struct TypographyHelper {
-    static func customLetterSpacing(fontSize: CGFloat, percent: CGFloat) -> CGFloat {
+public struct TypographyHelper {
+    public static func customLetterSpacing(fontSize: CGFloat, percent: CGFloat) -> CGFloat {
         return fontSize * (percent / 100)
     }
     
-    static func customLineHeight(
+    public static func customLineHeight(
         fontSize: CGFloat,
         weight: UIFont.Weight,
         targetLineHeightPercent: CGFloat
@@ -400,7 +408,7 @@ struct TypographyHelper {
         return max(0, additionalSpacing)
     }
     
-    static func calculateLineSpacing(
+    public static func calculateLineSpacing(
         fontSize: CGFloat,
         weight: UIFont.Weight,
         targetLineHeight: CGFloat

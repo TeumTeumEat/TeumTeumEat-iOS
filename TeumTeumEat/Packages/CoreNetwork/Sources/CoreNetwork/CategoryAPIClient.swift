@@ -8,12 +8,16 @@
 import Foundation
 import Dependencies
 
-struct CategoryAPIClient {
-    var fetchCategories: @Sendable () async throws -> [CategoryResponse]
+public struct CategoryAPIClient {
+    public var fetchCategories: @Sendable () async throws -> [CategoryResponse]
+
+    public init(fetchCategories: @escaping @Sendable () async throws -> [CategoryResponse]) {
+        self.fetchCategories = fetchCategories
+    }
 }
 
 extension CategoryAPIClient: DependencyKey {
-    static let liveValue = CategoryAPIClient(
+    public static let liveValue = CategoryAPIClient(
         fetchCategories: {
             do {
                 let baseURL = Config.baseURL
@@ -111,7 +115,7 @@ extension CategoryAPIClient: DependencyKey {
     )
 }
 
-extension DependencyValues {
+public extension DependencyValues {
     var categoryAPIClient: CategoryAPIClient {
         get { self[CategoryAPIClient.self] }
         set { self[CategoryAPIClient.self] = newValue }
@@ -120,11 +124,11 @@ extension DependencyValues {
 
 
 
-enum CategoryAPIError: Error, LocalizedError {
+public enum CategoryAPIError: Error, LocalizedError {
     case invalidResponse(message: String, details: String?)
     case networkError(Error)
     
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .invalidResponse(let message, let details):
             if let details = details {
@@ -137,7 +141,7 @@ enum CategoryAPIError: Error, LocalizedError {
     }
 }
 
-extension CategoryAPIClient {
+public extension CategoryAPIClient {
     static let testValue = CategoryAPIClient(
         fetchCategories: {
             // Mock 데이터
