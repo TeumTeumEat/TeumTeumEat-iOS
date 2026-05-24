@@ -249,6 +249,8 @@
 				46C647612F06D960009F030A /* XCRemoteSwiftPackageReference "lottie-ios" */,
 				46C65A622F13E1FA009F030A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				46C646932F6982AC005BA910 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+				46F2FFC72FC3054B001A9707 /* XCLocalSwiftPackageReference "Packages/DesignSystem" */,
+				46F2FFC82FC307A8001A9707 /* XCLocalSwiftPackageReference "Packages/CoreNetwork" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 46FE666F2EE1770E009E626A /* Products */;
@@ -639,6 +641,17 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		46F2FFC72FC3054B001A9707 /* XCLocalSwiftPackageReference "Packages/DesignSystem" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/DesignSystem;
+		};
+		46F2FFC82FC307A8001A9707 /* XCLocalSwiftPackageReference "Packages/CoreNetwork" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/CoreNetwork;
+		};
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
 		46AE2A9F2F0125BD0061B2EE /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */ = {
