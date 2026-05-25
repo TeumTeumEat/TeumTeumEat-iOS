@@ -19,7 +19,8 @@ let package = Package(
             dependencies: [
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ],
-            path: "Sources/CoreNetwork"
+            path: "Sources/CoreNetwork",
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
     ]
 )

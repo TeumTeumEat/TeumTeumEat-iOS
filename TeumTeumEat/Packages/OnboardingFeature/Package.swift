@@ -19,14 +19,16 @@ let package = Package(
             dependencies: [
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ],
-            path: "Sources/OnboardingFeature"
+            path: "Sources/OnboardingFeature",
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .executableTarget(
             name: "OnboardingDemoApp",
             dependencies: [
                 "OnboardingFeature",
             ],
-            path: "Sources/OnboardingDemoApp"
+            path: "Sources/OnboardingDemoApp",
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
     ]
 )

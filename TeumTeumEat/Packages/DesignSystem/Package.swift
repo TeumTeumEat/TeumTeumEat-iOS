@@ -13,7 +13,8 @@ let package = Package(
     targets: [
         .target(
             name: "DesignSystem",
-            path: "Sources/DesignSystem"
+            path: "Sources/DesignSystem",
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
     ]
 )

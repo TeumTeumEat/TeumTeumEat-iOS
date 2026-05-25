@@ -47,7 +47,7 @@ public struct TTETextField: View {
                       text: $text,
                       prompt: Text("입력해주세요")
                         .font(.bd_medium_16)
-                        .foregroundStyle(.gray600)
+                        .foregroundStyle(Color.gray600)
             )
             .lineSpacing(TypographyHelper.calculateLineSpacing(
                 fontSize: 16,

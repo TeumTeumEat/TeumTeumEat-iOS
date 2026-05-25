@@ -152,7 +152,7 @@ struct MyView: View {
         ) { index in
             switch index {
             case 0:
-                ButtonTestView()
+                EmptyView()
             case 1:
                 MyView2()
             default:
