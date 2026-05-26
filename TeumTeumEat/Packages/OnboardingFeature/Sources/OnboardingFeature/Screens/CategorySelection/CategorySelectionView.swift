@@ -519,7 +519,7 @@ struct CategoryGridButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                Image(icon)
+                Image(icon, bundle: .module)
                     .resizable()
                     .frame(width: 24, height: 24)
                 

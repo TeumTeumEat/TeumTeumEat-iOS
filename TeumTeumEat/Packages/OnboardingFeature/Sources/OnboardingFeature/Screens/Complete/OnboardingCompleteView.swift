@@ -15,7 +15,7 @@ struct OnboardingCompleteView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            LottieView(animation: .named("onboarding_comp"))
+            LottieView(animation: .named("onboarding_comp", bundle: .module))
                 .playing(loopMode: .loop)
                 .resizable()
                 .scaledToFit()
