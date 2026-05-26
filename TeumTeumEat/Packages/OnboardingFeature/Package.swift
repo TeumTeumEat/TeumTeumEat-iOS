@@ -28,13 +28,5 @@ let package = Package(
             path: "Sources/OnboardingFeature",
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
-        .executableTarget(
-            name: "OnboardingDemoApp",
-            dependencies: [
-                "OnboardingFeature",
-            ],
-            path: "Sources/OnboardingDemoApp",
-            swiftSettings: [.swiftLanguageMode(.v5)]
-        ),
     ]
 )
