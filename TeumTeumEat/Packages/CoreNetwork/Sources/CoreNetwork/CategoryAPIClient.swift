@@ -163,6 +163,13 @@ public extension CategoryAPIClient {
                 CategoryResponse(categoryId: 12, name: "Spring Boot",       path: "/IT/웹개발자/백엔드"),
                 CategoryResponse(categoryId: 13, name: "Node.js",           path: "/IT/웹개발자/백엔드"),
                 CategoryResponse(categoryId: 14, name: "RESTful API 설계",   path: "/IT/웹개발자/백엔드"),
+                CategoryResponse(categoryId: 51, name: "Django",            path: "/IT/웹개발자/백엔드"),
+                CategoryResponse(categoryId: 52, name: "FastAPI",           path: "/IT/웹개발자/백엔드"),
+                CategoryResponse(categoryId: 53, name: "GraphQL",           path: "/IT/웹개발자/백엔드"),
+                CategoryResponse(categoryId: 54, name: "gRPC",              path: "/IT/웹개발자/백엔드"),
+                CategoryResponse(categoryId: 55, name: "인증과 보안 (JWT)",    path: "/IT/웹개발자/백엔드"),
+                CategoryResponse(categoryId: 56, name: "서버 아키텍처",         path: "/IT/웹개발자/백엔드"),
+                CategoryResponse(categoryId: 57, name: "마이크로서비스",         path: "/IT/웹개발자/백엔드"),
                 // MARK: IT - DevOps - 클라우드
                 CategoryResponse(categoryId: 15, name: "AWS 기초",           path: "/IT/DevOps/클라우드"),
                 CategoryResponse(categoryId: 16, name: "Docker",            path: "/IT/DevOps/클라우드"),
