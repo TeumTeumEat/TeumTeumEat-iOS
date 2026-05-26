@@ -26,6 +26,7 @@ let package = Package(
                 .product(name: "CoreNetwork", package: "CoreNetwork"),
             ],
             path: "Sources/OnboardingFeature",
+            resources: [.process("Resources")],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
     ]
