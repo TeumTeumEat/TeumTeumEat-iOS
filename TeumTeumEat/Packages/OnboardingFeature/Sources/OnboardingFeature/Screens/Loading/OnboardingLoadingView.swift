@@ -32,7 +32,7 @@ public struct OnboardingLoadingView: View {
                     )
                 }
 
-                Image("character")
+                Image("character", bundle: .module)
                     .resizable()
                     .scaledToFit()
                     .padding(40)

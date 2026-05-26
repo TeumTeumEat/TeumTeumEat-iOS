@@ -38,7 +38,7 @@ public struct DurationSelectionView: View {
 
             ScrollView {
                 VStack(spacing: 0) {
-                    Image("character_period")
+                    Image("character_period", bundle: .module)
                         .resizable()
                         .scaledToFit()
                         .frame(height: 283)

@@ -48,7 +48,7 @@ public struct FileUploadView: View {
 
             ScrollView {
                 VStack(spacing: 0) {
-                    Image("character_pdf")
+                    Image("character_pdf", bundle: .module)
                         .resizable()
                         .scaledToFit()
                         .frame(height: 283)
@@ -57,7 +57,7 @@ public struct FileUploadView: View {
 
                     // 파일 업로드 버튼
                     TTECategoryButton(
-                        icon: Image("files"),
+                        icon: Image("files", bundle: .module),
                         title: store.isLoadingFile
                             ? "파일 확인 중..."
                             : (store.selectedFileName ?? "파일 업로드"),

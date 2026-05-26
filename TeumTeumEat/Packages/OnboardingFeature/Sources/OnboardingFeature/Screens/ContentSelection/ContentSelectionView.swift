@@ -38,7 +38,7 @@ public struct ContentSelectionView: View {
 
             ScrollView {
                 VStack(spacing: 0) {
-                    Image("character_select")
+                    Image("character_select", bundle: .module)
                         .resizable()
                         .scaledToFit()
                         .frame(height: 283)
@@ -47,7 +47,7 @@ public struct ContentSelectionView: View {
 
                     HStack(spacing: 16) {
                         TTECategoryButton(
-                            icon: Image("icon_category_fill"),
+                            icon: Image("icon_category_fill", bundle: .module),
                             title: "카테고리 선택",
                             subtitle: "공부하고 싶은걸\n골라볼게요",
                             isSelected: store.selectedType == .category
@@ -56,7 +56,7 @@ public struct ContentSelectionView: View {
                         }
 
                         TTECategoryButton(
-                            icon: Image("files"),
+                            icon: Image("files", bundle: .module),
                             title: "파일 업로드",
                             subtitle: "공부하고 싶은\n내용이 있어요",
                             isSelected: store.selectedType == .fileUpload
