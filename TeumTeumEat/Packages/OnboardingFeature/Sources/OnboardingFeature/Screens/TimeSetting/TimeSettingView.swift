@@ -35,7 +35,7 @@ struct TimeSettingView: View {
                 
                 ScrollView {
                     VStack(spacing: 0) {
-                        Image("character_comment")
+                        Image("character_comment", bundle: .module)
                             .resizable()
                             .scaledToFit()
                             .frame(height: 265)

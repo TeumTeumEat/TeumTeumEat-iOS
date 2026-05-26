@@ -39,7 +39,7 @@ struct NameInputView: View {
                     ScrollViewReader { proxy in
                         ScrollView {
                             VStack(spacing: 0) {
-                                Image("character_nameInput")
+                                Image("character_nameInput", bundle: .module)
                                     .resizable()
                                     .scaledToFit()
                                     .frame(height: 264)

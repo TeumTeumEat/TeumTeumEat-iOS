@@ -136,7 +136,7 @@ struct RootCategoryStepView: View {
 
             ScrollView {
                 VStack(spacing: 0) {
-                    Image("character_category")
+                    Image("character_category", bundle: .module)
                         .resizable()
                         .scaledToFit()
                         .frame(height: 264)
@@ -219,7 +219,7 @@ struct MainCategoryStepView: View {
 
             ScrollView {
                 VStack(spacing: 0) {
-                    Image("character_category")
+                    Image("character_category", bundle: .module)
                         .resizable()
                         .scaledToFit()
                         .frame(height: 264)
@@ -302,7 +302,7 @@ struct SubCategoryStepView: View {
 
             ScrollView {
                 VStack(spacing: 0) {
-                    Image("character_category")
+                    Image("character_category", bundle: .module)
                         .resizable()
                         .scaledToFit()
                         .frame(height: 264)
@@ -378,7 +378,7 @@ struct DetailCategoryStepView: View {
             
             ScrollView {
                 VStack(spacing: 0) {
-                    Image("character_category")
+                    Image("character_category", bundle: .module)
                         .resizable()
                         .scaledToFit()
                         .frame(height: 264)
@@ -519,7 +519,7 @@ struct CategoryGridButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                Image(icon)
+                Image(icon, bundle: .module)
                     .resizable()
                     .frame(width: 24, height: 24)
                 

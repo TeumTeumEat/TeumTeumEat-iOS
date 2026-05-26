@@ -14,14 +14,14 @@ struct WelcomeView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            Image("character_onboarding")
+            Image("character_onboarding", bundle: .module)
                 .resizable()
                 .scaledToFit()
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 30)
                 .padding(.top, 70)
 
-            Image("logo_login")
+            Image("logo_login", bundle: .module)
                 .resizable()
                 .frame(width: 131, height: 40)
                 .padding(.top, 21)
