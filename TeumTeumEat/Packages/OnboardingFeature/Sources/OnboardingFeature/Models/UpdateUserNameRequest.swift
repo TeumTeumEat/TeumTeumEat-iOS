@@ -7,19 +7,17 @@
 
 import Foundation
 
-struct EmptyData: Decodable {}
-
-
-struct UpdateUserNameRequest: Encodable {
-    let name: String
+public struct UpdateUserNameRequest: Encodable {
+    public let name: String
+    public init(name: String) { self.name = name }
 }
 
-struct UserNameData: Codable, Equatable {
-    let name: String
+public struct UserNameData: Codable, Equatable {
+    public let name: String
 }
 
-struct CommuteInfoData: Codable, Equatable {
-    let startTime: String  // "08:00:00" 형식
-    let endTime: String    // "18:00:00" 형식
-    let usageTime: Int     // 분 단위
+public struct CommuteInfoData: Codable, Equatable {
+    public let startTime: String  // "08:00:00" 형식
+    public let endTime: String    // "18:00:00" 형식
+    public let usageTime: Int     // 분 단위
 }

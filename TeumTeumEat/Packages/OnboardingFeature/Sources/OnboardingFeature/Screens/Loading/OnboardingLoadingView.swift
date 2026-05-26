@@ -9,11 +9,15 @@ import SwiftUI
 import ComposableArchitecture
 import DesignSystem
 
-struct OnboardingLoadingView: View {
-    @Bindable var store: StoreOf<OnboardingLoadingFeature>
+public struct OnboardingLoadingView: View {
+    @Bindable public var store: StoreOf<OnboardingLoadingFeature>
+
+    public init(store: StoreOf<OnboardingLoadingFeature>) {
+        self.store = store
+    }
     @State private var spinningProgress: CGFloat = 0.0
 
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) {
             ZStack {
                 if store.isFileUpload {

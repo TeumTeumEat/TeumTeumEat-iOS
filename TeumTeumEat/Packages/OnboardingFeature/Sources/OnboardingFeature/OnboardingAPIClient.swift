@@ -8,7 +8,7 @@ import Dependencies
 import CoreNetwork
 
 // MARK: - Empty Response Placeholder
-struct EmptyData: Decodable {}
+public struct EmptyData: Decodable {}
 
 // MARK: - SSE Internal Types
 private struct SSEDataPayload: Decodable {

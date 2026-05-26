@@ -15,7 +15,7 @@ public struct OnboardingView: View {
         self.store = store
     }
     
-    var body: some View {
+    public var body: some View {
         Group {
             if let welcomeStore = store.scope(state: \.welcome, action: \.welcome) {
                 WelcomeView(store: welcomeStore)

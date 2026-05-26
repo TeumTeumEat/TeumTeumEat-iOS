@@ -9,34 +9,65 @@ import ComposableArchitecture
 import Foundation
 
 @Reducer
-struct OnboardingSummaryFeature {
+public struct OnboardingSummaryFeature {
+    public init() {}
     @ObservableState
-    struct State: Equatable {
-        let userName: String
-        let leaveHomeTime: Date?
-        let returnHomeTime: Date?
-        let dailyUsageMinutes: Int
-        let programWeeks: Int
-        let contentType: OnboardingData.ContentType
-        let fileName: String?
-        let rootCategory: String?
-        let mainCategory: String?
-        let subCategory: String?
-        let detailCategory: String?
-        let difficulty: String?
-        let customPrompt: String
-        
-        var leaveTimeText: String {
+    public struct State: Equatable {
+        public let userName: String
+        public let leaveHomeTime: Date?
+        public let returnHomeTime: Date?
+        public let dailyUsageMinutes: Int
+        public let programWeeks: Int
+        public let contentType: OnboardingData.ContentType
+        public let fileName: String?
+        public let rootCategory: String?
+        public let mainCategory: String?
+        public let subCategory: String?
+        public let detailCategory: String?
+        public let difficulty: String?
+        public let customPrompt: String
+
+        public init(
+            userName: String,
+            leaveHomeTime: Date?,
+            returnHomeTime: Date?,
+            dailyUsageMinutes: Int,
+            programWeeks: Int,
+            contentType: OnboardingData.ContentType,
+            fileName: String?,
+            rootCategory: String?,
+            mainCategory: String?,
+            subCategory: String?,
+            detailCategory: String?,
+            difficulty: String?,
+            customPrompt: String
+        ) {
+            self.userName = userName
+            self.leaveHomeTime = leaveHomeTime
+            self.returnHomeTime = returnHomeTime
+            self.dailyUsageMinutes = dailyUsageMinutes
+            self.programWeeks = programWeeks
+            self.contentType = contentType
+            self.fileName = fileName
+            self.rootCategory = rootCategory
+            self.mainCategory = mainCategory
+            self.subCategory = subCategory
+            self.detailCategory = detailCategory
+            self.difficulty = difficulty
+            self.customPrompt = customPrompt
+        }
+
+        public var leaveTimeText: String {
             guard let time = leaveHomeTime else { return "미설정" }
             return formatTime(time)
         }
-        
-        var returnTimeText: String {
+
+        public var returnTimeText: String {
             guard let time = returnHomeTime else { return "미설정" }
             return formatTime(time)
         }
-        
-        var usageTimeText: String {
+
+        public var usageTimeText: String {
             switch dailyUsageMinutes {
             case 5: return "3문제"
             case 7: return "5문제"
@@ -45,12 +76,12 @@ struct OnboardingSummaryFeature {
             default: return "\(dailyUsageMinutes)분"
             }
         }
-        
-        var durationText: String {
+
+        public var durationText: String {
             "\(programWeeks)주"
         }
-        
-        var categoryText: String {
+
+        public var categoryText: String {
             guard let root = rootCategory,
                   let main = mainCategory,
                   let sub = subCategory,
@@ -59,15 +90,15 @@ struct OnboardingSummaryFeature {
             }
             return "\(root) > \(main) > \(sub) > \(detail)"
         }
-        
-        var fileNameText: String {
+
+        public var fileNameText: String {
             fileName ?? "없음"
         }
-        
-        var difficultyText: String {
+
+        public var difficultyText: String {
             difficulty ?? "미설정"
         }
-        
+
         private func formatTime(_ date: Date) -> String {
             let formatter = DateFormatter()
             formatter.locale = Locale(identifier: "ko_KR")
@@ -75,18 +106,18 @@ struct OnboardingSummaryFeature {
             return formatter.string(from: date)
         }
     }
-    
-    enum Action {
+
+    public enum Action {
         case backTapped
         case completeTapped
     }
-    
-    var body: some ReducerOf<Self> {
+
+    public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .backTapped:
                 return .none
-                
+
             case .completeTapped:
                 return .none
             }

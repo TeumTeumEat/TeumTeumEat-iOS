@@ -9,10 +9,14 @@ import SwiftUI
 import ComposableArchitecture
 import DesignSystem
 
-struct ContentSelectionView: View {
+public struct ContentSelectionView: View {
     let store: StoreOf<ContentSelectionFeature>
-    
-    var body: some View {
+
+    public init(store: StoreOf<ContentSelectionFeature>) {
+        self.store = store
+    }
+
+    public var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 16) {
                 Button {

@@ -11,22 +11,22 @@ import SwiftUI
 @Reducer
 public struct OnboardingFeature {
     @ObservableState
-    struct State: Equatable {
-        var currentStep: Step = .welcome
-        var onboardingData = OnboardingData()
-        
-        var welcome: WelcomeFeature.State?
-        var timeSetting: TimeSettingFeature.State?
-        var contentSelection: ContentSelectionFeature.State?
-        var fileUpload: FileUploadFeature.State?
-        var categorySelection: CategorySelectionFeature.State?
-        var difficultySelection: DifficultySelectionFeature.State?
-        var durationSelection: DurationSelectionFeature.State?
-        var summary: OnboardingSummaryFeature.State?
-        var loading: OnboardingLoadingFeature.State?
-        var complete: OnboardingCompleteFeature.State?
-        
-        enum Step: Int {
+    public struct State: Equatable {
+        public var currentStep: Step = .welcome
+        public var onboardingData = OnboardingData()
+
+        public var welcome: WelcomeFeature.State?
+        public var timeSetting: TimeSettingFeature.State?
+        public var contentSelection: ContentSelectionFeature.State?
+        public var fileUpload: FileUploadFeature.State?
+        public var categorySelection: CategorySelectionFeature.State?
+        public var difficultySelection: DifficultySelectionFeature.State?
+        public var durationSelection: DurationSelectionFeature.State?
+        public var summary: OnboardingSummaryFeature.State?
+        public var loading: OnboardingLoadingFeature.State?
+        public var complete: OnboardingCompleteFeature.State?
+
+        public enum Step: Int {
             case welcome = 0
             case timeSetting = 1
             case contentSelection = 2
@@ -38,13 +38,13 @@ public struct OnboardingFeature {
             case loading = 10
             case complete = 11
         }
-        
-        init() {
+
+        public init() {
             self.welcome = WelcomeFeature.State()
         }
     }
-    
-    enum Action {
+
+    public enum Action {
         case welcome(WelcomeFeature.Action)
         case timeSetting(TimeSettingFeature.Action)
         case contentSelection(ContentSelectionFeature.Action)
@@ -59,7 +59,9 @@ public struct OnboardingFeature {
         case previousStep
     }
     
-    var body: some ReducerOf<Self> {
+    public init() {}
+
+    public var body: some ReducerOf<Self> {
         Reduce(self.core)
             .onChange(of: \.onboardingData) { oldValue, newValue in
                 Reduce { state, action in

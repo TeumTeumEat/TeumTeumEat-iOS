@@ -5,6 +5,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import OnboardingFeature
 
 @Reducer
 struct NewGoalFlowFeature {
@@ -93,18 +94,18 @@ struct NewGoalFlowView: View {
         switch store.step {
         case .contentSelection:
             ContentSelectionView(store: store.scope(state: \.contentSelection, action: \.contentSelection))
-                .transition(.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .leading)))
+                .transition(AnyTransition.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .leading)))
 
         case .addSubject:
             if let addSubjectStore = store.scope(state: \.addSubject, action: \.addSubject) {
                 AddSubjectView(store: addSubjectStore)
-                    .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
+                    .transition(AnyTransition.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
             }
 
         case .addSubjectFile:
             if let addSubjectFileStore = store.scope(state: \.addSubjectFile, action: \.addSubjectFile) {
                 AddSubjectFileView(store: addSubjectFileStore)
-                    .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
+                    .transition(AnyTransition.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
             }
         }
     }

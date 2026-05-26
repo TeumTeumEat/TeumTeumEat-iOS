@@ -9,11 +9,16 @@ import SwiftUI
 import ComposableArchitecture
 import DesignSystem
 
-struct CategorySelectionView: View {
+public struct CategorySelectionView: View {
     let store: StoreOf<CategorySelectionFeature>
-    var showProgressBar: Bool = true
+    var showProgressBar: Bool
+
+    public init(store: StoreOf<CategorySelectionFeature>, showProgressBar: Bool = true) {
+        self.store = store
+        self.showProgressBar = showProgressBar
+    }
     
-    var body: some View {
+    public var body: some View {
         Group {
             if store.isLoading {
                 LoadingView()

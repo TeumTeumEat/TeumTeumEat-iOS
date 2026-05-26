@@ -5,9 +5,13 @@
 //  Created by 임재현 on 1/4/26.
 //
 
-import SwiftUI
+import Foundation
 
-struct RegisterDeviceTokenRequest: Encodable {
-    let token: String
-    let deviceType: String  
+public struct RegisterDeviceTokenRequest: Encodable {
+    public let token: String
+    public let deviceType: String
+    public init(token: String, deviceType: String) {
+        self.token = token
+        self.deviceType = deviceType
+    }
 }

@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import OnboardingFeature
 import SwiftUI
 
 struct AppView: View {

@@ -9,17 +9,18 @@ import SwiftUI
 import ComposableArchitecture
 
 @Reducer
-struct OnboardingCompleteFeature {
+public struct OnboardingCompleteFeature {
+    public init() {}
     @ObservableState
-    struct State: Equatable {
-        let userName: String
+    public struct State: Equatable {
+        public let userName: String
     }
-    
-    enum Action {
+
+    public enum Action {
         case startButtonTapped
     }
-    
-    var body: some ReducerOf<Self> {
+
+    public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .startButtonTapped:

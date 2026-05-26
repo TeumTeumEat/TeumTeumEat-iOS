@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import OnboardingFeature
 
 @Reducer
 struct AddSubjectFileFeature {
@@ -60,7 +61,7 @@ struct AddSubjectFileFeature {
     }
     
     var body: some ReducerOf<Self> {
-        Reduce { state, action in
+        Reduce { (state: inout State, action: Action) -> Effect<Action> in
             switch action {
             // MARK: - File Upload
             case .fileUpload(.backTapped):

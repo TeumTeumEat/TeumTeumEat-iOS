@@ -8,7 +8,7 @@
 import SwiftUI
 import UIKit
 
-struct TimePickerModal: View {
+public struct TimePickerModal: View {
     let title: String
     @Binding var selectedTime: Date?
     let onDismiss: () -> Void
@@ -16,7 +16,14 @@ struct TimePickerModal: View {
 
     @State private var tempTime: Date = Date()
 
-    var body: some View {
+    public init(title: String, selectedTime: Binding<Date?>, onDismiss: @escaping () -> Void, minuteInterval: Int = 1) {
+        self.title = title
+        self._selectedTime = selectedTime
+        self.onDismiss = onDismiss
+        self.minuteInterval = minuteInterval
+    }
+
+    public var body: some View {
         VStack(spacing: 0) {
             Spacer()
                 .frame(height: 24)
@@ -76,11 +83,16 @@ struct TimePickerModal: View {
     }
 }
 
-struct WheelDatePickerView: UIViewRepresentable {
-    @Binding var date: Date
-    let minuteInterval: Int
+public struct WheelDatePickerView: UIViewRepresentable {
+    @Binding public var date: Date
+    public let minuteInterval: Int
 
-    func makeUIView(context: Context) -> UIDatePicker {
+    public init(date: Binding<Date>, minuteInterval: Int) {
+        self._date = date
+        self.minuteInterval = minuteInterval
+    }
+
+    public func makeUIView(context: Context) -> UIDatePicker {
         let picker = UIDatePicker()
         picker.datePickerMode = .time
         picker.preferredDatePickerStyle = .wheels
@@ -90,17 +102,17 @@ struct WheelDatePickerView: UIViewRepresentable {
         return picker
     }
 
-    func updateUIView(_ uiView: UIDatePicker, context: Context) {
+    public func updateUIView(_ uiView: UIDatePicker, context: Context) {
         uiView.date = date
     }
 
-    func makeCoordinator() -> Coordinator {
+    public func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
 
-    class Coordinator: NSObject {
+    public class Coordinator: NSObject {
         var parent: WheelDatePickerView
-        init(_ parent: WheelDatePickerView) { self.parent = parent }
+        public init(_ parent: WheelDatePickerView) { self.parent = parent }
 
         @objc func dateChanged(_ picker: UIDatePicker) {
             parent.date = picker.date

@@ -161,11 +161,16 @@ struct OnboardingSummaryView: View {
     }
 }
 
-struct SummaryRow: View {
-    let title: String
-    let value: String
-    
-    var body: some View {
+public struct SummaryRow: View {
+    public let title: String
+    public let value: String
+
+    public init(title: String, value: String) {
+        self.title = title
+        self.value = value
+    }
+
+    public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .stSemibold16()
@@ -190,13 +195,19 @@ struct SummaryRow: View {
     }
 }
 
-struct ExpandableSummaryRow: View {
-    let categories: [String] // ["앱 개발자", "Swift", "SwiftUI"]
-    let items: [QuizHistoryItem]
+public struct ExpandableSummaryRow: View {
+    public let categories: [String]
+    public let items: [QuizHistoryItem]
     @State private var isExpanded: Bool = false
-    let onItemTapped: (QuizHistoryItem) -> Void
-    
-    var body: some View {
+    public let onItemTapped: (QuizHistoryItem) -> Void
+
+    public init(categories: [String], items: [QuizHistoryItem], onItemTapped: @escaping (QuizHistoryItem) -> Void) {
+        self.categories = categories
+        self.items = items
+        self.onItemTapped = onItemTapped
+    }
+
+    public var body: some View {
         VStack(spacing: 0) {
             // 헤더 - 카테고리 계층 표시
             Button(action: {
@@ -305,10 +316,18 @@ struct ExpandableSummaryRow: View {
     }
 }
 
-struct QuizHistoryItem: Identifiable {
-    let id: String
-    let title: String
-    let dateText: String
-    let summarySnippet: String
-    var isStreak: Bool = false // 연속 달성 여부
+public struct QuizHistoryItem: Identifiable {
+    public let id: String
+    public let title: String
+    public let dateText: String
+    public let summarySnippet: String
+    public var isStreak: Bool = false
+
+    public init(id: String, title: String, dateText: String, summarySnippet: String, isStreak: Bool = false) {
+        self.id = id
+        self.title = title
+        self.dateText = dateText
+        self.summarySnippet = summarySnippet
+        self.isStreak = isStreak
+    }
 }

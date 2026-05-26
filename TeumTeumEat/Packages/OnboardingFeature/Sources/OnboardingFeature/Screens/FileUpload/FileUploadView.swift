@@ -9,11 +9,16 @@ import SwiftUI
 import ComposableArchitecture
 import DesignSystem
 
-struct FileUploadView: View {
+public struct FileUploadView: View {
     let store: StoreOf<FileUploadFeature>
-    var showProgressBar: Bool = true
+    var showProgressBar: Bool
+
+    public init(store: StoreOf<FileUploadFeature>, showProgressBar: Bool = true) {
+        self.store = store
+        self.showProgressBar = showProgressBar
+    }
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 16) {
                 Button {

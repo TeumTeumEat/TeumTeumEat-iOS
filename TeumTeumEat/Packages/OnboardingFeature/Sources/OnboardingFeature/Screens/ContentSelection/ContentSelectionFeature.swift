@@ -9,37 +9,41 @@ import ComposableArchitecture
 import SwiftUI
 
 @Reducer
-struct ContentSelectionFeature {
+public struct ContentSelectionFeature {
+    public init() {}
+
     @ObservableState
-    struct State: Equatable {
-        var selectedType: ContentType?
-        
-        var canProceed: Bool {
+    public struct State: Equatable {
+        public var selectedType: ContentType?
+
+        public init() {}
+
+        public var canProceed: Bool {
             selectedType != nil
         }
-        
-        enum ContentType {
+
+        public enum ContentType {
             case fileUpload
             case category
         }
     }
-    
-    enum Action {
+
+    public enum Action {
         case contentTypeSelected(State.ContentType)
         case nextTapped
         case backTapped
     }
-    
-    var body: some ReducerOf<Self> {
+
+    public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case let .contentTypeSelected(type):
                 state.selectedType = type
                 return .none
-                
+
             case .nextTapped:
                 return .none
-                
+
             case .backTapped:
                 return .none
             }

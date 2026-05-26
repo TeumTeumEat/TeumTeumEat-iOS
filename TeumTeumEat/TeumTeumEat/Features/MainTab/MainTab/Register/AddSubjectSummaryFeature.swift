@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import OnboardingFeature
 
 @Reducer
 struct AddSubjectSummaryFeature {

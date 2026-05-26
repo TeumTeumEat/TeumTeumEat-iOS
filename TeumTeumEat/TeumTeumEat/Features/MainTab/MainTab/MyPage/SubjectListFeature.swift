@@ -7,6 +7,7 @@
 
 import ComposableArchitecture
 import Foundation
+import OnboardingFeature
 
 @Reducer
 struct SubjectListFeature {
