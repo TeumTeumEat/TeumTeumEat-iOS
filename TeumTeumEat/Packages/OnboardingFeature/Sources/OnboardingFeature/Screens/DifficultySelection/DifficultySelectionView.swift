@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import DesignSystem
 
 struct DifficultySelectionView: View {
     let store: StoreOf<DifficultySelectionFeature>

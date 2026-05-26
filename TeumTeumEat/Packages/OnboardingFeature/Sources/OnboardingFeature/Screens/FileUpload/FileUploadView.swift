@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import DesignSystem
 
 struct FileUploadView: View {
     let store: StoreOf<FileUploadFeature>

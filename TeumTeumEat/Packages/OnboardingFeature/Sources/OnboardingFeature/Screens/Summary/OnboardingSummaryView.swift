@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import DesignSystem
 
 struct OnboardingSummaryView: View {
     let store: StoreOf<OnboardingSummaryFeature>

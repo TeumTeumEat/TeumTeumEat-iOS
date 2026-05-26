@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import DesignSystem
 
 struct CategorySelectionView: View {
     let store: StoreOf<CategorySelectionFeature>

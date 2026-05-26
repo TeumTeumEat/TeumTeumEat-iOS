@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import DesignSystem
 
 struct TimeSettingView: View {
     let store: StoreOf<TimeSettingFeature>

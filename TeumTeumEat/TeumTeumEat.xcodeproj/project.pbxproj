@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		4663663E2FC477750043EAEB /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 4663663D2FC477750043EAEB /* DesignSystem */; };
 		466366402FC477800043EAEB /* CoreNetwork in Frameworks */ = {isa = PBXBuildFile; productRef = 4663663F2FC477800043EAEB /* CoreNetwork */; };
+		466366432FC52DB20043EAEB /* OnboardingFeature in Frameworks */ = {isa = PBXBuildFile; productRef = 466366422FC52DB20043EAEB /* OnboardingFeature */; };
 		46AE2AA12F0125BD0061B2EE /* KakaoSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 46AE2AA02F0125BD0061B2EE /* KakaoSDK */; };
 		46AE2AA32F0125BD0061B2EE /* KakaoSDKAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 46AE2AA22F0125BD0061B2EE /* KakaoSDKAuth */; };
 		46C646952F6982AC005BA910 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 46C646942F6982AC005BA910 /* GoogleMobileAds */; };
@@ -89,6 +90,7 @@
 				466366402FC477800043EAEB /* CoreNetwork in Frameworks */,
 				4663663E2FC477750043EAEB /* DesignSystem in Frameworks */,
 				46C646952F6982AC005BA910 /* GoogleMobileAds in Frameworks */,
+				466366432FC52DB20043EAEB /* OnboardingFeature in Frameworks */,
 				46AE2AA32F0125BD0061B2EE /* KakaoSDKAuth in Frameworks */,
 				46C65A642F13E1FA009F030A /* FirebaseCore in Frameworks */,
 				46C6475C2F06B813009F030A /* MarkdownUI in Frameworks */,
@@ -172,6 +174,7 @@
 				46C648C32F6C4568005BA910 /* FirebaseRemoteConfig */,
 				4663663D2FC477750043EAEB /* DesignSystem */,
 				4663663F2FC477800043EAEB /* CoreNetwork */,
+				466366422FC52DB20043EAEB /* OnboardingFeature */,
 			);
 			productName = TeumTeumEat;
 			productReference = 46FE666E2EE1770E009E626A /* TeumTeumEat.app */;
@@ -265,6 +268,7 @@
 				46C646932F6982AC005BA910 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 				46F2FFC72FC3054B001A9707 /* XCLocalSwiftPackageReference "Packages/DesignSystem" */,
 				46F2FFC82FC307A8001A9707 /* XCLocalSwiftPackageReference "Packages/CoreNetwork" */,
+				466366412FC52DB20043EAEB /* XCLocalSwiftPackageReference "Packages/OnboardingFeature" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 46FE666F2EE1770E009E626A /* Products */;
@@ -657,6 +661,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		466366412FC52DB20043EAEB /* XCLocalSwiftPackageReference "Packages/OnboardingFeature" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/OnboardingFeature;
+		};
 		46F2FFC72FC3054B001A9707 /* XCLocalSwiftPackageReference "Packages/DesignSystem" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/DesignSystem;
@@ -728,6 +736,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 46F2FFC82FC307A8001A9707 /* XCLocalSwiftPackageReference "Packages/CoreNetwork" */;
 			productName = CoreNetwork;
+		};
+		466366422FC52DB20043EAEB /* OnboardingFeature */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = OnboardingFeature;
 		};
 		46AE2AA02F0125BD0061B2EE /* KakaoSDK */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import DesignSystem
 
 struct NameInputView: View {
     let store: StoreOf<NameInputFeature>

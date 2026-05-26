@@ -8,6 +8,7 @@
 import SwiftUI
 import ComposableArchitecture
 import Lottie
+import DesignSystem
 
 struct OnboardingCompleteView: View {
     let store: StoreOf<OnboardingCompleteFeature>

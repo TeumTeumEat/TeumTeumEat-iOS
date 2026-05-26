@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import DesignSystem
 
 struct WelcomeView: View {
     let store: StoreOf<WelcomeFeature>

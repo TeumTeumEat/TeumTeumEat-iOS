@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import DesignSystem
 
 struct OnboardingLoadingView: View {
     @Bindable var store: StoreOf<OnboardingLoadingFeature>
