@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4663663E2FC477750043EAEB /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 4663663D2FC477750043EAEB /* DesignSystem */; };
+		466366402FC477800043EAEB /* CoreNetwork in Frameworks */ = {isa = PBXBuildFile; productRef = 4663663F2FC477800043EAEB /* CoreNetwork */; };
+		466366432FC52DB20043EAEB /* OnboardingFeature in Frameworks */ = {isa = PBXBuildFile; productRef = 466366422FC52DB20043EAEB /* OnboardingFeature */; };
 		46AE2AA12F0125BD0061B2EE /* KakaoSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 46AE2AA02F0125BD0061B2EE /* KakaoSDK */; };
 		46AE2AA32F0125BD0061B2EE /* KakaoSDKAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 46AE2AA22F0125BD0061B2EE /* KakaoSDKAuth */; };
 		46C646952F6982AC005BA910 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 46C646942F6982AC005BA910 /* GoogleMobileAds */; };
@@ -84,7 +87,10 @@
 				46FE6B842EEACE0B009E626A /* ComposableArchitecture in Frameworks */,
 				46C65A6C2F13EB11009F030A /* FirebaseMessaging in Frameworks */,
 				46AE2AA12F0125BD0061B2EE /* KakaoSDK in Frameworks */,
+				466366402FC477800043EAEB /* CoreNetwork in Frameworks */,
+				4663663E2FC477750043EAEB /* DesignSystem in Frameworks */,
 				46C646952F6982AC005BA910 /* GoogleMobileAds in Frameworks */,
+				466366432FC52DB20043EAEB /* OnboardingFeature in Frameworks */,
 				46AE2AA32F0125BD0061B2EE /* KakaoSDKAuth in Frameworks */,
 				46C65A642F13E1FA009F030A /* FirebaseCore in Frameworks */,
 				46C6475C2F06B813009F030A /* MarkdownUI in Frameworks */,
@@ -108,6 +114,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		4663663C2FC477750043EAEB /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		46FE66652EE1770D009E626A = {
 			isa = PBXGroup;
 			children = (
@@ -115,6 +128,7 @@
 				46FE66702EE1770E009E626A /* TeumTeumEat */,
 				46FE667E2EE17711009E626A /* TeumTeumEatTests */,
 				46FE66882EE17711009E626A /* TeumTeumEatUITests */,
+				4663663C2FC477750043EAEB /* Frameworks */,
 				46FE666F2EE1770E009E626A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -158,6 +172,9 @@
 				46C65A6B2F13EB11009F030A /* FirebaseMessaging */,
 				46C646942F6982AC005BA910 /* GoogleMobileAds */,
 				46C648C32F6C4568005BA910 /* FirebaseRemoteConfig */,
+				4663663D2FC477750043EAEB /* DesignSystem */,
+				4663663F2FC477800043EAEB /* CoreNetwork */,
+				466366422FC52DB20043EAEB /* OnboardingFeature */,
 			);
 			productName = TeumTeumEat;
 			productReference = 46FE666E2EE1770E009E626A /* TeumTeumEat.app */;
@@ -249,6 +266,9 @@
 				46C647612F06D960009F030A /* XCRemoteSwiftPackageReference "lottie-ios" */,
 				46C65A622F13E1FA009F030A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				46C646932F6982AC005BA910 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+				46F2FFC72FC3054B001A9707 /* XCLocalSwiftPackageReference "Packages/DesignSystem" */,
+				46F2FFC82FC307A8001A9707 /* XCLocalSwiftPackageReference "Packages/CoreNetwork" */,
+				466366412FC52DB20043EAEB /* XCLocalSwiftPackageReference "Packages/OnboardingFeature" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 46FE666F2EE1770E009E626A /* Products */;
@@ -640,6 +660,21 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		466366412FC52DB20043EAEB /* XCLocalSwiftPackageReference "Packages/OnboardingFeature" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/OnboardingFeature;
+		};
+		46F2FFC72FC3054B001A9707 /* XCLocalSwiftPackageReference "Packages/DesignSystem" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/DesignSystem;
+		};
+		46F2FFC82FC307A8001A9707 /* XCLocalSwiftPackageReference "Packages/CoreNetwork" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/CoreNetwork;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		46AE2A9F2F0125BD0061B2EE /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -692,6 +727,20 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		4663663D2FC477750043EAEB /* DesignSystem */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 46F2FFC72FC3054B001A9707 /* XCLocalSwiftPackageReference "Packages/DesignSystem" */;
+			productName = DesignSystem;
+		};
+		4663663F2FC477800043EAEB /* CoreNetwork */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 46F2FFC82FC307A8001A9707 /* XCLocalSwiftPackageReference "Packages/CoreNetwork" */;
+			productName = CoreNetwork;
+		};
+		466366422FC52DB20043EAEB /* OnboardingFeature */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = OnboardingFeature;
+		};
 		46AE2AA02F0125BD0061B2EE /* KakaoSDK */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 46AE2A9F2F0125BD0061B2EE /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
