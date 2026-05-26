@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import OnboardingFeature
 
 @Reducer
 struct AppFeature {

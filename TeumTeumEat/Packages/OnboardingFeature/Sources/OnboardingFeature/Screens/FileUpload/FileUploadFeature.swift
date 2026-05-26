@@ -10,28 +10,31 @@ import ComposableArchitecture
 import UniformTypeIdentifiers
 
 @Reducer
-struct FileUploadFeature {
+public struct FileUploadFeature {
+    public init() {}
     @ObservableState
-    struct State: Equatable {
-        var selectedFileURL: URL?
-        var selectedFileName: String?
-        var selectedFileSize: Int64?
-        var isFileImporterPresented = false
-        var isLoadingFile = false
-        var errorMessage: String?
-        var isAccessingSecurityScope = false
-        
-        var canProceed: Bool {
+    public struct State: Equatable {
+        public var selectedFileURL: URL?
+        public var selectedFileName: String?
+        public var selectedFileSize: Int64?
+        public var isFileImporterPresented = false
+        public var isLoadingFile = false
+        public var errorMessage: String?
+        public var isAccessingSecurityScope = false
+
+        public var canProceed: Bool {
             selectedFileURL != nil && errorMessage == nil && !isLoadingFile
         }
 
-        var fileSizeText: String? {
+        public var fileSizeText: String? {
             guard let size = selectedFileSize else { return nil }
             return ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
         }
+
+        public init() {}
     }
-    
-    enum Action {
+
+    public enum Action {
         case backTapped
         case fileUploadButtonTapped
         case fileSelected(Result<[URL], Error>)
@@ -44,7 +47,7 @@ struct FileUploadFeature {
         case stopSecurityAccess
     }
     
-    var body: some ReducerOf<Self> {
+    public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .backTapped:

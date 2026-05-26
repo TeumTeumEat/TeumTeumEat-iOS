@@ -7,39 +7,41 @@
 
 import SwiftUI
 import ComposableArchitecture
+import CoreNetwork
 
 @Reducer
-struct OnboardingLoadingFeature {
+public struct OnboardingLoadingFeature {
+    public init() {}
     @ObservableState
-    struct State: Equatable {
-        var loadingSteps: [LoadingStep]
-        var currentStepIndex: Int = 0
+    public struct State: Equatable {
+        public var loadingSteps: [LoadingStep]
+        public var currentStepIndex: Int = 0
 
-        var onboardingData: OnboardingData
-        var isOnboarding: Bool = true
-        var animationCompleted: Bool = false
-        var apiCompleted: Bool = false
-        var isFileUpload: Bool = false
-        var apiError: APIError?
+        public var onboardingData: OnboardingData
+        public var isOnboarding: Bool = true
+        public var animationCompleted: Bool = false
+        public var apiCompleted: Bool = false
+        public var isFileUpload: Bool = false
+        public var apiError: APIError?
 
         // SSE 관련
-        var sseGoalId: Int? = nil
-        var sseDocumentId: Int? = nil
-        var sseProgress: Double = 0.0
-        var remainingSeconds: Int? = nil
-        var totalInitialMs: Int? = nil
+        public var sseGoalId: Int? = nil
+        public var sseDocumentId: Int? = nil
+        public var sseProgress: Double = 0.0
+        public var remainingSeconds: Int? = nil
+        public var totalInitialMs: Int? = nil
 
-        @Presents var errorAlert: AlertState<Action.ErrorAlert>?
-        @Presents var confirmCancelAlert: AlertState<Action.ConfirmCancelAlert>?
+        @Presents public var errorAlert: AlertState<Action.ErrorAlert>?
+        @Presents public var confirmCancelAlert: AlertState<Action.ConfirmCancelAlert>?
 
-        var canProceed: Bool {
+        public var canProceed: Bool {
             if isFileUpload {
                 return apiCompleted && apiError == nil
             }
             return animationCompleted && apiCompleted && apiError == nil
         }
 
-        init(onboardingData: OnboardingData, isOnboarding: Bool = true, isFileUpload: Bool = false) {
+        public init(onboardingData: OnboardingData, isOnboarding: Bool = true, isFileUpload: Bool = false) {
             self.onboardingData = onboardingData
             self.isOnboarding = isOnboarding
             self.isFileUpload = isFileUpload
@@ -59,14 +61,14 @@ struct OnboardingLoadingFeature {
             }
         }
 
-        struct LoadingStep: Equatable, Identifiable {
-            let id = UUID()
-            let title: String
-            var isCompleted: Bool
+        public struct LoadingStep: Equatable, Identifiable {
+            public let id = UUID()
+            public let title: String
+            public var isCompleted: Bool
         }
     }
 
-    enum Action {
+    public enum Action {
         case onAppear
         case updateProgress
         case animationCompleted
@@ -89,18 +91,18 @@ struct OnboardingLoadingFeature {
         case confirmCancelAlert(PresentationAction<ConfirmCancelAlert>)
         case delegate(Delegate)
 
-        enum ErrorAlert: Equatable {
+        public enum ErrorAlert: Equatable {
             case retry
             case cancel
             case confirmNonRetryable
         }
 
-        enum ConfirmCancelAlert: Equatable {
+        public enum ConfirmCancelAlert: Equatable {
             case confirmCancel
             case goBack
         }
 
-        enum Delegate: Equatable {
+        public enum Delegate: Equatable {
             case onboardingCancelled
         }
     }
@@ -112,7 +114,7 @@ struct OnboardingLoadingFeature {
 
     @Dependency(\.onboardingAPIClient) var apiClient
 
-    var body: some ReducerOf<Self> {
+    public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
 
@@ -160,9 +162,9 @@ struct OnboardingLoadingFeature {
                                 )
                             }
                             try await apiClient.updateCommuteInfo(
-                                startTime: leaveTime.toString(format: "HH:mm:ss"),
-                                endTime: returnTime.toString(format: "HH:mm:ss"),
-                                usageTime: data.dailyUsageMinutes
+                                leaveTime.toString(format: "HH:mm:ss"),
+                                returnTime.toString(format: "HH:mm:ss"),
+                                data.dailyUsageMinutes
                             )
                             print("User info updated - Onboarding")
                         }
@@ -180,11 +182,11 @@ struct OnboardingLoadingFeature {
 
                             // Step 1: Presigned URL + S3 업로드
                             print("[UPLOAD] Step1: presigned URL 요청")
-                            let presignedData = try await apiClient.getPresignedURL(fileName: fileName, fileSize: fileSize)
+                            let presignedData = try await apiClient.getPresignedURL(fileName, fileSize)
                             print("[UPLOAD] Step1: S3 업로드 시작")
                             try await apiClient.uploadFileToS3(
-                                fileURL: fileURL,
-                                presignedURL: presignedData.presignedUrl
+                                fileURL,
+                                presignedData.presignedUrl
                             )
                             print("[UPLOAD] Step1: S3 업로드 완료")
                             await send(.uploadStepCompleted)
@@ -194,11 +196,11 @@ struct OnboardingLoadingFeature {
                             let prompt = data.customPrompt.isEmpty ? nil : data.customPrompt
                             print("[UPLOAD] Step2: 목표 생성")
                             try await apiClient.createGoal(
-                                type: .document,
-                                studyPeriod: "\(data.programWeeks)주",
-                                difficulty: difficulty,
-                                prompt: prompt,
-                                categoryId: nil
+                                .document,
+                                "\(data.programWeeks)주",
+                                difficulty,
+                                prompt,
+                                nil
                             )
 
                             print("[UPLOAD] Step2: 목표 조회")
@@ -216,9 +218,9 @@ struct OnboardingLoadingFeature {
 
                             print("[UPLOAD] Step3: 문서 등록")
                             try await apiClient.registerDocument(
-                                goalId: latestGoal.goalId,
-                                fileName: fileName,
-                                fileKey: presignedData.key
+                                latestGoal.goalId,
+                                fileName,
+                                presignedData.key
                             )
                             print("[UPLOAD] Step3: 현재 목표 조회")
                             let currentGoal = try await apiClient.fetchCurrentGoal()
@@ -258,8 +260,9 @@ struct OnboardingLoadingFeature {
                 return .run { send in
                     do {
                         for try await event in apiClient.connectDocumentSSE(
-                            goalId: goalId,
-                            documentId: documentId
+                            goalId,
+                            documentId,
+                            nil
                         ) {
                             await send(.sseEventReceived(event))
                             if case .completed = event { break }
@@ -485,11 +488,11 @@ struct OnboardingLoadingFeature {
         let difficulty = mapDifficulty(data.difficulty)
         let prompt = data.customPrompt.isEmpty ? nil : data.customPrompt
         try await apiClient.createGoal(
-            type: .category,
-            studyPeriod: "\(data.programWeeks)주",
-            difficulty: difficulty,
-            prompt: prompt,
-            categoryId: categoryId
+            .category,
+            "\(data.programWeeks)주",
+            difficulty,
+            prompt,
+            categoryId
         )
     }
 

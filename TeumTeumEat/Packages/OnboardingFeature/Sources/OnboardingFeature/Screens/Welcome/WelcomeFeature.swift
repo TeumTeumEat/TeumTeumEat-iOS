@@ -8,16 +8,17 @@
 import ComposableArchitecture
 
 @Reducer
-struct WelcomeFeature {
+public struct WelcomeFeature {
     @ObservableState
-    struct State: Equatable {
-        
+    public struct State: Equatable {
+        public init() {}
     }
-    enum Action {
+
+    public enum Action {
         case startOnboardingTapped
     }
-    
-    var body: some ReducerOf<Self> {
+
+    public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .startOnboardingTapped:

@@ -9,16 +9,19 @@ import SwiftUI
 import ComposableArchitecture
 
 @Reducer
-struct DurationSelectionFeature {
+public struct DurationSelectionFeature {
+    public init() {}
     @ObservableState
-    struct State: Equatable {
-        var selectedWeeks: Weeks?
-        
-        var canProceed: Bool {
+    public struct State: Equatable {
+        public var selectedWeeks: Weeks?
+
+        public var canProceed: Bool {
             selectedWeeks != nil
         }
-        
-        enum Weeks: Int, CaseIterable {
+
+        public init() {}
+
+        public enum Weeks: Int, CaseIterable {
             case one = 1
             case two = 2
             case three = 3
@@ -30,13 +33,13 @@ struct DurationSelectionFeature {
         }
     }
     
-    enum Action {
+    public enum Action {
         case backTapped
         case weeksSelected(State.Weeks)
         case nextTapped
     }
-    
-    var body: some ReducerOf<Self> {
+
+    public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .backTapped:

@@ -9,8 +9,9 @@ import SwiftUI
 import ComposableArchitecture
 
 @Reducer
-struct DifficultySelectionFeature {
-    static let promptOptions: [String] = [
+public struct DifficultySelectionFeature {
+    public init() {}
+    public static let promptOptions: [String] = [
         "출퇴근길에 가볍게 풀 수 있게 만들어주세요",
         "기초부터 차근차근 개념을 익히고 싶어요",
         "최신 트렌드나 뉴스 위주로 구성해주세요",
@@ -24,22 +25,24 @@ struct DifficultySelectionFeature {
     ]
 
     @ObservableState
-    struct State: Equatable {
-        var selectedDifficulty: Difficulty?
-        var isDifficultyPickerPresented = false
-        var isPromptPickerPresented = false
-        var customPrompt: String = ""
+    public struct State: Equatable {
+        public var selectedDifficulty: Difficulty?
+        public var isDifficultyPickerPresented = false
+        public var isPromptPickerPresented = false
+        public var customPrompt: String = ""
 
-        var canProceed: Bool {
+        public var canProceed: Bool {
             selectedDifficulty != nil
         }
 
-        var difficultyText: String {
+        public var difficultyText: String {
             guard let difficulty = selectedDifficulty else { return "난이도 선택" }
             return difficulty.rawValue
         }
-        
-        enum Difficulty: String, CaseIterable, Codable, Equatable {
+
+        public init() {}
+
+        public enum Difficulty: String, CaseIterable, Codable, Equatable {
             case easy = "하"
             case normal = "중"
             case hard = "상"
@@ -62,7 +65,7 @@ struct DifficultySelectionFeature {
         }
     }
     
-    enum Action {
+    public enum Action {
         case backTapped
         case difficultyButtonTapped
         case difficultySelected(State.Difficulty)
@@ -72,8 +75,8 @@ struct DifficultySelectionFeature {
         case promptPickerDismissed
         case nextTapped
     }
-    
-    var body: some ReducerOf<Self> {
+
+    public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .backTapped:

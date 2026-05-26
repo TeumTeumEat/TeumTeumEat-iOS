@@ -7,31 +7,35 @@
 
 import SwiftUI
 import ComposableArchitecture
+import CoreNetwork
 
 @Reducer
-struct CategorySelectionFeature {
+public struct CategorySelectionFeature {
+    public init() {}
     @ObservableState
-    struct State: Equatable {
-        var currentStep: Step = .rootCategory
-        
+    public struct State: Equatable {
+        public var currentStep: Step = .rootCategory
+
         // API 데이터
-        var categories: [CategoryResponse] = []
-        var isLoading: Bool = false
-        var loadError: String?
-        
+        public var categories: [CategoryResponse] = []
+        public var isLoading: Bool = false
+        public var loadError: String?
+
         // 선택된 값
-        var selectedRootCategory: String?
-        var selectedMainCategory: String?
-        var selectedSubCategory: String?
-        var selectedDetailCategory: CategoryResponse?
-        
+        public var selectedRootCategory: String?
+        public var selectedMainCategory: String?
+        public var selectedSubCategory: String?
+        public var selectedDetailCategory: CategoryResponse?
+
+        public init() {}
+
         // Computed properties
-        var rootCategories: [String] {
+        public var rootCategories: [String] {
             let result = Array(Set(categories.compactMap { $0.mainCategory })).sorted()
             print("rootCategories: \(result)")
             return result
         }
-        var mainCategories: [String] {
+        public var mainCategories: [String] {
             guard let root = selectedRootCategory else {
                 print("mainCategories: selectedRootCategory is nil")
                 return []
@@ -45,7 +49,7 @@ struct CategorySelectionFeature {
         }
 
         // currentSubCategories → path[3] 사용 (iOS, Android, ...)
-        var currentSubCategories: [String] {
+        public var currentSubCategories: [String] {
             guard let root = selectedRootCategory,
                   let main = selectedMainCategory else { return [] }
             let subs = categories
@@ -58,7 +62,7 @@ struct CategorySelectionFeature {
         }
 
         // currentDetailCategories → name 사용
-        var currentDetailCategories: [CategoryResponse] {
+        public var currentDetailCategories: [CategoryResponse] {
             guard let root = selectedRootCategory,
                   let main = selectedMainCategory,
                   let sub = selectedSubCategory else { return [] }
@@ -69,7 +73,7 @@ struct CategorySelectionFeature {
             }
         }
         
-        var canProceed: Bool {
+        public var canProceed: Bool {
             switch currentStep {
             case .rootCategory:
                 return selectedRootCategory != nil
@@ -82,38 +86,38 @@ struct CategorySelectionFeature {
             }
         }
         
-        enum Step {
+        public enum Step {
             case rootCategory
             case mainCategory
             case subCategory
             case detailCategory
         }
     }
-    
-    enum Action {
+
+    public enum Action {
         case onAppear
         case retryLoad
         case categoriesLoaded(TaskResult<[CategoryResponse]>)
-        
+
         case backTapped
         case rootCategorySelected(String)
         case mainCategorySelected(String)
         case subCategorySelected(String)
         case detailCategorySelected(CategoryResponse)
         case nextTapped
-        
+
         case delegate(Delegate)
-        
-        enum Delegate {
+
+        public enum Delegate {
             case completed(root: String, main: String, sub: String, detail: CategoryResponse)
             case backToContentSelection
             case saveProgress(root: String?, main: String?, sub: String?, detail: CategoryResponse?)
         }
     }
-    
+
     @Dependency(\.categoryAPIClient) var categoryAPIClient
 
-    var body: some ReducerOf<Self> {
+    public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .onAppear, .retryLoad:

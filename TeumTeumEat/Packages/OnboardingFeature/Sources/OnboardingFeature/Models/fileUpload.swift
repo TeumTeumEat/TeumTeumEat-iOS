@@ -7,52 +7,60 @@
 
 import Foundation
 
-struct PresignedURLRequest: Encodable {
-    let fileName: String
-    let fileSize: Int64
+public struct PresignedURLRequest: Encodable {
+    public let fileName: String
+    public let fileSize: Int64
+    public init(fileName: String, fileSize: Int64) {
+        self.fileName = fileName
+        self.fileSize = fileSize
+    }
 }
 
-struct PresignedURLData: Decodable {
-    let presignedUrl: String
-    let key: String
+public struct PresignedURLData: Decodable {
+    public let presignedUrl: String
+    public let key: String
 }
 
-struct RegisterDocumentRequest: Encodable {
-    let fileName: String
-    let fileKey: String
+public struct RegisterDocumentRequest: Encodable {
+    public let fileName: String
+    public let fileKey: String
+    public init(fileName: String, fileKey: String) {
+        self.fileName = fileName
+        self.fileKey = fileKey
+    }
 }
 
 struct RegisterDocumentData: Decodable, Equatable {
     let documentId: Int
 }
 
-struct GoalListData: Decodable {
-    let goalResponses: [GoalResponse]
+public struct GoalListData: Decodable {
+    public let goalResponses: [GoalResponse]
 }
 
-struct GoalResponse: Decodable, Equatable {
-    let goalId: Int
-    let type: String
-    let startDate: String
-    let endDate: String
-    let studyPeriod: String
-    let difficulty: String
-    let prompt: String?
-    let fileName: String?
-    let category: CategoryInfo?
-    let documentId: Int?
-    let isExpired: Bool
-    let isCompleted: Bool
+public struct GoalResponse: Decodable, Equatable {
+    public let goalId: Int
+    public let type: String
+    public let startDate: String
+    public let endDate: String
+    public let studyPeriod: String
+    public let difficulty: String
+    public let prompt: String?
+    public let fileName: String?
+    public let category: CategoryInfo?
+    public let documentId: Int?
+    public let isExpired: Bool
+    public let isCompleted: Bool
 }
 
-struct CategoryInfo: Decodable, Equatable {
-    let categoryId: Int
-    let name: String
-    let path: String
-    let description: String?
+public struct CategoryInfo: Decodable, Equatable {
+    public let categoryId: Int
+    public let name: String
+    public let path: String
+    public let description: String?
 }
 
-enum SSEDocumentStatus: Equatable {
+public enum SSEDocumentStatus: Equatable {
     case connected
     case pending
     case processing(remainMs: Int)
@@ -60,26 +68,26 @@ enum SSEDocumentStatus: Equatable {
     case failed(reason: SSEFailureReason)
 }
 
-enum SSEFailureReason: String, Equatable {
+public enum SSEFailureReason: String, Equatable {
     case timeout = "TIMEOUT"
     case serverError = "SERVER_ERROR"
     case encryptedFile = "ENCRYPTED_FILE"
 
-    var userMessage: String {
+    public var userMessage: String {
         switch self {
         case .timeout:
             return "네트워크가 불안정하거나 처리가 지연되고 있습니다. 잠시 후 다시 시도해주세요."
         case .serverError:
-            return "서비스 점검 중이거나 일시적인 오류가 발생했습니다. 나중에 다시 이용해주세요."
+            return "서비스 점검 중이거나 일시적인 오류가 발생했습니다. 나중에 이용해주세요."
         case .encryptedFile:
             return "암호화된 파일은 읽을 수 없습니다. 암호를 해제 후 업로드해주세요."
         }
     }
 }
 
-enum CategoryStreamEvent: Equatable {
+public enum CategoryStreamEvent: Equatable {
     case connected
-    case textChunk(String)   // event:message data
-    case titleChunk(String)  // event:title data
-    case completed           // 스트림 EOF
+    case textChunk(String)
+    case titleChunk(String)
+    case completed
 }

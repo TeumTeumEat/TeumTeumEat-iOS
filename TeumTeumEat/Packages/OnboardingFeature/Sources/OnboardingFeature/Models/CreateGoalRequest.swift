@@ -7,19 +7,27 @@
 
 import Foundation
 
-struct CreateGoalRequest: Encodable {
-    let type: GoalType
-    let studyPeriod: String
-    let difficulty: Difficulty
-    let prompt: String?
-    let categoryId: Int?         
-    
-    enum GoalType: String, Encodable {
+public struct CreateGoalRequest: Encodable {
+    public let type: GoalType
+    public let studyPeriod: String
+    public let difficulty: Difficulty
+    public let prompt: String?
+    public let categoryId: Int?
+
+    public init(type: GoalType, studyPeriod: String, difficulty: Difficulty, prompt: String?, categoryId: Int?) {
+        self.type = type
+        self.studyPeriod = studyPeriod
+        self.difficulty = difficulty
+        self.prompt = prompt
+        self.categoryId = categoryId
+    }
+
+    public enum GoalType: String, Encodable {
         case category = "CATEGORY"
         case document = "DOCUMENT"
     }
-    
-    enum Difficulty: String, Encodable {
+
+    public enum Difficulty: String, Encodable {
         case easy = "EASY"
         case medium = "MEDIUM"
         case hard = "HARD"

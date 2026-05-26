@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import OnboardingFeature
 
 @Reducer
 struct AddSubjectFeature {
@@ -63,7 +64,7 @@ struct AddSubjectFeature {
     }
     
     var body: some ReducerOf<Self> {
-        Reduce { state, action in
+        Reduce { (state: inout State, action: Action) -> Effect<Action> in
             switch action {
             // MARK: - Category Selection
             case .categorySelection(.delegate(.saveProgress(let root, let main, let sub, let detail))):
@@ -329,7 +330,7 @@ struct AddSubjectCompleteFeature {
     }
     
     var body: some ReducerOf<Self> {
-        Reduce { state, action in
+        Reduce { (state: inout State, action: Action) -> Effect<Action> in
             switch action {
             case .confirmTapped:
                 return .send(.delegate(.completed))
