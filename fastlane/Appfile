@@ -1,0 +1,2 @@
+app_identifier("com.teumteumeat.OnboardingDemoApp")
+team_id(ENV["TEAM_ID"] || "YOUR_TEAM_ID") # Apple Developer Team ID

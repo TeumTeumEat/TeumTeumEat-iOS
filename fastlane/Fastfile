@@ -1,0 +1,92 @@
+default_platform(:ios)
+
+DEMO_APP_BUNDLE_ID    = "com.teumteumeat.OnboardingDemoApp"
+DEMO_APP_WORKSPACE    = "TeumTeumEat/Packages/OnboardingFeature/DemoApp/OnboardingDemoApp.xcworkspace"
+DEMO_APP_SCHEME       = "OnboardingDemoApp"
+DEMO_APP_PROJECT_DIR  = "TeumTeumEat/Packages/OnboardingFeature/DemoApp"
+
+platform :ios do
+  before_all do
+    setup_ci if is_ci
+  end
+
+  # ── 인증서 & 프로비저닝 동기화 ──────────────────────────────
+  desc "App Store 인증서 및 프로비저닝 프로파일 동기화"
+  lane :sync_certs do |options|
+    api_key = app_store_connect_api_key(
+      key_id:        ENV["ASC_API_KEY_ID"],
+      issuer_id:     ENV["ASC_ISSUER_ID"],
+      key_content:   ENV["ASC_API_KEY_CONTENT"],
+      is_key_content_base64: true
+    )
+
+    match(
+      type:           "appstore",
+      app_identifier: DEMO_APP_BUNDLE_ID,
+      readonly:       options.fetch(:readonly, is_ci),
+      api_key:        api_key
+    )
+  end
+
+  # ── DemoApp TestFlight 배포 ──────────────────────────────────
+  desc "OnboardingFeature DemoApp 빌드 후 TestFlight 업로드"
+  lane :release_demo_app do
+    api_key = app_store_connect_api_key(
+      key_id:        ENV["ASC_API_KEY_ID"],
+      issuer_id:     ENV["ASC_ISSUER_ID"],
+      key_content:   ENV["ASC_API_KEY_CONTENT"],
+      is_key_content_base64: true
+    )
+
+    # 인증서 동기화 (CI에서는 readonly)
+    match(
+      type:           "appstore",
+      app_identifier: DEMO_APP_BUNDLE_ID,
+      readonly:       is_ci,
+      api_key:        api_key
+    )
+
+    # tuist generate
+    sh("tuist generate --no-open", chdir: DEMO_APP_PROJECT_DIR)
+
+    # 빌드 & 아카이브
+    gym(
+      workspace:        DEMO_APP_WORKSPACE,
+      scheme:           DEMO_APP_SCHEME,
+      configuration:    "Release",
+      export_method:    "app-store",
+      output_directory: "build",
+      output_name:      "OnboardingDemoApp.ipa",
+      clean:            true,
+      xcargs:           "CODE_SIGNING_REQUIRED=YES"
+    )
+
+    # TestFlight 업로드
+    pilot(
+      api_key:                          api_key,
+      ipa:                              "build/OnboardingDemoApp.ipa",
+      skip_waiting_for_build_processing: true,
+      changelog:                        last_git_commit[:message]
+    )
+
+    UI.success("✅ OnboardingDemoApp TestFlight 업로드 완료!")
+  end
+
+  # ── 로컬 인증서 초기 세팅 (최초 1회) ───────────────────────
+  desc "match 인증서 최초 생성 (로컬에서만 실행)"
+  lane :setup_certs do
+    api_key = app_store_connect_api_key(
+      key_id:        ENV["ASC_API_KEY_ID"],
+      issuer_id:     ENV["ASC_ISSUER_ID"],
+      key_content:   ENV["ASC_API_KEY_CONTENT"],
+      is_key_content_base64: true
+    )
+
+    match(
+      type:           "appstore",
+      app_identifier: DEMO_APP_BUNDLE_ID,
+      readonly:       false,
+      api_key:        api_key
+    )
+  end
+end

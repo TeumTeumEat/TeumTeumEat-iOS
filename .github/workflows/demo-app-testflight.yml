@@ -1,0 +1,45 @@
+name: DemoApp → TestFlight
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'TeumTeumEat/Packages/OnboardingFeature/**'
+  workflow_dispatch: # 수동 실행 가능
+
+jobs:
+  deploy:
+    name: Build & Upload DemoApp to TestFlight
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Install mise
+        run: |
+          curl https://mise.run | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install tuist via mise
+        run: |
+          ~/.local/bin/mise use --global tuist@4.9.0
+          echo "$HOME/.local/share/mise/shims" >> $GITHUB_PATH
+
+      - name: Deploy to TestFlight
+        env:
+          MATCH_GIT_URL:             ${{ secrets.MATCH_GIT_URL }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          MATCH_PASSWORD:            ${{ secrets.MATCH_PASSWORD }}
+          ASC_API_KEY_ID:            ${{ secrets.ASC_API_KEY_ID }}
+          ASC_ISSUER_ID:             ${{ secrets.ASC_ISSUER_ID }}
+          ASC_API_KEY_CONTENT:       ${{ secrets.ASC_API_KEY_CONTENT }}
+          TEAM_ID:                   ${{ secrets.TEAM_ID }}
+        run: bundle exec fastlane release_demo_app
