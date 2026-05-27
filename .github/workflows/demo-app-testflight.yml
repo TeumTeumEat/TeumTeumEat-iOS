@@ -23,15 +23,14 @@ jobs:
           ruby-version: '3.3'
           bundler-cache: true
 
-      - name: Install mise
-        run: |
-          curl https://mise.run | sh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
       - name: Install tuist via mise
-        run: |
-          ~/.local/bin/mise use --global tuist@4.9.0
-          echo "$HOME/.local/share/mise/shims" >> $GITHUB_PATH
+        uses: jdx/mise-action@v2
+        with:
+          mise_toml: |
+            [tools]
+            tuist = "4.9.0"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Deploy to TestFlight
         env:
