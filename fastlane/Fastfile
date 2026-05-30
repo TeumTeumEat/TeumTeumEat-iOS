@@ -58,8 +58,8 @@ platform :ios do
       export_method:    "app-store",
       output_directory: "build",
       output_name:      "OnboardingDemoApp.ipa",
-      clean:            true,
-      xcargs:           "CODE_SIGNING_REQUIRED=YES"
+      clean:            false,
+      xcargs:           "CODE_SIGNING_REQUIRED=YES CODE_SIGN_STYLE=Manual"
     )
 
     # TestFlight 업로드
