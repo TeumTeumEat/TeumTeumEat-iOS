@@ -23,15 +23,16 @@ jobs:
           ruby-version: '3.3'
           bundler-cache: true
 
-      - name: Install mise
-        run: |
-          curl https://mise.run | sh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
       - name: Install tuist via mise
-        run: |
-          ~/.local/bin/mise use --global tuist@4.9.0
-          echo "$HOME/.local/share/mise/shims" >> $GITHUB_PATH
+        uses: jdx/mise-action@v2
+        with:
+          mise_toml: |
+            [tools]
+            tuist = "4.9.0"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trust Swift Macros (CI)
+        run: defaults write com.apple.dt.Xcode IDESkipMacroFingerprintValidation -bool YES
 
       - name: Deploy to TestFlight
         env:
@@ -43,3 +44,10 @@ jobs:
           ASC_API_KEY_CONTENT:       ${{ secrets.ASC_API_KEY_CONTENT }}
           TEAM_ID:                   ${{ secrets.TEAM_ID }}
         run: bundle exec fastlane release_demo_app
+
+      - name: Upload gym log (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gym-log
+          path: ~/Library/Logs/gym/
