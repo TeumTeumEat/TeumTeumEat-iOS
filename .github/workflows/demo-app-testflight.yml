@@ -41,3 +41,10 @@ jobs:
           ASC_API_KEY_CONTENT:       ${{ secrets.ASC_API_KEY_CONTENT }}
           TEAM_ID:                   ${{ secrets.TEAM_ID }}
         run: bundle exec fastlane release_demo_app
+
+      - name: Upload gym log (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gym-log
+          path: ~/Library/Logs/gym/
