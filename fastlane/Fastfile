@@ -59,7 +59,8 @@ platform :ios do
       output_directory: "build",
       output_name:      "OnboardingDemoApp.ipa",
       clean:            false,
-      xcargs:           "CODE_SIGNING_REQUIRED=YES CODE_SIGN_STYLE=Manual"
+      xcargs:           "CODE_SIGNING_REQUIRED=YES CODE_SIGN_STYLE=Manual",
+      xcodebuild_formatter: ""
     )
 
     # TestFlight 업로드
