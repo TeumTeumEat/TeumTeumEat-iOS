@@ -59,7 +59,7 @@ platform :ios do
       output_directory: "build",
       output_name:      "OnboardingDemoApp.ipa",
       clean:            false,
-      xcargs:           "CODE_SIGNING_REQUIRED=YES CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=#{ENV['TEAM_ID']} CODE_SIGN_IDENTITY='Apple Distribution'",
+      xcargs:           "CODE_SIGNING_REQUIRED=YES CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=#{ENV['TEAM_ID']} CODE_SIGN_IDENTITY='Apple Distribution' CODE_SIGN_IDENTITY[sdk=macosx*]='' CODE_SIGNING_REQUIRED[sdk=macosx*]=NO PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]=''",
       xcodebuild_formatter: ""
     )
 
