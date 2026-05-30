@@ -46,11 +46,9 @@ platform :ios do
       api_key:        api_key
     )
 
-    # tuist install (패키지 의존성 resolve)
-    sh("tuist install", chdir: File.expand_path("../#{DEMO_APP_PROJECT_DIR}", __dir__))
-
-    # tuist generate
-    sh("tuist generate --no-open", chdir: File.expand_path("../#{DEMO_APP_PROJECT_DIR}", __dir__))
+    # tuist install & generate (절대 경로로 cd)
+    demo_app_path = File.expand_path("../#{DEMO_APP_PROJECT_DIR}", __dir__)
+    sh("cd '#{demo_app_path}' && tuist install && tuist generate --no-open")
 
     # 빌드 & 아카이브
     gym(
