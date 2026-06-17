@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import OnboardingFeature
 
 @Reducer
 struct QuizGuideFeature {
@@ -15,9 +16,12 @@ struct QuizGuideFeature {
         // 안내 화면 상태
         var isCheckboxSelected: Bool = false
         var isSubmitting: Bool = false
+        var quizCount: Int = 3
     }
-    
+
     enum Action {
+        case onAppear
+        case commuteInfoLoaded(Result<CommuteInfoData, Error>)
         case checkboxToggled
         case startQuizButtonTapped
         case updateQuizGuideResponse(Result<Void, Error>)
@@ -33,6 +37,25 @@ struct QuizGuideFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
+            case .onAppear:
+                return .run { send in
+                    await send(.commuteInfoLoaded(
+                        Result { try await apiClient.fetchCommuteInfo() }
+                    ))
+                }
+
+            case .commuteInfoLoaded(.success(let info)):
+                switch info.usageTime {
+                case 5:  state.quizCount = 3
+                case 7:  state.quizCount = 5
+                case 10: state.quizCount = 7
+                default: state.quizCount = info.usageTime >= 15 ? 10 : 3
+                }
+                return .none
+
+            case .commuteInfoLoaded(.failure):
+                return .none
+
             case .checkboxToggled:
                 state.isCheckboxSelected.toggle()
                 print("체크박스 토글: \(state.isCheckboxSelected)")
