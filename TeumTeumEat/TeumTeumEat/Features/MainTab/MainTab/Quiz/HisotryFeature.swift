@@ -31,7 +31,18 @@ struct HistoryFeature {
         
         var topicCategories: [HistoryCategoryResponse] = []
         var isLoadingTopics: Bool = false
-        
+
+        var showOnlyActive: Bool = false
+        var activeGoals: [GoalResponse] = []
+
+        var filteredTopicCategories: [HistoryCategoryResponse] {
+            guard showOnlyActive, !activeGoals.isEmpty else { return topicCategories }
+            let activeNames: Set<String> = Set(activeGoals.compactMap { goal -> String? in
+                goal.type == "CATEGORY" ? goal.category?.name : goal.fileName
+            })
+            return topicCategories.filter { activeNames.contains($0.categoryName) }
+        }
+
         var historyDetailSummary: HistoryDetailSummaryFeature.State?
     }
     
@@ -45,6 +56,8 @@ struct HistoryFeature {
         case historyItemsLoaded(Result<[HistoryItemResponse], Error>)
         case fetchTopicHistories
         case topicHistoriesLoaded(Result<[HistoryCategoryResponse], Error>)
+        case activeGoalsLoaded(Result<[GoalResponse], Error>)
+        case filterToggled
         case historyItemTapped(id: Int, type: String, date: String)
         case historyDetailSummary(HistoryDetailSummaryFeature.Action)
         case delegate(Delegate)
@@ -134,19 +147,37 @@ struct HistoryFeature {
              case .fetchTopicHistories:
                  state.isLoadingTopics = true
                  return .run { send in
-                     await send(.topicHistoriesLoaded(
-                        Result {
-                            try await apiClient.fetchHistoryTopics()
-                        }
-                     ))
+                     await withTaskGroup(of: Void.self) { group in
+                         group.addTask {
+                             await send(.topicHistoriesLoaded(
+                                 Result { try await apiClient.fetchHistoryTopics() }
+                             ))
+                         }
+                         group.addTask {
+                             await send(.activeGoalsLoaded(
+                                 Result { try await apiClient.fetchGoals() }
+                             ))
+                         }
+                     }
                  }
-                 
+
+             case .activeGoalsLoaded(.success(let goals)):
+                 state.activeGoals = goals.filter { !$0.isExpired && !$0.isCompleted }
+                 return .none
+
+             case .activeGoalsLoaded(.failure):
+                 return .none
+
+             case .filterToggled:
+                 state.showOnlyActive.toggle()
+                 return .none
+
              case .topicHistoriesLoaded(.success(let categories)):
                  state.isLoadingTopics = false
                  state.topicCategories = categories
                  print("Topic histories loaded: \(categories.count) categories")
                  return .none
-                 
+
              case .topicHistoriesLoaded(.failure(let error)):
                  state.isLoadingTopics = false
                  print("Failed to load topic histories: \(error)")
@@ -264,15 +295,40 @@ struct HistoryView: View {
                                 case 1:
                                     // 주제별
                                     VStack(spacing: 16) {
+                                        // 진행중인 주제 필터 라디오 버튼
+                                        Button {
+                                            store.send(.filterToggled)
+                                        } label: {
+                                            HStack(spacing: 8) {
+                                                ZStack {
+                                                    Circle()
+                                                        .stroke(
+                                                            store.showOnlyActive ? Color.blue500 : Color.gray300,
+                                                            lineWidth: 1.5
+                                                        )
+                                                        .frame(width: 20, height: 20)
+                                                    if store.showOnlyActive {
+                                                        Circle()
+                                                            .fill(Color.blue500)
+                                                            .frame(width: 10, height: 10)
+                                                    }
+                                                }
+                                                Text("진행중인 주제 보기")
+                                                    .font(.system(size: 14, weight: .medium))
+                                                    .foregroundColor(store.showOnlyActive ? .blue500 : .gray600)
+                                                Spacer()
+                                            }
+                                        }
+
                                         if store.isLoadingTopics {
                                             ProgressView()
                                                 .frame(maxWidth: .infinity, maxHeight: 300)
-                                        } else if store.topicCategories.isEmpty {
-                                            Text("주제별 히스토리가 없습니다")
+                                        } else if store.filteredTopicCategories.isEmpty {
+                                            Text(store.showOnlyActive ? "진행중인 주제의 히스토리가 없습니다" : "주제별 히스토리가 없습니다")
                                                 .foregroundColor(.gray)
                                                 .frame(maxWidth: .infinity, maxHeight: 300)
                                         } else {
-                                            ForEach(store.topicCategories) { category in
+                                            ForEach(store.filteredTopicCategories) { category in
                                                 ExpandableSummaryRow(
                                                     categories: [category.categoryName],
                                                     items: category.histories.map { history in
