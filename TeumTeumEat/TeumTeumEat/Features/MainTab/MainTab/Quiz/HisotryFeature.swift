@@ -303,15 +303,18 @@ struct HistoryView: View {
                                             HStack(spacing: 8) {
                                                 ZStack {
                                                     Circle()
+                                                        .fill(store.showOnlyActive ? Color.blue500 : Color.clear)
+                                                        .frame(width: 20, height: 20)
+                                                    Circle()
                                                         .stroke(
                                                             store.showOnlyActive ? Color.blue500 : Color.gray300,
                                                             lineWidth: 1.5
                                                         )
                                                         .frame(width: 20, height: 20)
                                                     if store.showOnlyActive {
-                                                        Circle()
-                                                            .fill(Color.blue500)
-                                                            .frame(width: 10, height: 10)
+                                                        Image(systemName: "checkmark")
+                                                            .font(.system(size: 11, weight: .bold))
+                                                            .foregroundColor(.white)
                                                     }
                                                 }
                                                 Text("진행중인 주제 보기")
