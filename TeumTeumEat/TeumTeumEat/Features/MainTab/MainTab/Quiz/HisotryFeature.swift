@@ -75,6 +75,7 @@ struct HistoryFeature {
              case .onAppear:
                  return .run { [year = state.currentYear, month = state.currentMonth] send in
                      await send(.monthChanged(year: year, month: month))
+                     await send(.fetchTopicHistories)
                  }
                  
              case .settingTapped:
