@@ -84,7 +84,7 @@ struct CouponModalView: View {
                 }
                 .disabled(!canIssueCoupon)
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 28)
             .padding(.bottom, 28)
         }
         .background(Color.white)
