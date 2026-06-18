@@ -166,7 +166,8 @@ struct CustomTabBar: View {
             TTETabButton(
                 icon: Image("library"),
                 size: .small,
-                isSelected: selectedTab == .quiz
+                isSelected: selectedTab == .quiz,
+                customIconSize: 30
             ) {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                     onTabSelected(.quiz)
