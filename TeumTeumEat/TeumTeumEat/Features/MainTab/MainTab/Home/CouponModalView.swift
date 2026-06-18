@@ -65,10 +65,10 @@ struct CouponModalView: View {
                 Button(action: onUse) {
                     Text("쿠폰 사용")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(couponCount > 0 ? .gray600 : Color.gray300)
+                        .foregroundColor(couponCount > 0 ? .blue500 : Color.gray300)
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
-                        .background(Color.gray300.opacity(0.4))
+                        .background(couponCount > 0 ? Color.blue100 : Color.gray300.opacity(0.4))
                         .cornerRadius(10)
                 }
                 .disabled(couponCount == 0)
