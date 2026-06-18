@@ -774,7 +774,7 @@ struct DayCell: View {
             if hasQuiz {
                 Circle()
                     .fill(isSelected ? Color.blue500 : Color.blue300)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 28, height: 28)
             }
             
             // 날짜 텍스트
