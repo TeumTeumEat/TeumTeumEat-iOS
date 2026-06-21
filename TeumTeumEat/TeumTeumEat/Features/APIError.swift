@@ -132,6 +132,21 @@ enum APIError: Error, LocalizedError, Equatable {
         return false
     }
     
+    // 에러 오버레이에 표시할 사용자 친화적 메시지
+    var overlayMessage: String {
+        switch self {
+        case .networkError:
+            return "인터넷 연결을 확인하고 다시 시도해 주세요."
+        case .serverError(let code, _, _):
+            if code.hasPrefix("5") || code == "COMMON-007" {
+                return "서버 점검 중이거나 일시적인 오류입니다."
+            }
+            return userFriendlyMessage
+        default:
+            return "에러가 발생했습니다."
+        }
+    }
+
     static func == (lhs: APIError, rhs: APIError) -> Bool {
         switch (lhs, rhs) {
         case (.invalidURL, .invalidURL):

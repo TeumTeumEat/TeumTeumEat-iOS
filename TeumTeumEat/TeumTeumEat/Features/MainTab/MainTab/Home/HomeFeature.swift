@@ -31,6 +31,12 @@ struct HomeFeature {
         var isLoading: Bool = false
         var errorMessage: String?
 
+        var showErrorOverlay: Bool = false
+        var errorOverlayMessage: String = ""
+        var isRetryingError: Bool = false
+        var retryCount: Int = 0
+        var showRetryToast: Bool = false
+
         var showCouponModal: Bool = false
         var isUsingCoupon: Bool = false
 
@@ -82,6 +88,9 @@ struct HomeFeature {
         // Step 4: 퀴즈 조회
         case fetchQuizzesResponse(Result<[UserQuiz], Error>)
         
+        case retryFromErrorOverlay
+        case dismissErrorOverlay
+        case retryToastDismissed
         case settingTapped
         case toggleQuizStatus
         case characterEatTapped
@@ -115,6 +124,9 @@ struct HomeFeature {
             case .onAppear:
                 state.isLoading = true
                 state.errorMessage = nil
+                state.showErrorOverlay = false
+                state.retryCount = 0
+                state.showRetryToast = false
                 
                 // 병렬 처리: 캘린더 조회 + 목표 조회
                 let now = Date()
@@ -156,6 +168,9 @@ struct HomeFeature {
                 
             // Step 1 완료 → Step 2 시작
             case .fetchCurrentGoalResponse(.success(let goal)):
+                state.showErrorOverlay = false
+                state.isRetryingError = false
+                state.retryCount = 0
                 state.isExpired = goal.isExpired
                 if goal.isExpired {
                     state.currentGoal = goal
@@ -194,7 +209,10 @@ struct HomeFeature {
                 
             case .fetchCurrentGoalResponse(.failure(let error)):
                 state.isLoading = false
-                state.errorMessage = "목표 조회 실패: \(error.localizedDescription)"
+                let overlayMsg = (error as? APIError)?.overlayMessage ?? "에러가 발생했습니다."
+                state.errorOverlayMessage = overlayMsg
+                state.showErrorOverlay = true
+                state.isRetryingError = false
                 print("[Home] Step1 실패: \(error)")
                 return .none
                 
@@ -239,7 +257,10 @@ struct HomeFeature {
                     return .none
                 }
                 state.isLoading = false
-                state.errorMessage = "퀴즈 상태 조회 실패: \(error.localizedDescription)"
+                let overlayMsg = (error as? APIError)?.overlayMessage ?? "에러가 발생했습니다."
+                state.errorOverlayMessage = overlayMsg
+                state.showErrorOverlay = true
+                state.isRetryingError = false
                 print("[Home] Step2 실패: \(error)")
                 return .none
                 
@@ -303,6 +324,48 @@ struct HomeFeature {
                 print("[Home] Step4 실패: \(error)")
                 return .none
                 
+            case .retryFromErrorOverlay:
+                state.retryCount += 1
+                if state.retryCount >= 2 {
+                    state.showRetryToast = true
+                }
+                state.isRetryingError = true
+                state.isLoading = true
+                state.errorMessage = nil
+
+                let now = Date()
+                let calendar = Calendar.current
+                let year = calendar.component(.year, from: now)
+                let month = calendar.component(.month, from: now)
+
+                return .merge(
+                    .run { send in
+                        do {
+                            let calendarData = try await apiClient.fetchCalendarHistory(year: year, month: month)
+                            await send(.fetchCalendarHistoryResponse(.success(calendarData)))
+                        } catch {
+                            await send(.fetchCalendarHistoryResponse(.failure(error)))
+                        }
+                    },
+                    .run { send in
+                        do {
+                            let goal = try await apiClient.fetchCurrentGoal()
+                            await send(.fetchCurrentGoalResponse(.success(goal)))
+                        } catch {
+                            await send(.fetchCurrentGoalResponse(.failure(error)))
+                        }
+                    }
+                )
+
+            case .dismissErrorOverlay:
+                state.showErrorOverlay = false
+                state.isRetryingError = false
+                return .none
+
+            case .retryToastDismissed:
+                state.showRetryToast = false
+                return .none
+
             case .settingTapped:
                 return .send(.delegate(.openMyPageRequested))
 
@@ -543,6 +606,27 @@ struct HomeView: View {
                 }
             }
             .animation(.spring(response: 0.3, dampingFraction: 0.85), value: store.showExpiredAlert)
+            // 에러 오버레이
+            .overlay {
+                if store.showErrorOverlay {
+                    ErrorOverlayView(
+                        message: store.errorOverlayMessage,
+                        isRetrying: store.isRetryingError,
+                        onRetry: { store.send(.retryFromErrorOverlay) },
+                        onBack: nil
+                    )
+                    .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.25), value: store.showErrorOverlay)
+            // 재시도 토스트
+            .tteToast(
+                isPresented: Binding(
+                    get: { store.showRetryToast },
+                    set: { if !$0 { store.send(.retryToastDismissed) } }
+                ),
+                message: "잠시 후 다시 시도해 주세요."
+            )
         }
     }
 }
