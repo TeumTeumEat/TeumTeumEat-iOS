@@ -15,7 +15,17 @@ struct UsageTimePickerModal: View {
     @State private var tempMinutes: Int = 5
     
     let timeOptions = [5, 7, 10, 15]
-    
+
+    private func questionCount(for minutes: Int) -> String {
+        switch minutes {
+        case 5:  return "3문제"
+        case 7:  return "5문제"
+        case 10: return "7문제"
+        case 15: return "10문제"
+        default: return "\(minutes)분"
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
@@ -72,19 +82,24 @@ struct UsageTimePickerModal: View {
     }
     
     private func timeOptionButton(minutes: Int) -> some View {
-        Button {
+        let isSelected = tempMinutes == minutes
+        return Button {
             tempMinutes = minutes
         } label: {
             HStack {
                 Spacer()
-                Text("\(minutes)분")
+                Text(questionCount(for: minutes))
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(tempMinutes == minutes ? .white : .primary)
+                    .foregroundColor(isSelected ? .blue500 : .gray500)
                 Spacer()
             }
             .padding(.vertical, 16)
-            .background(tempMinutes == minutes ? Color.blue : Color.gray.opacity(0.1))
+            .background(Color.white)
             .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelected ? Color.blue500 : Color.gray200, lineWidth: isSelected ? 2 : 1)
+            )
         }
     }
 }
