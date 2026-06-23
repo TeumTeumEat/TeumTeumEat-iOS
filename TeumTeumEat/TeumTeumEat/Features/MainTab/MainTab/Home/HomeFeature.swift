@@ -127,7 +127,7 @@ struct HomeFeature {
                 state.showErrorOverlay = false
                 state.retryCount = 0
                 state.showRetryToast = false
-                
+
                 // 병렬 처리: 캘린더 조회 + 목표 조회
                 let now = Date()
                 let calendar = Calendar.current

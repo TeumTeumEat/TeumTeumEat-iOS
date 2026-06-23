@@ -456,7 +456,7 @@ public struct OnboardingLoadingFeature {
                     TextState("정말 취소하시겠어요?")
                 } actions: {
                     ButtonState(role: .destructive, action: .confirmCancel) { TextState("취소") }
-                    ButtonState(action: .goBack) { TextState("돌아가기") }
+                    ButtonState(role: .cancel, action: .goBack) { TextState("돌아가기") }
                 } message: {
                     TextState("처음부터 다시 입력해야 합니다.")
                 }
