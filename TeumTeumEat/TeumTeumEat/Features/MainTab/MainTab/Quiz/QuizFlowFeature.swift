@@ -13,8 +13,8 @@ struct QuizFlowFeature {
     @ObservableState
     struct State: Equatable {
         var quizzes: [UserQuiz]
-        var isFirstTime: Bool
-        
+        var isQuizGuideSeen: Bool
+
         var currentStep: Step
         var contentSummary: ContentSummaryFeature.State
         var quizGuide: QuizGuideFeature.State?
@@ -37,10 +37,10 @@ struct QuizFlowFeature {
         init(
             quizzes: [UserQuiz],
             summaryData: ContentSummaryFeature.State,
-            isFirstTime: Bool
+            isQuizGuideSeen: Bool
         ) {
             self.quizzes = quizzes
-            self.isFirstTime = isFirstTime
+            self.isQuizGuideSeen = isQuizGuideSeen
             self.currentStep = .summary
             self.contentSummary = summaryData
         }
@@ -77,12 +77,12 @@ struct QuizFlowFeature {
 
         Reduce { state, action in
             switch action {
-            case .contentSummary(.delegate(.startQuiz(let quizzes, let isFirstTime))):
+            case .contentSummary(.delegate(.startQuiz(let quizzes, _))):
                 state.quizzes = quizzes  // ContentSummary에서 로드한 실제 퀴즈 목록 저장
-                if isFirstTime {
+                if !state.isQuizGuideSeen {
                     state.currentStep = .quizGuide
                     state.quizGuide = QuizGuideFeature.State()
-                    print("QuizFlow: 퀴즈 가이드로 이동")
+                    print("QuizFlow: 퀴즈 가이드로 이동 (isQuizGuideSeen=false)")
                     return .none
                 } else {
                     state.currentStep = .quiz

@@ -30,6 +30,7 @@ public struct OnboardingLoadingFeature {
         public var sseProgress: Double = 0.0
         public var remainingSeconds: Int? = nil
         public var totalInitialMs: Int? = nil
+        public var isOverdue: Bool = false
 
         @Presents public var errorAlert: AlertState<Action.ErrorAlert>?
         @Presents public var confirmCancelAlert: AlertState<Action.ConfirmCancelAlert>?
@@ -85,6 +86,7 @@ public struct OnboardingLoadingFeature {
         case sseStartRequested(goalId: Int, documentId: Int)
         case sseEventReceived(SSEDocumentStatus)
         case sseConnectionFailed(String)
+        case sseTimeoutTriggered
         case tickTimer
 
         case errorAlert(PresentationAction<ErrorAlert>)
@@ -110,7 +112,10 @@ public struct OnboardingLoadingFeature {
     private enum CancelID: Hashable {
         case sseStream
         case timer
+        case sseTimeout
     }
+
+    private static let clientTimeoutSeconds: Int = 300 // 5분
 
     @Dependency(\.onboardingAPIClient) var apiClient
 
@@ -257,7 +262,7 @@ public struct OnboardingLoadingFeature {
                 state.loadingSteps[1].isCompleted = true
                 print("[SSE] 연결 시작 - goalId: \(goalId), documentId: \(documentId)")
 
-                return .run { send in
+                let sseEffect = Effect<Action>.run { send in
                     do {
                         for try await event in apiClient.connectDocumentSSE(
                             goalId,
@@ -274,6 +279,14 @@ public struct OnboardingLoadingFeature {
                 }
                 .cancellable(id: CancelID.sseStream)
 
+                let timeoutEffect = Effect<Action>.run { send in
+                    try await Task.sleep(for: .seconds(OnboardingLoadingFeature.clientTimeoutSeconds))
+                    await send(.sseTimeoutTriggered)
+                }
+                .cancellable(id: CancelID.sseTimeout)
+
+                return .merge(sseEffect, timeoutEffect)
+
             case .sseEventReceived(let event):
                 switch event {
                 case .connected:
@@ -286,14 +299,15 @@ public struct OnboardingLoadingFeature {
                 case .processing(let remainMs):
                     print("[SSE] 처리 중 - 남은 시간: \(remainMs)ms")
 
-                    // remain: 0 → 서버가 잔여 시간을 모르는 경우, indeterminate 처리
+                    // remain_ms = 0 → 서버가 예상 시간을 모름, 99%에서 대기
                     guard remainMs > 0 else {
-                        if state.sseProgress < 0.85 {
-                            state.sseProgress = min(state.sseProgress + 0.05, 0.85)
-                        }
-                        return .none
+                        state.sseProgress = 0.99
+                        state.isOverdue = true
+                        state.remainingSeconds = nil
+                        return .cancel(id: CancelID.timer)
                     }
 
+                    state.isOverdue = false
                     if state.totalInitialMs == nil {
                         state.totalInitialMs = remainMs
                     }
@@ -314,10 +328,12 @@ public struct OnboardingLoadingFeature {
                     print("[SSE] 완료")
                     state.sseProgress = 1.0
                     state.remainingSeconds = 0
+                    state.isOverdue = false
                     state.loadingSteps[2].isCompleted = true
                     state.apiCompleted = true
                     return .merge(
                         .cancel(id: CancelID.timer),
+                        .cancel(id: CancelID.sseTimeout),
                         .send(.checkCompletion)
                     )
 
@@ -326,6 +342,7 @@ public struct OnboardingLoadingFeature {
                     return .merge(
                         .cancel(id: CancelID.timer),
                         .cancel(id: CancelID.sseStream),
+                        .cancel(id: CancelID.sseTimeout),
                         .send(.apiFailure(.serverError(
                             code: "SSE-FAILED",
                             message: reason.userMessage,
@@ -337,11 +354,26 @@ public struct OnboardingLoadingFeature {
 
             case .sseConnectionFailed(let message):
                 print("[SSE] 연결 실패: \(message)")
-                return .send(.apiFailure(.serverError(
-                    code: "SSE-CONNECTION",
-                    message: message,
-                    details: nil
-                )))
+                return .merge(
+                    .cancel(id: CancelID.sseTimeout),
+                    .send(.apiFailure(.serverError(
+                        code: "SSE-CONNECTION",
+                        message: message,
+                        details: nil
+                    )))
+                )
+
+            case .sseTimeoutTriggered:
+                print("[SSE] 클라이언트 타임아웃 (\(OnboardingLoadingFeature.clientTimeoutSeconds)초)")
+                return .merge(
+                    .cancel(id: CancelID.sseStream),
+                    .cancel(id: CancelID.timer),
+                    .send(.apiFailure(.serverError(
+                        code: "SSE-CLIENT-TIMEOUT",
+                        message: "처리 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.",
+                        details: nil
+                    )))
+                )
 
             case .tickTimer:
                 guard let remaining = state.remainingSeconds, remaining > 0 else { return .none }
@@ -398,9 +430,11 @@ public struct OnboardingLoadingFeature {
                     state.totalInitialMs = nil
                     state.sseGoalId = nil
                     state.sseDocumentId = nil
+                    state.isOverdue = false
                     return .merge(
                         .cancel(id: CancelID.sseStream),
                         .cancel(id: CancelID.timer),
+                        .cancel(id: CancelID.sseTimeout),
                         .send(.submitOnboardingData)
                     )
                 } else {

@@ -110,7 +110,7 @@ struct HomeFeature {
         case startQuizFlow(
             quizzes: [UserQuiz],
             summaryData: ContentSummaryFeature.State,
-            isFirstTime: Bool
+            isQuizGuideSeen: Bool
         )
         case openMyPageRequested
         case startNewGoalTapped
@@ -471,7 +471,7 @@ struct HomeFeature {
                     return .send(.delegate(.startQuizFlow(
                         quizzes: [],
                         summaryData: summaryData,
-                        isFirstTime: true
+                        isQuizGuideSeen: state.quizStatus?.isQuizGuideSeen ?? false
                     )))
 
                 } else if let goal = state.currentGoal,
@@ -490,7 +490,7 @@ struct HomeFeature {
                     return .send(.delegate(.startQuizFlow(
                         quizzes: [],
                         summaryData: summaryData,
-                        isFirstTime: true
+                        isQuizGuideSeen: state.quizStatus?.isQuizGuideSeen ?? false
                     )))
 
                 } else {

@@ -123,11 +123,11 @@ struct MainTabFeature {
                     return .none
                     
                 // Home에서 QuizFlow 시작 (summaryData 포함)
-                case .home(.delegate(.startQuizFlow(let quizzes, let summaryData, let isFirstTime))):
+                case .home(.delegate(.startQuizFlow(let quizzes, let summaryData, let isQuizGuideSeen))):
                     state.quizFlow = QuizFlowFeature.State(
                         quizzes: quizzes,
                         summaryData: summaryData,
-                        isFirstTime: isFirstTime
+                        isQuizGuideSeen: isQuizGuideSeen
                     )
                     print("퀴즈 플로우 시작 - 요약부터 표시")
                     return .none
