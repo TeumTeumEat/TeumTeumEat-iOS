@@ -84,7 +84,8 @@ struct AppSettingsView: View {
                 ),
                 onDismiss: {
                     store.send(.leaveTimePickerDismissed)
-                }
+                },
+                minuteInterval: 10
             )
         }
         .sheet(isPresented: Binding(
@@ -99,7 +100,8 @@ struct AppSettingsView: View {
                 ),
                 onDismiss: {
                     store.send(.returnTimePickerDismissed)
-                }
+                },
+                minuteInterval: 10
             )
         }
         .sheet(isPresented: Binding(
