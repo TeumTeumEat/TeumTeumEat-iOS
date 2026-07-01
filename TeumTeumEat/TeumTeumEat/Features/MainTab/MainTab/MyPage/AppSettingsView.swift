@@ -165,7 +165,7 @@ struct AppSettingsView: View {
                 ),
                 placeholder: "닉네임을 입력하세요",
                 state: store.textFieldState,
-                allowSpaces: false
+                allowSpaces: true
             )
             .focused($isNicknameFocused)
         }

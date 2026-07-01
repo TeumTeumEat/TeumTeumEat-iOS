@@ -13,6 +13,7 @@ import UserNotifications
 import FirebaseCore
 import FirebaseMessaging
 import GoogleMobileAds
+import FirebaseAnalytics
 
 @main
 struct TeumTeumEatApp: App {

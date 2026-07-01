@@ -383,6 +383,7 @@ struct HomeFeature {
 
             case .couponUseTapped:
                 guard state.availableQuizCount > 0 else { return .none }
+                AnalyticsManager.logCouponUsed()
                 state.isTodayQuizCompleted = false
                 state.isUsingCoupon = true
                 state.showCouponModal = false

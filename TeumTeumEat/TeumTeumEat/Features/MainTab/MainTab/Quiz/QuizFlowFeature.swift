@@ -88,6 +88,7 @@ struct QuizFlowFeature {
                     state.currentStep = .quiz
                     let convertedQuizzes = quizzes.map { Quiz(from: $0) }
                     state.quiz = QuizFeature.State(quizzes: convertedQuizzes)
+                    AnalyticsManager.logQuizStart(quizCount: quizzes.count)
                     print("QuizFlow: 퀴즈로 바로 이동 - complete-set 호출")
                     return .run { send in
                         do {
@@ -111,6 +112,7 @@ struct QuizFlowFeature {
                 state.currentStep = .quiz
                 let convertedQuizzes = state.quizzes.map { Quiz(from: $0) }
                 state.quiz = QuizFeature.State(quizzes: convertedQuizzes)
+                AnalyticsManager.logQuizStart(quizCount: state.quizzes.count)
                 print("QuizFlow: 안내 완료, 퀴즈 시작 - complete-set 호출")
                 return .run { send in
                     do {
@@ -131,10 +133,14 @@ struct QuizFlowFeature {
                 
             case .quiz(.delegate(.completed)):
                 state.currentStep = .result
-                
+
                 let quizState = state.quiz
+                let submitResults = quizState?.submitResults ?? [:]
+                let correctCount = submitResults.values.filter { $0.isCorrect }.count
+                AnalyticsManager.logQuizComplete(quizCount: state.quizzes.count, correctCount: correctCount)
+
                 state.result = QuizResultFeature.State(
-                    submitResults: quizState?.submitResults ?? [:],
+                    submitResults: submitResults,
                     totalQuizCount: state.quizzes.count
                 )
                 print("QuizFlow: 결과 화면으로 이동")
