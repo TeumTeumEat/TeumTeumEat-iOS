@@ -18,8 +18,8 @@ struct HomeFeature {
         var fireCount: Int = 0
         var stampCount: Int = 0
         var isTodayQuizCompleted: Bool = false
-        var isExpired: Bool = false
-        var showExpiredAlert: Bool = false
+        var isGoalCompleted: Bool = false
+        var showGoalCompletedAlert: Bool = false
         
         // API 관련 상태
         var currentGoal: GoalResponse?
@@ -49,7 +49,7 @@ struct HomeFeature {
         }
         
         var currentSnackImage: String {
-            guard !isExpired else { return "done" }
+            guard !isGoalCompleted else { return "done" }
             guard !isTodayQuizCompleted else { return "done" }
             guard let goal = currentGoal else { return "burger" }
 
@@ -91,6 +91,9 @@ struct HomeFeature {
         case retryFromErrorOverlay
         case dismissErrorOverlay
         case retryToastDismissed
+        case goalCompletedAlertDismissed
+        case goalCompletedNewGoalTapped
+        case goalCompletedSelectExistingTapped
         case settingTapped
         case toggleQuizStatus
         case characterEatTapped
@@ -100,9 +103,6 @@ struct HomeFeature {
         case adRewardEarned
         case postAdRewardResponse(Result<Void, Error>)
         case refreshQuizStatusResponse(Result<UserQuizStatusData, Error>)
-        case expiredAlertDismissed
-        case expiredNewGoalTapped
-        case expiredSelectExistingTapped
         case delegate(Delegate)
     }
 
@@ -171,13 +171,6 @@ struct HomeFeature {
                 state.showErrorOverlay = false
                 state.isRetryingError = false
                 state.retryCount = 0
-                state.isExpired = goal.isExpired
-                if goal.isExpired {
-                    state.currentGoal = goal
-                    state.isLoading = false
-                    print("[Home] Goal 만료")
-                    return .none
-                }
 
                 let previousGoal = state.currentGoal
                 state.currentGoal = goal
@@ -228,7 +221,7 @@ struct HomeFeature {
                 print("[Home] Step2 완료 - hasSolvedToday: \(status.hasSolvedToday)")
 
                 if status.isCompleted {
-                    state.isExpired = true
+                    state.isGoalCompleted = true
                     state.isLoading = false
                     print("[Home] Goal 완료 - 모든 퀴즈 세트 완료")
                     return .none
@@ -252,7 +245,7 @@ struct HomeFeature {
             case .fetchQuizStatusResponse(.failure(let error)):
                 if let apiError = error as? APIError,
                    case .serverError(let code, _, _) = apiError, code == "GOAL-002" {
-                    state.isExpired = true
+                    state.isGoalCompleted = true
                     state.isLoading = false
                     return .none
                 }
@@ -286,7 +279,7 @@ struct HomeFeature {
                 if let apiError = error as? APIError,
                    case .serverError(let code, _, _) = apiError {
                     if code == "GOAL-002" {
-                        state.isExpired = true
+                        state.isGoalCompleted = true
                         state.isLoading = false
                         return .none
                     }
@@ -315,7 +308,7 @@ struct HomeFeature {
                 if let apiError = error as? APIError,
                    case .serverError(let code, _, _) = apiError,
                    code == "GOAL-002" || code == "GOAL-003" {
-                    state.isExpired = true
+                    state.isGoalCompleted = true
                     state.isLoading = false
                     return .none
                 }
@@ -431,25 +424,23 @@ struct HomeFeature {
                 print("퀴즈 상태 새로고침 실패: \(error)")
                 return .none
 
-            case .expiredAlertDismissed:
-                state.showExpiredAlert = false
+            case .goalCompletedAlertDismissed:
+                state.showGoalCompletedAlert = false
                 return .none
 
-            case .expiredNewGoalTapped:
-                state.showExpiredAlert = false
+            case .goalCompletedNewGoalTapped:
+                state.showGoalCompletedAlert = false
                 return .send(.delegate(.startNewGoalTapped))
 
-            case .expiredSelectExistingTapped:
-                state.showExpiredAlert = false
+            case .goalCompletedSelectExistingTapped:
+                state.showGoalCompletedAlert = false
                 return .send(.delegate(.openMyPageRequested))
 
             case .characterEatTapped:
-                if state.isExpired {
-                    state.showExpiredAlert = true
+                if state.isGoalCompleted {
+                    state.showGoalCompletedAlert = true
                     return .none
                 }
-
-                // summaryData 생성 후 QuizFlow에 전달
 
                 if state.isTodayQuizCompleted {
                     print("오늘 퀴즈를 이미 완료했습니다")
@@ -520,7 +511,7 @@ struct HomeView: View {
                 )
                 
                 Spacer()
-                    .frame(height: (store.isTodayQuizCompleted || store.isExpired) ? 5 : 11)
+                    .frame(height: (store.isTodayQuizCompleted || store.isGoalCompleted) ? 5 : 11)
                 
                 if store.isLoading {
                     
@@ -547,7 +538,7 @@ struct HomeView: View {
                 } else {
                     CharacterImageView(
                         isTodayQuizCompleted: store.isTodayQuizCompleted,
-                        isExpired: store.isExpired,
+                        isGoalCompleted: store.isGoalCompleted,
                         currentSnackImage: store.currentSnackImage,
                         onCharacterTapped: {
                             store.send(.characterEatTapped)
@@ -592,21 +583,21 @@ struct HomeView: View {
                 }
             }
             .animation(.spring(response: 0.3, dampingFraction: 0.85), value: store.showCouponModal)
-            // 만료 알럿
+            // 주제 완료 알럿
             .overlay {
-                if store.showExpiredAlert {
+                if store.showGoalCompletedAlert {
                     Color.black.opacity(0.4)
                         .ignoresSafeArea()
-                        .onTapGesture { store.send(.expiredAlertDismissed) }
+                        .onTapGesture { store.send(.goalCompletedAlertDismissed) }
 
-                    ExpiredAlertView(
-                        onNewGoal: { store.send(.expiredNewGoalTapped) },
-                        onSelectExisting: { store.send(.expiredSelectExistingTapped) }
+                    GoalCompletedAlertView(
+                        onNewGoal: { store.send(.goalCompletedNewGoalTapped) },
+                        onSelectExisting: { store.send(.goalCompletedSelectExistingTapped) }
                     )
                     .transition(.scale(scale: 0.95).combined(with: .opacity))
                 }
             }
-            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: store.showExpiredAlert)
+            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: store.showGoalCompletedAlert)
             // 에러 오버레이
             .overlay {
                 if store.showErrorOverlay {
@@ -635,41 +626,39 @@ struct HomeView: View {
 // MARK: - Character Image View
 struct CharacterImageView: View {
     let isTodayQuizCompleted: Bool
-    let isExpired: Bool
+    let isGoalCompleted: Bool
     let currentSnackImage: String
     let onCharacterTapped: () -> Void
     let onSpeechBubbleTapped: () -> Void
 
     var body: some View {
         ZStack(alignment: .center) {
-            // Lottie 배경 (항상 동일한 위치)
-            LottieView(animation: .named((isTodayQuizCompleted || isExpired) ? "home_v2_dummy" : "home_dummy"))
+            // Lottie 배경
+            LottieView(animation: .named((isTodayQuizCompleted || isGoalCompleted) ? "home_v2_dummy" : "home_dummy"))
                 .playing(loopMode: .loop)
                 .frame(height: 548)
                 .offset(x: -10)
 
-            // 오버레이 (만료/완료/미완료에 따라 다름)
             VStack(spacing: 16) {
                 Spacer()
 
-                if isExpired {
-                    // 만료 시 - done 이미지
+                if isGoalCompleted {
+                    // 주제 전체 완료
                     Image("done")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 180, height: 180)
 
-                    Text("학습 기간이\n만료되었어요!")
+                    Text("이 주제의 모든 지식을\n다 먹었어요!")
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.black)
                         .multilineTextAlignment(.center)
 
                 } else if isTodayQuizCompleted {
-                    // 말풍선
+                    // 오늘 완료
                     SpeechBubbleView()
                         .onTapGesture { onSpeechBubbleTapped() }
 
-                    // 완료 시 - done 이미지
                     Image("done")
                         .resizable()
                         .scaledToFit()
@@ -681,7 +670,7 @@ struct CharacterImageView: View {
                         .multilineTextAlignment(.center)
 
                 } else {
-                    // 미완료 시 - 햄버거 + 텍스트
+                    // 미완료 - 퀴즈 대기 중
                     Image(currentSnackImage)
                         .resizable()
                         .scaledToFit()
@@ -702,8 +691,7 @@ struct CharacterImageView: View {
         .padding(.trailing, 3)
         .contentShape(Rectangle())
         .onTapGesture {
-            // 만료 시에는 항상 터치 가능, 완료 시에만 막음
-            if !isTodayQuizCompleted || isExpired {
+            if !isTodayQuizCompleted && !isGoalCompleted {
                 onCharacterTapped()
             }
         }
@@ -817,19 +805,20 @@ struct TriangleUp: Shape {
     }
 }
 
-// MARK: - Expired Alert View
-struct ExpiredAlertView: View {
+
+// MARK: - Goal Completed Alert View
+struct GoalCompletedAlertView: View {
     let onNewGoal: () -> Void
     let onSelectExisting: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
             VStack(spacing: 8) {
-                Text("풀고 있는 틈틈잇이 없어요")
+                Text("이 주제를 모두 완료했어요!")
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.black)
 
-                Text("먹을 간식이 없어요!\n새로운 지식을 먹여줄래요?")
+                Text("새로운 지식을 먹으러 가볼까요?")
                     .font(.system(size: 14))
                     .foregroundColor(.gray600)
                     .multilineTextAlignment(.center)
