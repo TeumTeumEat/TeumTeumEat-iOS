@@ -20,6 +20,7 @@ struct HomeFeature {
         var isTodayQuizCompleted: Bool = false
         var isGoalCompleted: Bool = false
         var showGoalCompletedAlert: Bool = false
+        var hasActiveSubjects: Bool = false
         
         // API 관련 상태
         var currentGoal: GoalResponse?
@@ -94,6 +95,7 @@ struct HomeFeature {
         case goalCompletedAlertDismissed
         case goalCompletedNewGoalTapped
         case goalCompletedSelectExistingTapped
+        case fetchActiveGoalsResponse(Result<[GoalResponse], Error>)
         case settingTapped
         case toggleQuizStatus
         case characterEatTapped
@@ -225,7 +227,11 @@ struct HomeFeature {
                     state.showGoalCompletedAlert = true
                     state.isLoading = false
                     print("[Home] Goal 완료 - 모든 퀴즈 세트 완료")
-                    return .none
+                    return .run { send in
+                        await send(.fetchActiveGoalsResponse(
+                            Result { try await apiClient.fetchGoals() }
+                        ))
+                    }
                 }
 
                 if wasCompletedYesterday && !status.hasSolvedToday {
@@ -249,7 +255,11 @@ struct HomeFeature {
                     state.isGoalCompleted = true
                     state.showGoalCompletedAlert = true
                     state.isLoading = false
-                    return .none
+                    return .run { send in
+                        await send(.fetchActiveGoalsResponse(
+                            Result { try await apiClient.fetchGoals() }
+                        ))
+                    }
                 }
                 state.isLoading = false
                 let overlayMsg = (error as? APIError)?.overlayMessage ?? "에러가 발생했습니다."
@@ -284,7 +294,11 @@ struct HomeFeature {
                         state.isGoalCompleted = true
                         state.showGoalCompletedAlert = true
                         state.isLoading = false
-                        return .none
+                        return .run { send in
+                            await send(.fetchActiveGoalsResponse(
+                                Result { try await apiClient.fetchGoals() }
+                            ))
+                        }
                     }
                     if code == "COMMON-005" {
                         // 오늘 문서가 아직 없음 — ContentSummaryFeature가 SSE로 생성
@@ -314,7 +328,11 @@ struct HomeFeature {
                     state.isGoalCompleted = true
                     state.showGoalCompletedAlert = true
                     state.isLoading = false
-                    return .none
+                    return .run { send in
+                        await send(.fetchActiveGoalsResponse(
+                            Result { try await apiClient.fetchGoals() }
+                        ))
+                    }
                 }
                 state.isLoading = false
                 state.errorMessage = "퀴즈 조회 실패: \(error.localizedDescription)"
@@ -426,6 +444,14 @@ struct HomeFeature {
 
             case .refreshQuizStatusResponse(.failure(let error)):
                 print("퀴즈 상태 새로고침 실패: \(error)")
+                return .none
+
+            case .fetchActiveGoalsResponse(.success(let goals)):
+                state.hasActiveSubjects = goals.contains { !$0.isExpired && !$0.isCompleted }
+                return .none
+
+            case .fetchActiveGoalsResponse(.failure):
+                state.hasActiveSubjects = false
                 return .none
 
             case .goalCompletedAlertDismissed:
@@ -594,6 +620,7 @@ struct HomeView: View {
                         .ignoresSafeArea()
 
                     GoalCompletedAlertView(
+                        hasActiveSubjects: store.hasActiveSubjects,
                         onNewGoal: { store.send(.goalCompletedNewGoalTapped) },
                         onSelectExisting: { store.send(.goalCompletedSelectExistingTapped) }
                     )
@@ -811,6 +838,7 @@ struct TriangleUp: Shape {
 
 // MARK: - Goal Completed Alert View
 struct GoalCompletedAlertView: View {
+    let hasActiveSubjects: Bool
     let onNewGoal: () -> Void
     let onSelectExisting: () -> Void
 
@@ -845,12 +873,13 @@ struct GoalCompletedAlertView: View {
                 Button(action: onSelectExisting) {
                     Text("진행중인 틈틈잇 선택하기")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(hasActiveSubjects ? .white : .gray400)
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
-                        .background(Color.blue500)
+                        .background(hasActiveSubjects ? Color.blue500 : Color.gray200)
                         .cornerRadius(12)
                 }
+                .disabled(!hasActiveSubjects)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 24)
