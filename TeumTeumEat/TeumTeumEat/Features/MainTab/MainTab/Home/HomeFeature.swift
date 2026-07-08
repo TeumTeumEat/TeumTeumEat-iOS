@@ -222,6 +222,7 @@ struct HomeFeature {
 
                 if status.isCompleted {
                     state.isGoalCompleted = true
+                    state.showGoalCompletedAlert = true
                     state.isLoading = false
                     print("[Home] Goal 완료 - 모든 퀴즈 세트 완료")
                     return .none
@@ -246,6 +247,7 @@ struct HomeFeature {
                 if let apiError = error as? APIError,
                    case .serverError(let code, _, _) = apiError, code == "GOAL-002" {
                     state.isGoalCompleted = true
+                    state.showGoalCompletedAlert = true
                     state.isLoading = false
                     return .none
                 }
@@ -280,6 +282,7 @@ struct HomeFeature {
                    case .serverError(let code, _, _) = apiError {
                     if code == "GOAL-002" {
                         state.isGoalCompleted = true
+                        state.showGoalCompletedAlert = true
                         state.isLoading = false
                         return .none
                     }
@@ -309,6 +312,7 @@ struct HomeFeature {
                    case .serverError(let code, _, _) = apiError,
                    code == "GOAL-002" || code == "GOAL-003" {
                     state.isGoalCompleted = true
+                    state.showGoalCompletedAlert = true
                     state.isLoading = false
                     return .none
                 }
@@ -583,12 +587,11 @@ struct HomeView: View {
                 }
             }
             .animation(.spring(response: 0.3, dampingFraction: 0.85), value: store.showCouponModal)
-            // 주제 완료 알럿
+            // 주제 완료 알럿 (강제 - 배경 탭으로 닫기 불가)
             .overlay {
                 if store.showGoalCompletedAlert {
                     Color.black.opacity(0.4)
                         .ignoresSafeArea()
-                        .onTapGesture { store.send(.goalCompletedAlertDismissed) }
 
                     GoalCompletedAlertView(
                         onNewGoal: { store.send(.goalCompletedNewGoalTapped) },
@@ -691,7 +694,7 @@ struct CharacterImageView: View {
         .padding(.trailing, 3)
         .contentShape(Rectangle())
         .onTapGesture {
-            if !isTodayQuizCompleted && !isGoalCompleted {
+            if !isTodayQuizCompleted {
                 onCharacterTapped()
             }
         }
