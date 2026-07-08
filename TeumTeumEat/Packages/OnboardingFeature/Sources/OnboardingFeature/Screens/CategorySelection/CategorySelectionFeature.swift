@@ -64,12 +64,15 @@ public struct CategorySelectionFeature {
         // currentDetailCategories → name 사용
         public var currentDetailCategories: [CategoryResponse] {
             guard let root = selectedRootCategory,
-                  let main = selectedMainCategory,
-                  let sub = selectedSubCategory else { return [] }
-            return categories.filter {
-                $0.mainCategory == root &&
-                $0.subCategory == main &&
-                $0.pathComponents[safe: 3] == sub
+                  let main = selectedMainCategory else { return [] }
+            let base = categories.filter {
+                $0.mainCategory == root && $0.subCategory == main
+            }
+            if let sub = selectedSubCategory {
+                return base.filter { $0.pathComponents[safe: 3] == sub }
+            } else {
+                // subCategory 단계가 없는 depth-2 경로 (/IT/iOS 개발)
+                return base.filter { $0.pathComponents[safe: 3] == nil }
             }
         }
         
@@ -109,7 +112,7 @@ public struct CategorySelectionFeature {
         case delegate(Delegate)
 
         public enum Delegate {
-            case completed(root: String, main: String, sub: String, detail: CategoryResponse)
+            case completed(root: String, main: String, sub: String?, detail: CategoryResponse)
             case backToContentSelection
             case saveProgress(root: String?, main: String?, sub: String?, detail: CategoryResponse?)
         }
@@ -184,7 +187,12 @@ public struct CategorySelectionFeature {
                     )))
                     
                 case .detailCategory:
-                    state.currentStep = .subCategory
+                    // subCategory 단계를 거치지 않은 경우(depth-2) mainCategory로 복귀
+                    if state.currentSubCategories.isEmpty {
+                        state.currentStep = .mainCategory
+                    } else {
+                        state.currentStep = .subCategory
+                    }
                     return .send(.delegate(.saveProgress(
                         root: state.selectedRootCategory,
                         main: state.selectedMainCategory,
@@ -198,23 +206,28 @@ public struct CategorySelectionFeature {
                 case .rootCategory:
                     state.currentStep = .mainCategory
                     return .none
-                    
+
                 case .mainCategory:
-                    state.currentStep = .subCategory
+                    // subCategory가 없는 depth-2 경로면 detailCategory로 바로 이동
+                    if state.currentSubCategories.isEmpty {
+                        state.selectedSubCategory = nil
+                        state.currentStep = .detailCategory
+                    } else {
+                        state.currentStep = .subCategory
+                    }
                     return .none
-                    
+
                 case .subCategory:
                     state.currentStep = .detailCategory
                     return .none
-                    
+
                 case .detailCategory:
                     guard let root = state.selectedRootCategory,
                           let main = state.selectedMainCategory,
-                          let sub = state.selectedSubCategory,
                           let detail = state.selectedDetailCategory else {
                         return .none
                     }
-                    return .send(.delegate(.completed(root: root, main: main, sub: sub, detail: detail)))
+                    return .send(.delegate(.completed(root: root, main: main, sub: state.selectedSubCategory, detail: detail)))
                 }
                 
             case .rootCategorySelected(let category):
