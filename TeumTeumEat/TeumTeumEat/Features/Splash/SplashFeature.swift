@@ -47,7 +47,7 @@ struct SplashFeature {
                 return .run { send in
                     let remoteConfig = RemoteConfig.remoteConfig()
                     let settings = RemoteConfigSettings()
-                    settings.minimumFetchInterval = 0 // TODO: 출시 전 3600으로 변경
+                    settings.minimumFetchInterval = 3600
                     remoteConfig.configSettings = settings
                     remoteConfig.setDefaults(["minimum_required_version": "1.0.0" as NSObject])
 
@@ -73,7 +73,7 @@ struct SplashFeature {
 
             case .openAppStore:
                 return .run { _ in
-                    if let url = URL(string: "itms-apps://itunes.apple.com/app/id YOUR_APP_ID") {
+                    if let url = URL(string: "itms-apps://itunes.apple.com/app/id6757255726") {
                         await openURL(url)
                     }
                 }

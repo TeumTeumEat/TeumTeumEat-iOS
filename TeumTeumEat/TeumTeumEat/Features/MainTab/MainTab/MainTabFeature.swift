@@ -72,30 +72,33 @@ struct MainTabFeature {
             Reduce { state, action in
                 switch action {
                 case .tabSelected(let tab):
+                    guard !state.home.isGoalCompleted else { return .none }
                     let previousTab = state.selectedTab
                     state.selectedTab = tab
-                    
+
                     if tab != .register {
                         state.isRegisterMenuExpanded = false
                     }
-                    
+
                     // 홈 탭으로 전환될 때 새로고침
                     if tab == .home && previousTab != .home {
                         return .send(.home(.onAppear))
                     }
-                    
+
                     // 히스토리 탭으로 전환될 때 새로고침
                     if tab == .quiz && previousTab != .quiz {
                         return .send(.quiz(.onAppear))
                     }
-                    
+
                     return .none
-                    
+
                 case .toggleRegisterMenu:
+                    guard !state.home.isGoalCompleted else { return .none }
                     state.isRegisterMenuExpanded.toggle()
                     return .none
-                    
+
                 case .registerMenuItemTapped(let item):
+                    guard !state.home.isGoalCompleted else { return .none }
                     print("메뉴 아이템 선택: \(item)")
                     state.isRegisterMenuExpanded = false
                     if item == .category {
@@ -115,6 +118,9 @@ struct MainTabFeature {
 
                 case .newGoalFlow(.delegate(.cancelled)):
                     state.newGoalFlow = nil
+                    if state.home.isGoalCompleted {
+                        state.home.showGoalCompletedAlert = true
+                    }
                     return .none
 
                 case .home(.delegate(.openMyPageRequested)):
@@ -123,11 +129,11 @@ struct MainTabFeature {
                     return .none
                     
                 // Home에서 QuizFlow 시작 (summaryData 포함)
-                case .home(.delegate(.startQuizFlow(let quizzes, let summaryData, let isFirstTime))):
+                case .home(.delegate(.startQuizFlow(let quizzes, let summaryData, let isQuizGuideSeen))):
                     state.quizFlow = QuizFlowFeature.State(
                         quizzes: quizzes,
                         summaryData: summaryData,
-                        isFirstTime: isFirstTime
+                        isQuizGuideSeen: isQuizGuideSeen
                     )
                     print("퀴즈 플로우 시작 - 요약부터 표시")
                     return .none
@@ -139,6 +145,9 @@ struct MainTabFeature {
                     
                 case .myPage(.delegate(.dismissed)):
                     state.myPage = nil
+                    if state.home.isGoalCompleted {
+                        state.home.showGoalCompletedAlert = true
+                    }
                     print("MyPage 닫힘")
                     return .none
                     

@@ -84,7 +84,8 @@ struct AppSettingsView: View {
                 ),
                 onDismiss: {
                     store.send(.leaveTimePickerDismissed)
-                }
+                },
+                minuteInterval: 10
             )
         }
         .sheet(isPresented: Binding(
@@ -99,7 +100,8 @@ struct AppSettingsView: View {
                 ),
                 onDismiss: {
                     store.send(.returnTimePickerDismissed)
-                }
+                },
+                minuteInterval: 10
             )
         }
         .sheet(isPresented: Binding(
@@ -163,7 +165,7 @@ struct AppSettingsView: View {
                 ),
                 placeholder: "닉네임을 입력하세요",
                 state: store.textFieldState,
-                allowSpaces: false
+                allowSpaces: true
             )
             .focused($isNicknameFocused)
         }

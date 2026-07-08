@@ -20,6 +20,7 @@ struct LoginFeature {
         var pendingProvider: SocialProvider?
         var pendingName: String?
         var showTermsSheet = false
+        var isNewUser = false
     }
     
     enum SocialProvider: String {
@@ -133,30 +134,38 @@ struct LoginFeature {
                         state.errorMessage = "응답 데이터가 없습니다."
                         return .none
                     }
-                    
+
                     // 토큰 저장
                     print("토큰 저장 중...")
                     KeyChainManager.shared.saveAccessToken(data.accessToken)
                     KeyChainManager.shared.saveRefreshToken(data.refreshToken)
                     print("토큰 저장 완료")
-                    
+
+                    // Analytics
+                    let method = state.pendingProvider?.rawValue.lowercased() ?? "unknown"
+                    if state.isNewUser {
+                        AnalyticsManager.logSignUp(method: method)
+                    } else {
+                        AnalyticsManager.logLogin(method: method)
+                    }
+
                     print("다음 화면 분기:")
                     if data.isOnboardingCompleted {
                         print("   → 메인 화면 (온보딩 완료)")
                     } else {
                         print("   → 온보딩 화면 (온보딩 미완료)")
                     }
-                    
+
                     return .send(.delegate(.loginSuccess(
                         accessToken: data.accessToken,
                         refreshToken: data.refreshToken,
                         isOnboardingCompleted: data.isOnboardingCompleted
                     )))
-                    
+
                 } else if response.code == "AUTH-006" {
                     // 신규 유저 → 약관 동의 필요
-                    // pendingIdToken은 이미 state에 저장되어 있음
                     print("약관 동의 필요 (신규 유저)")
+                    state.isNewUser = true
                     state.showTermsSheet = true
                     return .none
 

@@ -31,7 +31,20 @@ struct HistoryFeature {
         
         var topicCategories: [HistoryCategoryResponse] = []
         var isLoadingTopics: Bool = false
-        
+        var calendarError: String? = nil
+        var topicError: String? = nil
+
+        var showOnlyActive: Bool = false
+        var activeGoals: [GoalResponse] = []
+
+        var filteredTopicCategories: [HistoryCategoryResponse] {
+            guard showOnlyActive, !activeGoals.isEmpty else { return topicCategories }
+            let activeNames: Set<String> = Set(activeGoals.compactMap { goal -> String? in
+                goal.type == "CATEGORY" ? goal.category?.name : goal.fileName
+            })
+            return topicCategories.filter { activeNames.contains($0.categoryName) }
+        }
+
         var historyDetailSummary: HistoryDetailSummaryFeature.State?
     }
     
@@ -45,6 +58,10 @@ struct HistoryFeature {
         case historyItemsLoaded(Result<[HistoryItemResponse], Error>)
         case fetchTopicHistories
         case topicHistoriesLoaded(Result<[HistoryCategoryResponse], Error>)
+        case activeGoalsLoaded(Result<[GoalResponse], Error>)
+        case retryCalendar
+        case retryTopicHistories
+        case filterToggled
         case historyItemTapped(id: Int, type: String, date: String)
         case historyDetailSummary(HistoryDetailSummaryFeature.Action)
         case delegate(Delegate)
@@ -62,6 +79,7 @@ struct HistoryFeature {
              case .onAppear:
                  return .run { [year = state.currentYear, month = state.currentMonth] send in
                      await send(.monthChanged(year: year, month: month))
+                     await send(.fetchTopicHistories)
                  }
                  
              case .settingTapped:
@@ -111,14 +129,17 @@ struct HistoryFeature {
                  
              case .calendarDataLoaded(.success(let data)):
                  state.calendarData = data
+                 state.calendarError = nil
                  // stampCount를 totalStamps로 업데이트
                  state.fireCount = data.currentStreak
                  state.stampCount = data.totalStamps
                  print("Calendar data loaded: \(data.currentStreak) stamped dates, total: \(data.totalStamps)")
                  return .none
-                 
+
              case .calendarDataLoaded(.failure(let error)):
-                 print("    Failed to load calendar data: \(error)")
+                 let msg = (error as? APIError)?.overlayMessage ?? "에러가 발생했습니다."
+                 state.calendarError = msg
+                 print("Failed to load calendar data: \(error)")
                  return .none
                  
              case .historyItemsLoaded(.success(let items)):
@@ -134,21 +155,54 @@ struct HistoryFeature {
              case .fetchTopicHistories:
                  state.isLoadingTopics = true
                  return .run { send in
-                     await send(.topicHistoriesLoaded(
-                        Result {
-                            try await apiClient.fetchHistoryTopics()
-                        }
+                     await withTaskGroup(of: Void.self) { group in
+                         group.addTask {
+                             await send(.topicHistoriesLoaded(
+                                 Result { try await apiClient.fetchHistoryTopics() }
+                             ))
+                         }
+                         group.addTask {
+                             await send(.activeGoalsLoaded(
+                                 Result { try await apiClient.fetchGoals() }
+                             ))
+                         }
+                     }
+                 }
+
+             case .activeGoalsLoaded(.success(let goals)):
+                 state.activeGoals = goals.filter { !$0.isExpired && !$0.isCompleted }
+                 return .none
+
+             case .activeGoalsLoaded(.failure):
+                 return .none
+
+             case .retryCalendar:
+                 state.calendarError = nil
+                 return .run { [year = state.currentYear, month = state.currentMonth] send in
+                     await send(.calendarDataLoaded(
+                         Result { try await apiClient.fetchCalendarHistory(year: year, month: month) }
                      ))
                  }
-                 
+
+             case .retryTopicHistories:
+                 state.topicError = nil
+                 return .send(.fetchTopicHistories)
+
+             case .filterToggled:
+                 state.showOnlyActive.toggle()
+                 return .none
+
              case .topicHistoriesLoaded(.success(let categories)):
                  state.isLoadingTopics = false
+                 state.topicError = nil
                  state.topicCategories = categories
                  print("Topic histories loaded: \(categories.count) categories")
                  return .none
-                 
+
              case .topicHistoriesLoaded(.failure(let error)):
                  state.isLoadingTopics = false
+                 let msg = (error as? APIError)?.overlayMessage ?? "에러가 발생했습니다."
+                 state.topicError = msg
                  print("Failed to load topic histories: \(error)")
                  return .none
                  
@@ -220,42 +274,49 @@ struct HistoryView: View {
                                         HistoryDateCard(
                                             fireCount: store.fireCount
                                         )
-                                        
-                                        // 스탬프 카운트 HStack
-                                        HStack(spacing: 12) {
-                                            StampCountCapsule(
-                                                title: "총 스탬프",
-                                                count: store.calendarData?.totalStamps ?? 0,
-                                                iconName: "stamp",
-                                                backgroundColor: Color(hex: "EAF4FF")
+
+                                        if let calendarError = store.calendarError {
+                                            InlineErrorView(
+                                                message: calendarError,
+                                                onRetry: { store.send(.retryCalendar) }
                                             )
-                                            
-                                            StampCountCapsule(
-                                                title: "이번달 스탬프",
-                                                count: store.calendarData?.stampedDates.count ?? 0,
-                                                iconName: "stamp",
-                                                backgroundColor: Color(hex: "EAF4FF")
-                                            )
-                                        }
-                                        
-                                        HistoryCalendarView(
-                                            currentYear: store.currentYear,
-                                            currentMonth: store.currentMonth,
-                                            stampedDates: store.calendarData?.stampedDates ?? [],
-                                            selectedDateString: store.selectedDateString,
-                                            historyItems: store.selectedDateHistoryItems,
-                                            onMonthChanged: { year, month in
-                                                store.send(.monthChanged(year: year, month: month))
-                                            },
-                                            onDateSelected: { dateString in
-                                                store.send(.dateSelected(dateString))
-                                            },
-                                            onItemTapped: { id, type, date in
-                                                store.send(.historyItemTapped(id: id, type: type, date: date))
+                                        } else {
+                                            // 스탬프 카운트 HStack
+                                            HStack(spacing: 12) {
+                                                StampCountCapsule(
+                                                    title: "총 스탬프",
+                                                    count: store.calendarData?.totalStamps ?? 0,
+                                                    iconName: "stamp",
+                                                    backgroundColor: Color(hex: "EAF4FF")
+                                                )
+
+                                                StampCountCapsule(
+                                                    title: "이번달 스탬프",
+                                                    count: store.calendarData?.stampedDates.count ?? 0,
+                                                    iconName: "stamp",
+                                                    backgroundColor: Color(hex: "EAF4FF")
+                                                )
                                             }
-                                        )
-                                        .padding(.top, 5)
-                                        .id("calendar")  // ID 추가
+
+                                            HistoryCalendarView(
+                                                currentYear: store.currentYear,
+                                                currentMonth: store.currentMonth,
+                                                stampedDates: store.calendarData?.stampedDates ?? [],
+                                                selectedDateString: store.selectedDateString,
+                                                historyItems: store.selectedDateHistoryItems,
+                                                onMonthChanged: { year, month in
+                                                    store.send(.monthChanged(year: year, month: month))
+                                                },
+                                                onDateSelected: { dateString in
+                                                    store.send(.dateSelected(dateString))
+                                                },
+                                                onItemTapped: { id, type, date in
+                                                    store.send(.historyItemTapped(id: id, type: type, date: date))
+                                                }
+                                            )
+                                            .padding(.top, 5)
+                                            .id("calendar")
+                                        }
                                     }
                                     .padding(.horizontal, 20)
                                     .padding(.top, 20)
@@ -264,15 +325,48 @@ struct HistoryView: View {
                                 case 1:
                                     // 주제별
                                     VStack(spacing: 16) {
+                                        // 진행중인 주제 필터 라디오 버튼
+                                        Button {
+                                            store.send(.filterToggled)
+                                        } label: {
+                                            HStack(spacing: 8) {
+                                                ZStack {
+                                                    Circle()
+                                                        .fill(store.showOnlyActive ? Color.blue500 : Color.clear)
+                                                        .frame(width: 20, height: 20)
+                                                    Circle()
+                                                        .stroke(
+                                                            store.showOnlyActive ? Color.blue500 : Color.gray300,
+                                                            lineWidth: 1.5
+                                                        )
+                                                        .frame(width: 20, height: 20)
+                                                    if store.showOnlyActive {
+                                                        Image(systemName: "checkmark")
+                                                            .font(.system(size: 11, weight: .bold))
+                                                            .foregroundColor(.white)
+                                                    }
+                                                }
+                                                Text("진행중인 주제 보기")
+                                                    .font(.system(size: 14, weight: .medium))
+                                                    .foregroundColor(store.showOnlyActive ? .blue500 : .gray600)
+                                                Spacer()
+                                            }
+                                        }
+
                                         if store.isLoadingTopics {
                                             ProgressView()
                                                 .frame(maxWidth: .infinity, maxHeight: 300)
-                                        } else if store.topicCategories.isEmpty {
-                                            Text("주제별 히스토리가 없습니다")
+                                        } else if let topicError = store.topicError {
+                                            InlineErrorView(
+                                                message: topicError,
+                                                onRetry: { store.send(.retryTopicHistories) }
+                                            )
+                                        } else if store.filteredTopicCategories.isEmpty {
+                                            Text(store.showOnlyActive ? "진행중인 주제의 히스토리가 없습니다" : "주제별 히스토리가 없습니다")
                                                 .foregroundColor(.gray)
                                                 .frame(maxWidth: .infinity, maxHeight: 300)
                                         } else {
-                                            ForEach(store.topicCategories) { category in
+                                            ForEach(store.filteredTopicCategories) { category in
                                                 ExpandableSummaryRow(
                                                     categories: [category.categoryName],
                                                     items: category.histories.map { history in
@@ -714,7 +808,7 @@ struct DayCell: View {
             if hasQuiz {
                 Circle()
                     .fill(isSelected ? Color.blue500 : Color.blue300)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 28, height: 28)
             }
             
             // 날짜 텍스트

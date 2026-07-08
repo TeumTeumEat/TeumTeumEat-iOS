@@ -83,7 +83,7 @@ struct QuizGuideView: View {
                                     .scaledToFit()
                                     .frame(width: 24, height: 24)
                                 
-                                Text("총 3문제가 등장해요")
+                                Text("총 \(store.quizCount)문제가 등장해요")
                                     .font(.system(size: 15))
                                     .foregroundColor(.black)
                             }
@@ -169,5 +169,6 @@ struct QuizGuideView: View {
         }
         .background(.white)
         .navigationBarHidden(true)
+        .onAppear { store.send(.onAppear) }
     }
 }

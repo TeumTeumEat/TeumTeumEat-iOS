@@ -226,7 +226,7 @@ struct MyPageView: View {
                                 
                                 Spacer()
                                 
-                                Text("v 1.0.0")
+                                Text("v 1.0.8")
                                     .bodyRegular14()
                                     .foregroundColor(.gray)
                             }

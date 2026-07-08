@@ -17,11 +17,15 @@ struct DurationSelectButton: View {
         Button(action: action) {
             Text(text)
                 .stSemibold16()
-                .foregroundColor(isSelected ? .white : .gray700)
+                .foregroundColor(isSelected ? .blue500 : .gray700)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .background(isSelected ? Color.blue500 : Color.gray100)
+                .background(Color.white)
                 .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isSelected ? Color.blue500 : Color.gray200, lineWidth: 1.5)
+                )
         }
     }
 }

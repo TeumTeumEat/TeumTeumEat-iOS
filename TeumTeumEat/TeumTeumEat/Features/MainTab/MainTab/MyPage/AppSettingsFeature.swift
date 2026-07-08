@@ -34,48 +34,39 @@ struct AppSettingsFeature {
         var isSaving: Bool = false
         var errorMessage: String?
         
-        // 닉네임 검증 로직 추가
+        // 닉네임 검증 로직
         var nicknameValidationError: String? {
-            let trimmedName = nickname.trimmingCharacters(in: .whitespaces)
-            
-            // 입력이 없으면 에러 메시지 표시 안 함
-            if nickname.isEmpty {
-                return nil
-            }
-            
-            // 길이 체크
-            if trimmedName.count > 10 {
-                return "닉네임은 10글자 이하로 입력해주세요"
-            }
-            
-            // 완성된 한글, 영문, 숫자만 허용
-            let allowedPattern = "^[a-zA-Z0-9가-힣]+$"
+            let trimmed = nickname.trimmingCharacters(in: .whitespaces)
+
+            // 완전히 빈 값이면 에러 미표시
+            if nickname.isEmpty { return nil }
+
+            // 공백만 입력된 경우
+            if trimmed.isEmpty { return "닉네임을 입력해주세요" }
+
+            // 한글, 영문, 숫자, 공백만 허용
+            let allowedPattern = "^[가-힣a-zA-Z0-9 ]*$"
             let predicate = NSPredicate(format: "SELF MATCHES %@", allowedPattern)
-            
-            if !predicate.evaluate(with: trimmedName) {
+            if !predicate.evaluate(with: nickname) {
                 return "한글, 영문, 숫자만 사용 가능해요"
             }
-            
+
             return nil
         }
-        
-        // 닉네임 유효성 체크
+
+        // 닉네임 유효성 체크 (저장 버튼 활성화 기준)
         var isNicknameValid: Bool {
-            let trimmedName = nickname.trimmingCharacters(in: .whitespaces)
-            
-            guard !trimmedName.isEmpty else { return false }
-            guard trimmedName.count >= 1 && trimmedName.count <= 10 else { return false }
-            guard !nickname.contains(" ") else { return false }
-            
-            let allowedPattern = "^[a-zA-Z0-9가-힣]+$"
+            let trimmed = nickname.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty else { return false }
+
+            let allowedPattern = "^[가-힣a-zA-Z0-9 ]*$"
             let predicate = NSPredicate(format: "SELF MATCHES %@", allowedPattern)
-            
-            return predicate.evaluate(with: trimmedName)
+            return predicate.evaluate(with: nickname)
         }
-        
+
         // Computed Properties
         var hasChanges: Bool {
-            nickname != originalNickname ||
+            nickname.trimmingCharacters(in: .whitespaces) != originalNickname ||
             leaveTime != originalLeaveTime ||
             returnTime != originalReturnTime ||
             usageMinutes != originalUsageMinutes
@@ -220,10 +211,11 @@ struct AppSettingsFeature {
                 var effects: [Effect<Action>] = []
                 
                 // 이름 변경됐으면
-                if state.nickname != state.originalNickname {
-                    effects.append(.run { [nickname = state.nickname] send in
+                if state.nickname.trimmingCharacters(in: .whitespaces) != state.originalNickname {
+                    let trimmedNickname = state.nickname.trimmingCharacters(in: .whitespaces)
+                    effects.append(.run { send in
                         await send(.updateNameResponse(
-                            Result { try await apiClient.updateUserName(name: nickname) }
+                            Result { try await apiClient.updateUserName(name: trimmedNickname) }
                         ))
                     })
                 }
@@ -255,7 +247,9 @@ struct AppSettingsFeature {
             // MARK: - 업데이트 응답
             case .updateNameResponse(.success):
                 print("이름 업데이트 성공")
-                state.originalNickname = state.nickname
+                let trimmed = state.nickname.trimmingCharacters(in: .whitespaces)
+                state.nickname = trimmed
+                state.originalNickname = trimmed
                 
                 // 출퇴근도 같이 업데이트 중이 아니면 저장 완료
                 if state.leaveTime == state.originalLeaveTime &&
@@ -296,7 +290,7 @@ struct AppSettingsFeature {
                 return .send(.delegate(.dismissed))
                 
             case .nicknameChanged(let nickname):
-                state.nickname = nickname
+                state.nickname = String(nickname.prefix(10))
                 return .none
                 
             case .leaveTimeButtonTapped:

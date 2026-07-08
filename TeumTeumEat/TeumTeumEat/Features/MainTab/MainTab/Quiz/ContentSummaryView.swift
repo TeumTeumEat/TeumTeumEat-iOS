@@ -147,6 +147,7 @@ struct ContentSummaryView: View {
         .onAppear {
             store.send(.onAppear)
         }
+        // QUIZ-002: 퀴즈 횟수 소진 알림 (기존 alert 유지)
         .alert(
             "퀴즈를 시작할 수 없어요",
             isPresented: Binding(
@@ -158,6 +159,19 @@ struct ContentSummaryView: View {
         } message: {
             Text(store.errorMessage ?? "")
         }
+        // 일반 에러 오버레이
+        .overlay {
+            if store.showErrorOverlay {
+                ErrorOverlayView(
+                    message: store.errorOverlayMessage,
+                    isRetrying: store.isRetryingError,
+                    onRetry: { store.send(.retryFromErrorOverlay) },
+                    onBack: { store.send(.dismissErrorOverlay) }
+                )
+                .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: store.showErrorOverlay)
     }
 }
 

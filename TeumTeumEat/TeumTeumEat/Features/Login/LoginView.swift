@@ -73,12 +73,6 @@ struct LoginView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 50)
             
-            if let errorMessage = store.errorMessage {
-                Text(errorMessage)
-                    .font(.caption)
-                    .foregroundColor(.red)
-                    .padding(.top, 8)
-            }
         }
         .padding()
         .background(.white)

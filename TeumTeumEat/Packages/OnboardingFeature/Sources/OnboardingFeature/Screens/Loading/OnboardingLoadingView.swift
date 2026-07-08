@@ -53,7 +53,11 @@ public struct OnboardingLoadingView: View {
                     .foregroundColor(.primary)
 
                 if store.isFileUpload {
-                    if let remaining = store.remainingSeconds, remaining > 0 {
+                    if store.isOverdue {
+                        Text("시간이 조금 더 걸리고 있어요...")
+                            .font(.system(size: 16))
+                            .foregroundColor(.gray)
+                    } else if let remaining = store.remainingSeconds, remaining > 0 {
                         Text("약 \(remaining)초 남았어요")
                             .font(.system(size: 16))
                             .foregroundColor(.gray)

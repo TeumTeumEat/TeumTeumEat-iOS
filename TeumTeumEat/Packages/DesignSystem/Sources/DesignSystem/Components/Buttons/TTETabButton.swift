@@ -30,6 +30,7 @@ public struct TTETabButton: View {
     public let icon: Image
     public let size: TabButtonSize
     public let isSelected: Bool
+    public let customIconSize: CGFloat?
 
     // 커스텀 색상
     public let selectedBackgroundColor: Color?
@@ -43,6 +44,7 @@ public struct TTETabButton: View {
         icon: Image,
         size: TabButtonSize = .large,
         isSelected: Bool = false,
+        customIconSize: CGFloat? = nil,
         selectedBackgroundColor: Color? = nil,
         unselectedBackgroundColor: Color? = nil,
         selectedIconColor: Color? = nil,
@@ -52,13 +54,14 @@ public struct TTETabButton: View {
         self.icon = icon
         self.size = size
         self.isSelected = isSelected
+        self.customIconSize = customIconSize
         self.selectedBackgroundColor = selectedBackgroundColor
         self.unselectedBackgroundColor = unselectedBackgroundColor
         self.selectedIconColor = selectedIconColor
         self.unselectedIconColor = unselectedIconColor
         self.action = action
     }
-    
+
     public var body: some View {
         Button(action: action) {
             ZStack {
@@ -66,13 +69,13 @@ public struct TTETabButton: View {
                 Circle()
                     .fill(backgroundColor)
                     .frame(width: size.buttonSize, height: size.buttonSize)
-                
+
                 // 아이콘
                 icon
                     .resizable()
                     .renderingMode(.template)
                     .foregroundColor(iconColor)
-                    .frame(width: size.iconSize, height: size.iconSize)
+                    .frame(width: customIconSize ?? size.iconSize, height: customIconSize ?? size.iconSize)
             }
         }
     }

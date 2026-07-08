@@ -27,6 +27,9 @@ struct ContentSummaryFeature {
         var isStreaming: Bool = false
         var isQuizLoading: Bool = false
         var errorMessage: String? = nil
+        var showErrorOverlay: Bool = false
+        var errorOverlayMessage: String = ""
+        var isRetryingError: Bool = false
 
         init(
             documentId: Int,
@@ -57,6 +60,8 @@ struct ContentSummaryFeature {
         case startQuizButtonTapped
         case closeButtonTapped
         case errorAlertDismissed
+        case retryFromErrorOverlay
+        case dismissErrorOverlay
         case delegate(Delegate)
 
         case startStreaming
@@ -226,7 +231,12 @@ struct ContentSummaryFeature {
                         }
                     }
                 }
+                // 일반 에러 → 오버레이 표시
                 state.isStreaming = false
+                let overlayMsg = (error as? APIError)?.overlayMessage ?? "에러가 발생했습니다."
+                state.errorOverlayMessage = overlayMsg
+                state.showErrorOverlay = true
+                state.isRetryingError = false
                 return .none
 
             case .fallbackResponse(.success(let doc)):
@@ -306,6 +316,19 @@ struct ContentSummaryFeature {
             case .errorAlertDismissed:
                 state.errorMessage = nil
                 return .send(.delegate(.cancelled))
+
+            case .retryFromErrorOverlay:
+                state.showErrorOverlay = false
+                state.isRetryingError = true
+                return .send(.startStreaming)
+
+            case .dismissErrorOverlay:
+                state.showErrorOverlay = false
+                state.isRetryingError = false
+                return .merge(
+                    .cancel(id: CancelID.streaming),
+                    .send(.delegate(.cancelled))
+                )
 
             case .startQuizButtonTapped:
                 return .send(.delegate(.startQuiz(

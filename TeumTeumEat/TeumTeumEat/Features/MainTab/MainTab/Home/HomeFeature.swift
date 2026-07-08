@@ -18,8 +18,9 @@ struct HomeFeature {
         var fireCount: Int = 0
         var stampCount: Int = 0
         var isTodayQuizCompleted: Bool = false
-        var isExpired: Bool = false
-        var showExpiredAlert: Bool = false
+        var isGoalCompleted: Bool = false
+        var showGoalCompletedAlert: Bool = false
+        var hasActiveSubjects: Bool = false
         
         // API 관련 상태
         var currentGoal: GoalResponse?
@@ -30,6 +31,12 @@ struct HomeFeature {
         
         var isLoading: Bool = false
         var errorMessage: String?
+
+        var showErrorOverlay: Bool = false
+        var errorOverlayMessage: String = ""
+        var isRetryingError: Bool = false
+        var retryCount: Int = 0
+        var showRetryToast: Bool = false
 
         var showCouponModal: Bool = false
         var isUsingCoupon: Bool = false
@@ -43,7 +50,7 @@ struct HomeFeature {
         }
         
         var currentSnackImage: String {
-            guard !isExpired else { return "done" }
+            guard !isGoalCompleted else { return "done" }
             guard !isTodayQuizCompleted else { return "done" }
             guard let goal = currentGoal else { return "burger" }
 
@@ -82,6 +89,13 @@ struct HomeFeature {
         // Step 4: 퀴즈 조회
         case fetchQuizzesResponse(Result<[UserQuiz], Error>)
         
+        case retryFromErrorOverlay
+        case dismissErrorOverlay
+        case retryToastDismissed
+        case goalCompletedAlertDismissed
+        case goalCompletedNewGoalTapped
+        case goalCompletedSelectExistingTapped
+        case fetchActiveGoalsResponse(Result<[GoalResponse], Error>)
         case settingTapped
         case toggleQuizStatus
         case characterEatTapped
@@ -91,9 +105,6 @@ struct HomeFeature {
         case adRewardEarned
         case postAdRewardResponse(Result<Void, Error>)
         case refreshQuizStatusResponse(Result<UserQuizStatusData, Error>)
-        case expiredAlertDismissed
-        case expiredNewGoalTapped
-        case expiredSelectExistingTapped
         case delegate(Delegate)
     }
 
@@ -101,7 +112,7 @@ struct HomeFeature {
         case startQuizFlow(
             quizzes: [UserQuiz],
             summaryData: ContentSummaryFeature.State,
-            isFirstTime: Bool
+            isQuizGuideSeen: Bool
         )
         case openMyPageRequested
         case startNewGoalTapped
@@ -115,7 +126,10 @@ struct HomeFeature {
             case .onAppear:
                 state.isLoading = true
                 state.errorMessage = nil
-                
+                state.showErrorOverlay = false
+                state.retryCount = 0
+                state.showRetryToast = false
+
                 // 병렬 처리: 캘린더 조회 + 목표 조회
                 let now = Date()
                 let calendar = Calendar.current
@@ -156,13 +170,9 @@ struct HomeFeature {
                 
             // Step 1 완료 → Step 2 시작
             case .fetchCurrentGoalResponse(.success(let goal)):
-                state.isExpired = goal.isExpired
-                if goal.isExpired {
-                    state.currentGoal = goal
-                    state.isLoading = false
-                    print("[Home] Goal 만료")
-                    return .none
-                }
+                state.showErrorOverlay = false
+                state.isRetryingError = false
+                state.retryCount = 0
 
                 let previousGoal = state.currentGoal
                 state.currentGoal = goal
@@ -194,7 +204,10 @@ struct HomeFeature {
                 
             case .fetchCurrentGoalResponse(.failure(let error)):
                 state.isLoading = false
-                state.errorMessage = "목표 조회 실패: \(error.localizedDescription)"
+                let overlayMsg = (error as? APIError)?.overlayMessage ?? "에러가 발생했습니다."
+                state.errorOverlayMessage = overlayMsg
+                state.showErrorOverlay = true
+                state.isRetryingError = false
                 print("[Home] Step1 실패: \(error)")
                 return .none
                 
@@ -210,10 +223,15 @@ struct HomeFeature {
                 print("[Home] Step2 완료 - hasSolvedToday: \(status.hasSolvedToday)")
 
                 if status.isCompleted {
-                    state.isExpired = true
+                    state.isGoalCompleted = true
+                    state.showGoalCompletedAlert = true
                     state.isLoading = false
                     print("[Home] Goal 완료 - 모든 퀴즈 세트 완료")
-                    return .none
+                    return .run { send in
+                        await send(.fetchActiveGoalsResponse(
+                            Result { try await apiClient.fetchGoals() }
+                        ))
+                    }
                 }
 
                 if wasCompletedYesterday && !status.hasSolvedToday {
@@ -234,12 +252,20 @@ struct HomeFeature {
             case .fetchQuizStatusResponse(.failure(let error)):
                 if let apiError = error as? APIError,
                    case .serverError(let code, _, _) = apiError, code == "GOAL-002" {
-                    state.isExpired = true
+                    state.isGoalCompleted = true
+                    state.showGoalCompletedAlert = true
                     state.isLoading = false
-                    return .none
+                    return .run { send in
+                        await send(.fetchActiveGoalsResponse(
+                            Result { try await apiClient.fetchGoals() }
+                        ))
+                    }
                 }
                 state.isLoading = false
-                state.errorMessage = "퀴즈 상태 조회 실패: \(error.localizedDescription)"
+                let overlayMsg = (error as? APIError)?.overlayMessage ?? "에러가 발생했습니다."
+                state.errorOverlayMessage = overlayMsg
+                state.showErrorOverlay = true
+                state.isRetryingError = false
                 print("[Home] Step2 실패: \(error)")
                 return .none
                 
@@ -265,9 +291,14 @@ struct HomeFeature {
                 if let apiError = error as? APIError,
                    case .serverError(let code, _, _) = apiError {
                     if code == "GOAL-002" {
-                        state.isExpired = true
+                        state.isGoalCompleted = true
+                        state.showGoalCompletedAlert = true
                         state.isLoading = false
-                        return .none
+                        return .run { send in
+                            await send(.fetchActiveGoalsResponse(
+                                Result { try await apiClient.fetchGoals() }
+                            ))
+                        }
                     }
                     if code == "COMMON-005" {
                         // 오늘 문서가 아직 없음 — ContentSummaryFeature가 SSE로 생성
@@ -294,15 +325,62 @@ struct HomeFeature {
                 if let apiError = error as? APIError,
                    case .serverError(let code, _, _) = apiError,
                    code == "GOAL-002" || code == "GOAL-003" {
-                    state.isExpired = true
+                    state.isGoalCompleted = true
+                    state.showGoalCompletedAlert = true
                     state.isLoading = false
-                    return .none
+                    return .run { send in
+                        await send(.fetchActiveGoalsResponse(
+                            Result { try await apiClient.fetchGoals() }
+                        ))
+                    }
                 }
                 state.isLoading = false
                 state.errorMessage = "퀴즈 조회 실패: \(error.localizedDescription)"
                 print("[Home] Step4 실패: \(error)")
                 return .none
                 
+            case .retryFromErrorOverlay:
+                state.retryCount += 1
+                if state.retryCount >= 2 {
+                    state.showRetryToast = true
+                }
+                state.isRetryingError = true
+                state.isLoading = true
+                state.errorMessage = nil
+
+                let now = Date()
+                let calendar = Calendar.current
+                let year = calendar.component(.year, from: now)
+                let month = calendar.component(.month, from: now)
+
+                return .merge(
+                    .run { send in
+                        do {
+                            let calendarData = try await apiClient.fetchCalendarHistory(year: year, month: month)
+                            await send(.fetchCalendarHistoryResponse(.success(calendarData)))
+                        } catch {
+                            await send(.fetchCalendarHistoryResponse(.failure(error)))
+                        }
+                    },
+                    .run { send in
+                        do {
+                            let goal = try await apiClient.fetchCurrentGoal()
+                            await send(.fetchCurrentGoalResponse(.success(goal)))
+                        } catch {
+                            await send(.fetchCurrentGoalResponse(.failure(error)))
+                        }
+                    }
+                )
+
+            case .dismissErrorOverlay:
+                state.showErrorOverlay = false
+                state.isRetryingError = false
+                return .none
+
+            case .retryToastDismissed:
+                state.showRetryToast = false
+                return .none
+
             case .settingTapped:
                 return .send(.delegate(.openMyPageRequested))
 
@@ -320,6 +398,7 @@ struct HomeFeature {
 
             case .couponUseTapped:
                 guard state.availableQuizCount > 0 else { return .none }
+                AnalyticsManager.logCouponUsed()
                 state.isTodayQuizCompleted = false
                 state.isUsingCoupon = true
                 state.showCouponModal = false
@@ -367,25 +446,31 @@ struct HomeFeature {
                 print("퀴즈 상태 새로고침 실패: \(error)")
                 return .none
 
-            case .expiredAlertDismissed:
-                state.showExpiredAlert = false
+            case .fetchActiveGoalsResponse(.success(let goals)):
+                state.hasActiveSubjects = goals.contains { !$0.isExpired && !$0.isCompleted }
                 return .none
 
-            case .expiredNewGoalTapped:
-                state.showExpiredAlert = false
+            case .fetchActiveGoalsResponse(.failure):
+                state.hasActiveSubjects = false
+                return .none
+
+            case .goalCompletedAlertDismissed:
+                state.showGoalCompletedAlert = false
+                return .none
+
+            case .goalCompletedNewGoalTapped:
+                state.showGoalCompletedAlert = false
                 return .send(.delegate(.startNewGoalTapped))
 
-            case .expiredSelectExistingTapped:
-                state.showExpiredAlert = false
+            case .goalCompletedSelectExistingTapped:
+                state.showGoalCompletedAlert = false
                 return .send(.delegate(.openMyPageRequested))
 
             case .characterEatTapped:
-                if state.isExpired {
-                    state.showExpiredAlert = true
+                if state.isGoalCompleted {
+                    state.showGoalCompletedAlert = true
                     return .none
                 }
-
-                // summaryData 생성 후 QuizFlow에 전달
 
                 if state.isTodayQuizCompleted {
                     print("오늘 퀴즈를 이미 완료했습니다")
@@ -408,7 +493,7 @@ struct HomeFeature {
                     return .send(.delegate(.startQuizFlow(
                         quizzes: [],
                         summaryData: summaryData,
-                        isFirstTime: true
+                        isQuizGuideSeen: state.quizStatus?.isQuizGuideSeen ?? false
                     )))
 
                 } else if let goal = state.currentGoal,
@@ -427,7 +512,7 @@ struct HomeFeature {
                     return .send(.delegate(.startQuizFlow(
                         quizzes: [],
                         summaryData: summaryData,
-                        isFirstTime: true
+                        isQuizGuideSeen: state.quizStatus?.isQuizGuideSeen ?? false
                     )))
 
                 } else {
@@ -456,7 +541,7 @@ struct HomeView: View {
                 )
                 
                 Spacer()
-                    .frame(height: (store.isTodayQuizCompleted || store.isExpired) ? 5 : 11)
+                    .frame(height: (store.isTodayQuizCompleted || store.isGoalCompleted) ? 5 : 11)
                 
                 if store.isLoading {
                     
@@ -483,7 +568,7 @@ struct HomeView: View {
                 } else {
                     CharacterImageView(
                         isTodayQuizCompleted: store.isTodayQuizCompleted,
-                        isExpired: store.isExpired,
+                        isGoalCompleted: store.isGoalCompleted,
                         currentSnackImage: store.currentSnackImage,
                         onCharacterTapped: {
                             store.send(.characterEatTapped)
@@ -528,21 +613,42 @@ struct HomeView: View {
                 }
             }
             .animation(.spring(response: 0.3, dampingFraction: 0.85), value: store.showCouponModal)
-            // 만료 알럿
+            // 주제 완료 알럿 (강제 - 배경 탭으로 닫기 불가)
             .overlay {
-                if store.showExpiredAlert {
+                if store.showGoalCompletedAlert {
                     Color.black.opacity(0.4)
                         .ignoresSafeArea()
-                        .onTapGesture { store.send(.expiredAlertDismissed) }
 
-                    ExpiredAlertView(
-                        onNewGoal: { store.send(.expiredNewGoalTapped) },
-                        onSelectExisting: { store.send(.expiredSelectExistingTapped) }
+                    GoalCompletedAlertView(
+                        hasActiveSubjects: store.hasActiveSubjects,
+                        onNewGoal: { store.send(.goalCompletedNewGoalTapped) },
+                        onSelectExisting: { store.send(.goalCompletedSelectExistingTapped) }
                     )
                     .transition(.scale(scale: 0.95).combined(with: .opacity))
                 }
             }
-            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: store.showExpiredAlert)
+            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: store.showGoalCompletedAlert)
+            // 에러 오버레이
+            .overlay {
+                if store.showErrorOverlay {
+                    ErrorOverlayView(
+                        message: store.errorOverlayMessage,
+                        isRetrying: store.isRetryingError,
+                        onRetry: { store.send(.retryFromErrorOverlay) },
+                        onBack: nil
+                    )
+                    .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.25), value: store.showErrorOverlay)
+            // 재시도 토스트
+            .tteToast(
+                isPresented: Binding(
+                    get: { store.showRetryToast },
+                    set: { if !$0 { store.send(.retryToastDismissed) } }
+                ),
+                message: "잠시 후 다시 시도해 주세요."
+            )
         }
     }
 }
@@ -550,41 +656,39 @@ struct HomeView: View {
 // MARK: - Character Image View
 struct CharacterImageView: View {
     let isTodayQuizCompleted: Bool
-    let isExpired: Bool
+    let isGoalCompleted: Bool
     let currentSnackImage: String
     let onCharacterTapped: () -> Void
     let onSpeechBubbleTapped: () -> Void
 
     var body: some View {
         ZStack(alignment: .center) {
-            // Lottie 배경 (항상 동일한 위치)
-            LottieView(animation: .named((isTodayQuizCompleted || isExpired) ? "home_v2_dummy" : "home_dummy"))
+            // Lottie 배경
+            LottieView(animation: .named((isTodayQuizCompleted || isGoalCompleted) ? "home_v2_dummy" : "home_dummy"))
                 .playing(loopMode: .loop)
                 .frame(height: 548)
                 .offset(x: -10)
 
-            // 오버레이 (만료/완료/미완료에 따라 다름)
             VStack(spacing: 16) {
                 Spacer()
 
-                if isExpired {
-                    // 만료 시 - done 이미지
+                if isGoalCompleted {
+                    // 주제 전체 완료
                     Image("done")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 180, height: 180)
 
-                    Text("학습 기간이\n만료되었어요!")
+                    Text("이 주제의 모든 지식을\n다 먹었어요!")
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.black)
                         .multilineTextAlignment(.center)
 
                 } else if isTodayQuizCompleted {
-                    // 말풍선
+                    // 오늘 완료
                     SpeechBubbleView()
                         .onTapGesture { onSpeechBubbleTapped() }
 
-                    // 완료 시 - done 이미지
                     Image("done")
                         .resizable()
                         .scaledToFit()
@@ -596,7 +700,7 @@ struct CharacterImageView: View {
                         .multilineTextAlignment(.center)
 
                 } else {
-                    // 미완료 시 - 햄버거 + 텍스트
+                    // 미완료 - 퀴즈 대기 중
                     Image(currentSnackImage)
                         .resizable()
                         .scaledToFit()
@@ -617,8 +721,7 @@ struct CharacterImageView: View {
         .padding(.trailing, 3)
         .contentShape(Rectangle())
         .onTapGesture {
-            // 만료 시에는 항상 터치 가능, 완료 시에만 막음
-            if !isTodayQuizCompleted || isExpired {
+            if !isTodayQuizCompleted {
                 onCharacterTapped()
             }
         }
@@ -732,19 +835,21 @@ struct TriangleUp: Shape {
     }
 }
 
-// MARK: - Expired Alert View
-struct ExpiredAlertView: View {
+
+// MARK: - Goal Completed Alert View
+struct GoalCompletedAlertView: View {
+    let hasActiveSubjects: Bool
     let onNewGoal: () -> Void
     let onSelectExisting: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
             VStack(spacing: 8) {
-                Text("풀고 있는 틈틈잇이 없어요")
+                Text("이 주제를 모두 완료했어요!")
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.black)
 
-                Text("먹을 간식이 없어요!\n새로운 지식을 먹여줄래요?")
+                Text("새로운 지식을 먹으러 가볼까요?")
                     .font(.system(size: 14))
                     .foregroundColor(.gray600)
                     .multilineTextAlignment(.center)
@@ -768,12 +873,13 @@ struct ExpiredAlertView: View {
                 Button(action: onSelectExisting) {
                     Text("진행중인 틈틈잇 선택하기")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(hasActiveSubjects ? .white : .gray400)
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
-                        .background(Color.blue500)
+                        .background(hasActiveSubjects ? Color.blue500 : Color.gray200)
                         .cornerRadius(12)
                 }
+                .disabled(!hasActiveSubjects)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 24)
