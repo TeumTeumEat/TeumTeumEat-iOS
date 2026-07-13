@@ -478,7 +478,7 @@
 		46FE66902EE17711009E626A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReferenceAnchor = 46FE66702EE1770E009E626A /* TeumTeumEat */;
-			baseConfigurationReferenceRelativePath = Resources/Config.xcconfig;
+			baseConfigurationReferenceRelativePath = Resources/Config.Debug.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -517,7 +517,7 @@
 		46FE66912EE17711009E626A /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReferenceAnchor = 46FE66702EE1770E009E626A /* TeumTeumEat */;
-			baseConfigurationReferenceRelativePath = Resources/Config.xcconfig;
+			baseConfigurationReferenceRelativePath = Resources/Config.Release.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

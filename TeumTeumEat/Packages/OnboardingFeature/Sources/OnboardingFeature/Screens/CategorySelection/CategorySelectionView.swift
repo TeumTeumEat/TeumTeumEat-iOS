@@ -309,17 +309,42 @@ struct SubCategoryStepView: View {
                         .padding(.horizontal, 32)
                         .padding(.top, 14)
 
-                    FlowLayout(spacing: 12) {
-                        ForEach(store.currentSubCategories, id: \.self) { subCategory in
-                            CategoryChip(
-                                text: subCategory,
-                                isSelected: store.selectedSubCategory == subCategory
-                            ) {
-                                store.send(.subCategorySelected(subCategory))
+                    VStack(spacing: 20) {
+                        // Groups: 탭 시 자동으로 다음 depth로 이동
+                        if !store.currentSubCategories.isEmpty {
+                            FlowLayout(spacing: 12) {
+                                ForEach(store.currentSubCategories, id: \.self) { subCategory in
+                                    CategoryChip(
+                                        text: subCategory,
+                                        isSelected: store.selectedSubCategory == subCategory
+                                    ) {
+                                        store.send(.subCategorySelected(subCategory))
+                                    }
+                                }
                             }
+                            .padding(.horizontal, 30)
+                        }
+
+                        // Leaves: 탭 시 직접 선택, "다음으로"로 완료
+                        if !store.currentDirectCategories.isEmpty {
+                            VStack(spacing: 16) {
+                                ForEach(store.currentDirectCategories) { category in
+                                    let isSelected = store.selectedDetailCategory?.id == category.id
+                                    TTEButton(
+                                        title: category.name,
+                                        size: .large,
+                                        style: .secondary,
+                                        isEnabled: true,
+                                        foregroundColor: isSelected ? .blue500 : .gray600,
+                                        borderColor: isSelected ? .blue500 : .gray300
+                                    ) {
+                                        store.send(.directCategorySelected(category))
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 20)
                         }
                     }
-                    .padding(.horizontal, 30)
                     .padding(.top, 20)
                     .padding(.bottom, 20)
                 }
