@@ -96,8 +96,8 @@ public struct CategorySelectionFeature {
             case .mainCategory:
                 return selectedMainCategory != nil
             case .subCategory:
-                // group chip은 탭 시 자동 이동이므로, leaf가 선택됐을 때만 활성화
-                return selectedDetailCategory != nil
+                // group chip 또는 leaf 중 하나라도 선택되면 활성화
+                return selectedSubCategory != nil || selectedDetailCategory != nil
             case .detailCategory:
                 return selectedDetailCategory != nil
             }
@@ -127,7 +127,7 @@ public struct CategorySelectionFeature {
         case delegate(Delegate)
 
         public enum Delegate {
-            case completed(root: String, main: String, sub: String?, detail: CategoryResponse)
+            case completed(root: String, main: String?, sub: String?, detail: CategoryResponse)
             case backToContentSelection
             case saveProgress(root: String?, main: String?, sub: String?, detail: CategoryResponse?)
         }
@@ -193,34 +193,35 @@ public struct CategorySelectionFeature {
                     )))
 
                 case .subCategory:
-                    state.selectedSubCategory = nil
-                    state.selectedDetailCategory = nil
                     state.currentStep = .mainCategory
                     return .send(.delegate(.saveProgress(
                         root: state.selectedRootCategory,
                         main: state.selectedMainCategory,
-                        sub: nil,
-                        detail: nil
+                        sub: state.selectedSubCategory,
+                        detail: state.selectedDetailCategory
                     )))
 
                 case .detailCategory:
-                    state.selectedDetailCategory = nil
-                    if state.selectedMainCategory == nil {
-                        // depth-2 경로: rootCategory로 복귀
+                    let detailToSave = state.selectedDetailCategory
+                    if state.mainCategories.isEmpty {
+                        // depth-2 경로(/IT테스트): mainCategory 단계가 없었으므로 rootCategory로 복귀
+                        // selectedMainCategory nil 체크 대신 mainCategories로 판별
+                        // (복원 시 selectedMainCategory가 root값으로 복원될 수 있으므로)
                         state.currentStep = .rootCategory
                     } else if state.currentSubCategories.isEmpty {
                         // group이 없었던 경우: mainCategory로 복귀
                         state.currentStep = .mainCategory
                     } else {
                         // group을 통해 진입했던 경우: subCategory로 복귀
-                        state.selectedSubCategory = nil
+                        // selectedDetailCategory만 초기화 (subCategory의 nextTapped 라우팅이 올바르게 동작하도록)
+                        state.selectedDetailCategory = nil
                         state.currentStep = .subCategory
                     }
                     return .send(.delegate(.saveProgress(
                         root: state.selectedRootCategory,
                         main: state.selectedMainCategory,
                         sub: state.selectedSubCategory,
-                        detail: nil
+                        detail: detailToSave  // 복원용으로 원래 선택값 보존
                     )))
                 }
                 
@@ -247,22 +248,24 @@ public struct CategorySelectionFeature {
                     return .none
 
                 case .subCategory:
-                    // leaf(directCategory)를 선택한 경우 바로 완료
-                    guard let root = state.selectedRootCategory,
-                          let main = state.selectedMainCategory,
-                          let detail = state.selectedDetailCategory else {
+                    if let detail = state.selectedDetailCategory, state.selectedSubCategory == nil {
+                        // leaf를 직접 선택한 경우 → 바로 완료
+                        guard let root = state.selectedRootCategory,
+                              let main = state.selectedMainCategory else { return .none }
+                        return .send(.delegate(.completed(root: root, main: main, sub: nil, detail: detail)))
+                    } else {
+                        // group chip을 선택한 경우 → detailCategory로 이동
+                        state.currentStep = .detailCategory
                         return .none
                     }
-                    return .send(.delegate(.completed(root: root, main: main, sub: state.selectedSubCategory, detail: detail)))
 
                 case .detailCategory:
                     guard let root = state.selectedRootCategory,
                           let detail = state.selectedDetailCategory else {
                         return .none
                     }
-                    // depth-2 경로는 selectedMainCategory가 nil → root를 main으로 사용
-                    let main = state.selectedMainCategory ?? root
-                    return .send(.delegate(.completed(root: root, main: main, sub: state.selectedSubCategory, detail: detail)))
+                    // depth-2 경로는 selectedMainCategory가 nil 그대로 전달 (복원 시 currentDetailCategories가 올바르게 동작하도록)
+                    return .send(.delegate(.completed(root: root, main: state.selectedMainCategory, sub: state.selectedSubCategory, detail: detail)))
                 }
                 
             case .rootCategorySelected(let category):
@@ -279,10 +282,9 @@ public struct CategorySelectionFeature {
                 return .none
 
             case .subCategorySelected(let category):
-                // group chip 탭 → 즉시 detailCategory로 이동
+                // group chip 탭 → 선택만, "다음으로"로 detailCategory 이동
                 state.selectedSubCategory = category
                 state.selectedDetailCategory = nil
-                state.currentStep = .detailCategory
                 return .none
 
             case .directCategorySelected(let category):

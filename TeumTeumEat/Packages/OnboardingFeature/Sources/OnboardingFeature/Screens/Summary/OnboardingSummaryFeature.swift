@@ -83,12 +83,14 @@ public struct OnboardingSummaryFeature {
 
         public var categoryText: String {
             guard let root = rootCategory,
-                  let main = mainCategory,
-                  let sub = subCategory,
                   let detail = detailCategory else {
                 return "미설정"
             }
-            return "\(root) > \(main) > \(sub) > \(detail)"
+            var parts = [root]
+            if let main = mainCategory { parts.append(main) }
+            if let sub = subCategory { parts.append(sub) }
+            parts.append(detail)
+            return parts.joined(separator: " > ")
         }
 
         public var fileNameText: String {
