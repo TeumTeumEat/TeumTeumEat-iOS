@@ -600,28 +600,28 @@ struct HistoryCalendarView: View {
     
     // MARK: - 월 헤더
     private var monthHeader: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 24) {
             Button(action: {
                 let newMonth = currentMonth == 1 ? 12 : currentMonth - 1
                 let newYear = currentMonth == 1 ? currentYear - 1 : currentYear
                 onMonthChanged(newYear, newMonth)
             }) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 24, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.gray800)
             }
-            
+
             Text(monthYearString)
                 .stSemibold18()
                 .foregroundStyle(.gray900)
-            
+
             Button(action: {
                 let newMonth = currentMonth == 12 ? 1 : currentMonth + 1
                 let newYear = currentMonth == 12 ? currentYear + 1 : currentYear
                 onMonthChanged(newYear, newMonth)
             }) {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 24, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.gray800)
             }
         }
@@ -725,7 +725,7 @@ struct HistoryCalendarView: View {
     private var monthYearString: String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
-        formatter.dateFormat = "yyyy년 M월"
+        formatter.dateFormat = "M월"
         return formatter.string(from: currentMonthDate)
     }
     
