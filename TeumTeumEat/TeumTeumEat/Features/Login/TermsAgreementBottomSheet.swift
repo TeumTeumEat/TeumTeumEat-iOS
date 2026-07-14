@@ -20,16 +20,18 @@ struct TermsAgreementBottomSheet: View {
         serviceTermsAgreed && privacyPolicyAgreed && ageConfirmationAgreed
     }
     
+    private let linkBlue = Color(red: 0.169, green: 0.561, blue: 1.0)
+
     var body: some View {
         VStack(spacing: 0) {
             // 헤더
             HStack {
                 Text("이용 약관")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.black)
-                
+                    .foregroundStyle(Color.black)
+
                 Spacer()
-                
+
                 Button {
                     if canProceed {
                         onAgree()
@@ -37,16 +39,17 @@ struct TermsAgreementBottomSheet: View {
                 } label: {
                     Text("완료")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
+                        .foregroundStyle(Color.white)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 8)
-                        .background(canProceed ? Color.blue : Color.gray)
+                        .background(canProceed ? linkBlue : Color(UIColor.systemGray3))
                         .clipShape(Capsule())
                 }
                 .disabled(!canProceed)
             }
-            .padding()
-            
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
+
             ScrollView {
                 VStack(spacing: 20) {
                     // 개별 약관 (순서 변경)
@@ -56,13 +59,13 @@ struct TermsAgreementBottomSheet: View {
                             title: "만 14세 이상 가입 동의 (필수)",
                             link: nil
                         )
-                        
+
                         TermRow(
                             isAgreed: $serviceTermsAgreed,
                             title: "이용약관 (필수)",
                             link: "https://resolute-flier-02d.notion.site/2d8151abb62e80cbaefde6ddcef603cc"
                         )
-                        
+
                         TermRow(
                             isAgreed: $privacyPolicyAgreed,
                             title: "개인정보처리방침 (필수)",
@@ -72,7 +75,7 @@ struct TermsAgreementBottomSheet: View {
                     .onChange(of: ageConfirmationAgreed) { _, _ in updateAllAgreed() }
                     .onChange(of: serviceTermsAgreed) { _, _ in updateAllAgreed() }
                     .onChange(of: privacyPolicyAgreed) { _, _ in updateAllAgreed() }
-                    
+
                     HStack(spacing: 12) {
                         Button {
                             allAgreed.toggle()
@@ -83,11 +86,11 @@ struct TermsAgreementBottomSheet: View {
                             HStack(spacing: 12) {
                                 Image(systemName: allAgreed ? "checkmark.circle.fill" : "circle")
                                     .font(.title2)
-                                    .foregroundColor(allAgreed ? .blue : .gray)
-                                
+                                    .foregroundStyle(allAgreed ? linkBlue : Color(UIColor.systemGray))
+
                                 Text("전체 동의")
                                     .font(.headline)
-                                    .foregroundColor(.black)
+                                    .foregroundStyle(Color.black)
                             }
                         }
                         Spacer()
@@ -95,10 +98,13 @@ struct TermsAgreementBottomSheet: View {
                     .padding(.leading, 4)
                     .padding(.top, 24)
                 }
-                .padding()
+                .padding(.horizontal, 24)
+                .padding(.vertical, 16)
             }
         }
-        .background(.white)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.white)
+        .colorScheme(.light)
     }
     
     private func updateAllAgreed() {
