@@ -85,7 +85,7 @@ public struct TTETabButton: View {
         if isSelected {
             return selectedBackgroundColor ?? ._2_B_8_FFF
         } else {
-            return unselectedBackgroundColor ?? ._2690_FB
+            return unselectedBackgroundColor ?? .blue300
         }
     }
     
