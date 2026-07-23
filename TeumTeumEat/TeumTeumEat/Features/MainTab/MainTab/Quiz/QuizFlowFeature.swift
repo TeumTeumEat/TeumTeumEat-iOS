@@ -483,7 +483,7 @@ struct QuizView: View {
                         }
                     )
                     .frame(height: 426)
-                    .padding(.top, 80)
+                    .padding(.top, 160)
                     .transition(.scale.combined(with: .opacity))
                     
                 } else if let currentQuiz = store.currentQuiz {  // 퀴즈 카드
@@ -647,63 +647,42 @@ struct QuizResultFeature {
 
 struct QuizResultView: View {
     let store: StoreOf<QuizResultFeature>
-    
+
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            
-            //  결과 요약
-            VStack(spacing: 16) {
-                // 정답 개수 표시
-                Text("\(store.totalQuizCount)문제 중 \(store.correctCount)문제를 맞췄어요!")
-                    .font(.system(size: 24, weight: .bold))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-                    .foregroundStyle(.black)
-                
-                // 점수 표시 (선택사항)
-                Text("\(store.score)점")
-                    .font(.system(size: 48, weight: .heavy))
-                    .foregroundColor(.blue500)
-                
-                // 정답/오답 표시
-                HStack(spacing: 40) {
-                    VStack(spacing: 8) {
-                        Text("정답")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.gray)
-                        Text("\(store.correctCount)")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.green)
-                    }
-                    
-                    VStack(spacing: 8) {
-                        Text("오답")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.gray)
-                        Text("\(store.incorrectCount)")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.red)
-                    }
-                }
-                .padding(.top, 20)
-            }
-            
+
+            Image("char_exited_quiz_finish")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 240)
+
+            Text("\(store.correctCount)문제를 맞췄어요!")
+                .font(Font.custom("Pretendard-SemiBold", size: 30))
+                .foregroundColor(.black)
+                .padding(.top, 24)
+
+            Text("아래 버튼을 눌러\n정답과 해설을 확인해보세요")
+                .font(.body2_regular_16)
+                .foregroundColor(.black)
+                .multilineTextAlignment(.center)
+                .padding(.top, 12)
+
             Spacer()
-            
+
             // 결과 보기 버튼
             Button {
                 store.send(.showDetailResultsButtonTapped)
             } label: {
                 Text("결과 보기")
-                    .font(.system(size: 18, weight: .semibold))
+                    .btBold20_24()
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 56)
+                    .frame(height: 60)
                     .background(Color.blue)
                     .cornerRadius(12)
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 30)
             .padding(.bottom, 34)
         }
         .background(.white)
@@ -716,20 +695,20 @@ struct CompletionCardView: View {
     var body: some View {
         VStack(alignment: .center, spacing: 0) {
             Spacer()
-            
+
             // 완료 이미지
             Image("character_complete 1")  // 완료 이미지
                 .resizable()
                 .scaledToFit()
                 .frame(height: 200)
                 .padding(.bottom, 40)
-            
+
             // 완료 텍스트
             Text("모든 퀴즈를 풀었어요!")
                 .font(.t_bold_20)
                 .foregroundColor(.black)
                 .padding(.bottom, 32)
-            
+
             // 채점하러 가기 버튼
             Button(action: onGradeButtonTapped) {
                 Text("채점하러 가기")
@@ -740,10 +719,10 @@ struct CompletionCardView: View {
                     .background(Color(hex: "EAF4FF"))
                     .cornerRadius(16)
             }
-            
+
             Spacer()
         }
-        .frame(minHeight: 426)
+        .frame(maxWidth: .infinity, minHeight: 426)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.white)
