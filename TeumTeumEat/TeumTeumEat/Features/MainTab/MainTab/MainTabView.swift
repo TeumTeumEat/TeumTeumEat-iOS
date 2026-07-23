@@ -10,7 +10,7 @@ import ComposableArchitecture
 
 struct MainTabView: View {
     let store: StoreOf<MainTabFeature>
-    
+
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottom) {
@@ -29,7 +29,7 @@ struct MainTabView: View {
                     }
                 }
                 .animation(.easeInOut(duration: 0.2), value: store.selectedTab)
-                
+
                 // 어두운 배경
                 if store.isRegisterMenuExpanded {
                     Color.black.opacity(0.4)
@@ -39,28 +39,7 @@ struct MainTabView: View {
                         }
                         .transition(.opacity)
                 }
-                
-                if store.isRegisterMenuExpanded {
-                    VStack {
-                        Spacer()
-                        HStack {
-                            RegisterFloatingMenu(
-                                onFileUploadTapped: {
-                                    store.send(.registerMenuItemTapped(.fileUpload))
-                                },
-                                onCategoryTapped: {
-                                    store.send(.registerMenuItemTapped(.category))
-                                }
-                            )
-                            .padding(.leading,store.selectedTab == .quiz ? 76 : 60)
-                            .padding(.bottom, store.selectedTab == .quiz ? (0 + 50 + 18) : (20 + 50 + 18))
-                            
-                            Spacer()
-                        }
-                    }
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-                
+
                 if store.myPage == nil {
                     CustomTabBar(
                         selectedTab: store.selectedTab,
@@ -70,6 +49,12 @@ struct MainTabView: View {
                         },
                         onRegisterTapped: {
                             store.send(.toggleRegisterMenu)
+                        },
+                        onFileUploadTapped: {
+                            store.send(.registerMenuItemTapped(.fileUpload))
+                        },
+                        onCategoryTapped: {
+                            store.send(.registerMenuItemTapped(.category))
                         }
                     )
                     .padding(.horizontal, 60)
@@ -140,7 +125,9 @@ struct CustomTabBar: View {
     let isRegisterMenuExpanded: Bool
     let onTabSelected: (MainTabFeature.State.Tab) -> Void
     let onRegisterTapped: () -> Void
-    
+    let onFileUploadTapped: () -> Void
+    let onCategoryTapped: () -> Void
+
     var body: some View {
         HStack(spacing: 30) {
             TTETabButton(
@@ -152,17 +139,28 @@ struct CustomTabBar: View {
                     onRegisterTapped()
                 }
             }
-            
+            .overlay(alignment: .bottom) {
+                if isRegisterMenuExpanded {
+                    RegisterFloatingMenu(
+                        onFileUploadTapped: onFileUploadTapped,
+                        onCategoryTapped: onCategoryTapped
+                    )
+                    .fixedSize()
+                    .offset(y: -(50 + 12))
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+
             TTETabButton(
                 icon: Image("home"),
-                size: selectedTab == .quiz ? .small : .large,  // quiz일 때 small, 아니면 large
-                isSelected: selectedTab == .home
+                size: (selectedTab == .quiz || isRegisterMenuExpanded) ? .small : .large,
+                isSelected: !isRegisterMenuExpanded && selectedTab == .home
             ) {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                     onTabSelected(.home)
                 }
             }
-            
+
             TTETabButton(
                 icon: Image("library"),
                 size: .small,
@@ -174,24 +172,27 @@ struct CustomTabBar: View {
                 }
             }
         }
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedTab)  // 애니메이션 추가
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedTab)
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isRegisterMenuExpanded)
     }
 }
 
 struct RegisterFloatingMenu: View {
     let onFileUploadTapped: () -> Void
     let onCategoryTapped: () -> Void
-    
+
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 20) {
 
             FloatingMenuButton(
                 icon: Image("category 1"),
+                label: "주제찾기",
                 action: onCategoryTapped
             )
 
             FloatingMenuButton(
                 icon: Image("upload"),
+                label: "자료올리기",
                 action: onFileUploadTapped
             )
         }
@@ -200,22 +201,29 @@ struct RegisterFloatingMenu: View {
 
 struct FloatingMenuButton: View {
     let icon: Image
+    let label: String
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             ZStack {
                 Circle()
-                    .fill(Color._2690_FB)
+                    .fill(Color.white)
                     .frame(width: 65, height: 65)
-                
-                icon
-                    .resizable()
-                    .renderingMode(.template)
-                    .foregroundColor(.white)
-                    .frame(width: 30, height: 30)
+                    .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 2)
+
+                VStack(spacing: 3) {
+                    icon
+                        .resizable()
+                        .renderingMode(.template)
+                        .foregroundColor(Color._2690_FB)
+                        .frame(width: 31.2, height: 31.2)
+
+                    Text(label)
+                        .font(Font.custom("Pretendard-Bold", size: 12))
+                        .foregroundColor(Color._2690_FB)
+                }
             }
         }
     }
 }
-
