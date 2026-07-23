@@ -40,10 +40,10 @@ public struct TTEMultipleChoiceCard: View {
         minHeight: CGFloat = 426,
         choiceSpacing: CGFloat = 14,
         selectedChoiceColor: Color = Color(hex: "2B8FFF"),
-        unselectedChoiceColor: Color = .white,
+        unselectedChoiceColor: Color = Color(hex: "F7F7F7"),
         selectedTextColor: Color = .white,
         unselectedTextColor: Color = .black,
-        borderColor: Color = Color(hex: "C4C4C4")
+        borderColor: Color = Color.clear
     ) {
         self.questionNumber = questionNumber
         self.question = question
@@ -90,18 +90,14 @@ public struct TTEMultipleChoiceCard: View {
                         onChoiceSelected(index)
                     }) {
                         Text(choice)
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(selectedChoice == index ? selectedTextColor : unselectedTextColor)
+                            .font(.st_semibold_18)
+                            .foregroundColor(selectedChoice == index ? selectedTextColor : Color(hex: "787C82"))
                             .multilineTextAlignment(.leading)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.vertical, 10)
+                            .padding(.vertical, 12)
                             .padding(.horizontal, 16)
                             .background(selectedChoice == index ? selectedChoiceColor : unselectedChoiceColor)
                             .cornerRadius(8)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(selectedChoice == index ? Color.clear : borderColor, lineWidth: 1)
-                            )
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
