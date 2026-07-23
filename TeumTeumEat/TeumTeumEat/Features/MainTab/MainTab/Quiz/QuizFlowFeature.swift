@@ -890,17 +890,13 @@ struct QuizDetailResultView: View {
         Button {
             store.send(.reviewSummaryButtonTapped)
         } label: {
-            Text("글 보기")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.blue)
+            Text("요약 글 보기")
+                .btSemiBold20_24()
+                .foregroundColor(Color(hex: "2B8FFF"))
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
-                .background(Color.white)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.blue, lineWidth: 2)
-                )
-                .cornerRadius(12)
+                .background(Color(hex: "EAF4FF"))
+                .cornerRadius(16)
         }
     }
     
@@ -910,12 +906,12 @@ struct QuizDetailResultView: View {
             store.send(.nextButtonTapped)
         } label: {
             Text("다음으로")
-                .font(.system(size: 18, weight: .semibold))
+                .btSemiBold20_24()
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
                 .background(Color.blue)
-                .cornerRadius(12)
+                .cornerRadius(16)
         }
     }
     

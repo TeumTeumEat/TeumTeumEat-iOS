@@ -103,17 +103,11 @@ public struct TTEAnswerCard: View {
             }
             
             // 해설
-            VStack(alignment: .leading, spacing: 8) {
-                Text("해설")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color(hex: "7A7A7A"))
-                
-                Text(explanation)
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundColor(Color(hex: "7A7A7A"))
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            Text(explanation)
+                .font(.system(size: 14, weight: .regular))
+                .foregroundColor(Color(hex: "7A7A7A"))
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(padding)
         .background(
