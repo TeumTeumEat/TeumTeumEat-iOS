@@ -26,6 +26,8 @@ struct ContentSummaryFeature {
         var streamingText: String = ""
         var isStreaming: Bool = false
         var isQuizLoading: Bool = false
+        var title: String = ""
+        var createdAt: String = ""
         var errorMessage: String? = nil
         var showErrorOverlay: Bool = false
         var errorOverlayMessage: String = ""
@@ -133,7 +135,8 @@ struct ContentSummaryFeature {
                 case .textChunk(let s):
                     state.streamingText += s
                     return .none
-                case .titleChunk:
+                case .titleChunk(let t):
+                    state.title = t
                     return .none
                 case .completed:
                     return .send(.streamCompleted)
@@ -244,6 +247,8 @@ struct ContentSummaryFeature {
                 state.documentId = doc.documentId
                 state.isFirstTime = doc.isFirstTime
                 state.hasSolvedToday = doc.hasSolvedToday
+                state.title = doc.title
+                state.createdAt = doc.createdAt
                 state.summaryText = doc.content
                 state.streamingText = ""
                 state.isStreaming = false
@@ -267,6 +272,8 @@ struct ContentSummaryFeature {
                 state.documentId = summary.documentId
                 state.isFirstTime = summary.isFirstTime
                 state.hasSolvedToday = summary.hasSolvedToday
+                state.title = summary.fileName
+                state.createdAt = summary.updatedAt
                 state.summaryText = summary.summary
                 state.streamingText = ""
                 state.isStreaming = false
@@ -289,6 +296,8 @@ struct ContentSummaryFeature {
                 state.documentId = doc.documentId
                 state.isFirstTime = doc.isFirstTime
                 state.hasSolvedToday = doc.hasSolvedToday
+                state.title = doc.title
+                state.createdAt = doc.createdAt
                 // summaryText는 SSE로 이미 완성된 상태 — 서버 저장본으로 덮어쓰지 않음
                 return .run { [docId = doc.documentId] send in
                     let result = await Result {

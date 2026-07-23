@@ -12,6 +12,7 @@ struct CategoryDocumentData: Codable, Equatable {
     let content: String
     let hasSolvedToday: Bool
     let isFirstTime: Bool
+    let title: String
     let createdAt: String
 }
 

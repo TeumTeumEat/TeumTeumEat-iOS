@@ -29,7 +29,7 @@ struct ContentSummaryView: View {
                             
                             Spacer()
                             
-                            Text("콘텐츠 요약")
+                            Text("오늘의 냠냠지식")
                                 .titleSemibold20()
                                 .foregroundStyle(.black)
                             
@@ -59,19 +59,21 @@ struct ContentSummaryView: View {
                                 .padding(.top, 80)
                             } else if store.isStreaming {
                                 // 스트리밍 텍스트 수신 중 — Markdown 실시간 렌더링
+                                titleHeader
                                 Markdown(store.streamingText)
                                     .markdownTheme(.gitHub)
                                     .colorScheme(.light)
                                     .padding(.horizontal, 20)
-                                    .padding(.top, 24)
+                                    .padding(.top, 8)
                                     .padding(.bottom, 180)
                             } else {
                                 // 완료 — Markdown 렌더링
+                                titleHeader
                                 Markdown(store.summaryText)
                                     .markdownTheme(.gitHub)
                                     .colorScheme(.light)
                                     .padding(.horizontal, 20)
-                                    .padding(.top, 24)
+                                    .padding(.top, 8)
                                     .padding(.bottom, 180)
                             }
 
@@ -175,6 +177,33 @@ struct ContentSummaryView: View {
     }
 }
 
+
+extension ContentSummaryView {
+    @ViewBuilder
+    var titleHeader: some View {
+        if !store.title.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(store.title)
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(.black)
+
+                if !store.createdAt.isEmpty {
+                    Text(String(store.createdAt.prefix(10)))
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.top, 24)
+            .padding(.bottom, 8)
+
+            Divider()
+                .padding(.horizontal, 20)
+        }
+    }
+}
 
 extension Theme {
     static let custom = Theme()
