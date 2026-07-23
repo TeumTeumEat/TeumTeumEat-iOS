@@ -17,6 +17,10 @@ public struct TTETextField: View {
     public let borderWidth: CGFloat
     public let cornerRadius: CGFloat
     public let allowSpaces: Bool
+    public let showCharacterCount: Bool
+    public let isLimitReached: Binding<Bool>
+
+    @State private var displayText: String
 
     public init(
         text: Binding<String>,
@@ -27,9 +31,12 @@ public struct TTETextField: View {
         borderColor: Color = .gray300,
         borderWidth: CGFloat = 2,
         cornerRadius: CGFloat = 16,
-        allowSpaces: Bool = true
+        allowSpaces: Bool = true,
+        showCharacterCount: Bool = true,
+        isLimitReached: Binding<Bool> = .constant(false)
     ) {
         self._text = text
+        self._displayText = State(initialValue: text.wrappedValue)
         self.placeholder = placeholder
         self.maxLength = maxLength
         self.height = height
@@ -38,13 +45,14 @@ public struct TTETextField: View {
         self.cornerRadius = cornerRadius
         self.allowSpaces = allowSpaces
         self.state = state
+        self.showCharacterCount = showCharacterCount
+        self.isLimitReached = isLimitReached
     }
-    
+
     public var body: some View {
         HStack(spacing: 12) {
-            // TextField - 중앙 정렬
             TextField(placeholder,
-                      text: $text,
+                      text: $displayText,
                       prompt: Text("입력해주세요")
                         .font(.bd_medium_16)
                         .foregroundStyle(Color.gray600)
@@ -54,32 +62,44 @@ public struct TTETextField: View {
                 weight: .medium,
                 targetLineHeight: 22
             ))
-                .multilineTextAlignment(.center)
-                .foregroundColor(.black)
-                .onChange(of: text) { oldValue, newValue in
-                    var filteredText = newValue
-                    
-                    // 공백 제거 (allowSpaces가 false일 때)
-                    if !allowSpaces {
-                        filteredText = filteredText.replacingOccurrences(of: " ", with: "")
-                    }
-                    
-                    // 최대 글자수 제한
-                    if filteredText.count > maxLength {
-                        filteredText = String(filteredText.prefix(maxLength))
-                    }
-                    
-                    // 변경된 값이 있으면 업데이트
-                    if filteredText != newValue {
-                        text = filteredText
-                    }
+            .multilineTextAlignment(.center)
+            .foregroundColor(.black)
+            .onChange(of: displayText) { _, newValue in
+                var filtered = newValue
+
+                if !allowSpaces {
+                    filtered = filtered.replacingOccurrences(of: " ", with: "")
                 }
-            
+
+                if filtered.count > maxLength {
+                    filtered = String(filtered.prefix(maxLength))
+                    isLimitReached.wrappedValue = true
+                } else if filtered.count < maxLength {
+                    isLimitReached.wrappedValue = false
+                }
+                // count == maxLength: isLimitReached 유지 (타이핑 시도 후 상태 보존)
+
+                if filtered != newValue {
+                    displayText = filtered
+                }
+                if text != filtered {
+                    text = filtered
+                }
+            }
+            .onChange(of: text) { _, newValue in
+                // 외부(TCA)에서 값이 바뀔 때 동기화
+                if newValue != displayText {
+                    displayText = newValue
+                }
+            }
+
             // 글자수 카운터
-            Text("\(text.count) / \(maxLength)")
-                .font(.system(size: 14))
-                .foregroundColor(.gray)
-                .fixedSize()
+            if showCharacterCount {
+                Text("\(displayText.count) / \(maxLength)")
+                    .font(.system(size: 14))
+                    .foregroundColor(.gray)
+                    .fixedSize()
+            }
         }
         .padding(.horizontal, 16)
         .frame(height: height)
@@ -88,7 +108,7 @@ public struct TTETextField: View {
             RoundedRectangle(cornerRadius: cornerRadius)
                 .stroke(state.borderColor, lineWidth: borderWidth)
         )
-        
+
         if let errorMessage = state.errorMessage {
             HStack {
                 Text(errorMessage)
@@ -98,8 +118,6 @@ public struct TTETextField: View {
             }
             .transition(.opacity.combined(with: .move(edge: .top)))
         }
-        
-        
     }
 }
 
@@ -118,7 +136,7 @@ public enum TextFieldState {
             return .red500
         }
     }
-    
+
     public var errorMessage: String? {
         switch self {
         case .error(let message):

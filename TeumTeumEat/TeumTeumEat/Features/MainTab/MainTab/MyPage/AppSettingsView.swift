@@ -12,6 +12,7 @@ import ComposableArchitecture
 struct AppSettingsView: View {
     let store: StoreOf<AppSettingsFeature>
     @FocusState private var isNicknameFocused: Bool
+    @State private var isNicknameLimitReached = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -59,6 +60,7 @@ struct AppSettingsView: View {
                     size: .large,
                     isEnabled: store.canSave && !store.isSaving
                 ) {
+                    isNicknameFocused = false
                     store.send(.saveButtonTapped)
                 }
                 .frame(maxWidth: .infinity)
@@ -152,20 +154,32 @@ struct AppSettingsView: View {
         .background(Color.white)
     }
     
+    private var nicknameTextFieldState: TextFieldState {
+        if let error = store.textFieldState.errorMessage {
+            return .error(error)
+        }
+        if isNicknameFocused && isNicknameLimitReached {
+            return .error("최대 10글자까지 입력 가능해요")
+        }
+        return store.textFieldState
+    }
+
     private var nicknameSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("닉네임")
                 .titleSemibold16()
                 .foregroundColor(.black)
-            
+
             TTETextField(
                 text: Binding(
                     get: { store.nickname },
                     set: { store.send(.nicknameChanged($0)) }
                 ),
                 placeholder: "닉네임을 입력하세요",
-                state: store.textFieldState,
-                allowSpaces: true
+                state: nicknameTextFieldState,
+                allowSpaces: true,
+                showCharacterCount: isNicknameFocused,
+                isLimitReached: $isNicknameLimitReached
             )
             .focused($isNicknameFocused)
         }
