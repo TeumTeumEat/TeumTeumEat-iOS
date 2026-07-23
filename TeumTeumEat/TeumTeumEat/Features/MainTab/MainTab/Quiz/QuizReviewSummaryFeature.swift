@@ -64,7 +64,7 @@ struct QuizReviewSummaryView: View {
                         
                         Spacer()
                         
-                        Text("콘텐츠 요약")
+                        Text("오늘의 냠냠지식")
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundStyle(.black)
                         

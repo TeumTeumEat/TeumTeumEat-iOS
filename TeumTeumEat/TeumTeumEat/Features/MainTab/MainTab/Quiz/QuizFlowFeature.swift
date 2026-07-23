@@ -455,16 +455,16 @@ struct QuizView: View {
     var body: some View {
         VStack(spacing: 0) {
             // 상단 진행 상황
-            HStack {
-                Text("\(store.currentIndex + 1) / \(store.quizzes.count)")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.gray)
-                
-                Spacer()
+            if !store.isCompleted {
+                TTEProgressBar(
+                    currentStep: store.currentIndex + 1,
+                    totalSteps: store.quizzes.count
+                )
+                .padding(.leading, 40)
+                .padding(.trailing, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 30)
             }
-            .padding(.horizontal, 40)
-            .padding(.top, 20)
-            .padding(.bottom, 30)
             
             // 카드 영역
             ZStack(alignment: .top) {
@@ -483,7 +483,7 @@ struct QuizView: View {
                         }
                     )
                     .frame(height: 426)
-                    .padding(.top, 0)  // 쌓인 이미지 없으니 padding 제거
+                    .padding(.top, 80)
                     .transition(.scale.combined(with: .opacity))
                     
                 } else if let currentQuiz = store.currentQuiz {  // 퀴즈 카드
@@ -726,21 +726,20 @@ struct CompletionCardView: View {
             
             // 완료 텍스트
             Text("모든 퀴즈를 풀었어요!")
-                .font(.system(size: 24, weight: .bold))
+                .font(.t_bold_20)
                 .foregroundColor(.black)
                 .padding(.bottom, 32)
             
             // 채점하러 가기 버튼
             Button(action: onGradeButtonTapped) {
                 Text("채점하러 가기")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(Color.blue)
-                    .cornerRadius(12)
+                    .btSemiBold20_24()
+                    .foregroundColor(Color(hex: "2B8FFF"))
+                    .padding(.horizontal, 22.5)
+                    .padding(.vertical, 18)
+                    .background(Color(hex: "EAF4FF"))
+                    .cornerRadius(16)
             }
-            .padding(.horizontal, 20)
             
             Spacer()
         }
