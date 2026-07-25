@@ -200,11 +200,16 @@ struct QuizFlowFeature {
                     await send(.fetchStatusForCompletionResponse(result))
                 }
 
-            case .fetchStatusForCompletionResponse(.success):
-                // [TEMP] 테스트용 고정값 - 실제 배포 전 status.isCompleted 로 원복 필요
-                state.currentStep = .subjectComplete
-                state.subjectComplete = QuizSubjectCompleteFeature.State()
-                print("QuizFlow: 주제 완료 화면으로 이동 (TEMP)")
+            case .fetchStatusForCompletionResponse(.success(let status)):
+                if status.isCompleted {
+                    state.currentStep = .subjectComplete
+                    state.subjectComplete = QuizSubjectCompleteFeature.State()
+                    print("QuizFlow: 주제 완료 화면으로 이동")
+                } else {
+                    state.currentStep = .complete
+                    state.complete = QuizCompleteFeature.State()
+                    print("QuizFlow: 일반 완료 화면으로 이동")
+                }
                 return .none
 
             case .fetchStatusForCompletionResponse(.failure(let error)):
