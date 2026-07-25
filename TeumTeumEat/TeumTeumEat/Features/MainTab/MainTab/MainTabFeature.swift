@@ -158,17 +158,20 @@ struct MainTabFeature {
                 case .quizFlow(.delegate(.completed(let destination))):
                     state.quizFlow = nil
                     print("퀴즈 플로우 완료 - 이동: \(destination)")
-                    
+
                     switch destination {
                     case .home:
                         state.selectedTab = .home
-                        // 홈으로 이동하면서 새로고침
                         return .send(.home(.onAppear))
-                        
+
                     case .history:
                         state.selectedTab = .quiz
-                        // 히스토리로 이동하면서 새로고침
                         return .send(.quiz(.onAppear))
+
+                    case .addSubject:
+                        state.selectedTab = .home
+                        state.addSubject = AddSubjectFeature.State()
+                        return .send(.home(.onAppear))
                     }
                     
                 case .quizFlow(.delegate(.cancelled)):

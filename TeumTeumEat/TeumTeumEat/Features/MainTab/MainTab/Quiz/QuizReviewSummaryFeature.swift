@@ -196,3 +196,95 @@ struct QuizCompleteView: View {
         .background(.white)
     }
 }
+
+
+// MARK: - QuizSubjectCompleteFeature
+
+@Reducer
+struct QuizSubjectCompleteFeature {
+    @ObservableState
+    struct State: Equatable {}
+
+    enum Action {
+        case homeButtonTapped
+        case addSubjectButtonTapped
+        case delegate(Delegate)
+    }
+
+    enum Delegate {
+        case navigateToHome
+        case navigateToAddSubject
+    }
+
+    var body: some ReducerOf<Self> {
+        Reduce { state, action in
+            switch action {
+            case .homeButtonTapped:
+                return .send(.delegate(.navigateToHome))
+            case .addSubjectButtonTapped:
+                return .send(.delegate(.navigateToAddSubject))
+            case .delegate:
+                return .none
+            }
+        }
+    }
+}
+
+struct SubjectFinView: View {
+    let store: StoreOf<QuizSubjectCompleteFeature>
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            VStack(spacing: 24) {
+                Image("subjectFin")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 240)
+
+                VStack(spacing: 8) {
+                    Text("주제를 완료했어요!")
+                        .font(Font.custom("Pretendard-SemiBold", size: 30))
+                        .foregroundColor(.black)
+
+                    Text("새로운 주제를 추가하고\n틈틈잇을 계속해보세요")
+                        .font(.body2_regular_16)
+                        .foregroundColor(.black)
+                        .multilineTextAlignment(.center)
+                }
+            }
+
+            Spacer()
+
+            HStack(spacing: 12) {
+                Button {
+                    store.send(.homeButtonTapped)
+                } label: {
+                    Text("홈으로")
+                        .btSemiBold20_24()
+                        .foregroundColor(Color(hex: "2B8FFF"))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 60)
+                        .background(Color(hex: "EAF4FF"))
+                        .cornerRadius(16)
+                }
+
+                Button {
+                    store.send(.addSubjectButtonTapped)
+                } label: {
+                    Text("주제 추가")
+                        .btSemiBold20_24()
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 60)
+                        .background(Color.blue500)
+                        .cornerRadius(16)
+                }
+            }
+            .padding(.horizontal, 30)
+            .padding(.bottom, 34)
+        }
+        .background(.white)
+    }
+}

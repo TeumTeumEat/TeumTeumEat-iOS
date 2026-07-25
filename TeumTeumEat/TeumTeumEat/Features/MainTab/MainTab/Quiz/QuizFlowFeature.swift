@@ -23,7 +23,8 @@ struct QuizFlowFeature {
         var detailResult: QuizDetailResultFeature.State?
         var reviewSummary: QuizReviewSummaryFeature.State?
         var complete: QuizCompleteFeature.State?
-        
+        var subjectComplete: QuizSubjectCompleteFeature.State?
+
         enum Step {
             case summary
             case quizGuide
@@ -32,6 +33,7 @@ struct QuizFlowFeature {
             case detailResult
             case reviewSummary
             case complete
+            case subjectComplete
         }
         
         init(
@@ -54,17 +56,20 @@ struct QuizFlowFeature {
         case detailResult(QuizDetailResultFeature.Action)
         case reviewSummary(QuizReviewSummaryFeature.Action)
         case complete(QuizCompleteFeature.Action)
+        case subjectComplete(QuizSubjectCompleteFeature.Action)
         case completeSetResponse(Result<Void, Error>)
+        case fetchStatusForCompletionResponse(Result<UserQuizStatusData, Error>)
         case delegate(Delegate)
     }
-    
+
     enum Delegate {
         case completed(destination: CompletionDestination)
         case cancelled
-        
+
         enum CompletionDestination {
             case home
             case history
+            case addSubject
         }
     }
     
@@ -175,11 +180,29 @@ struct QuizFlowFeature {
                 print("QuizFlow: 요약본 다시 보기로 이동")
                 return .none
                 
-            // DetailResult → Complete (다음으로)
+            // DetailResult → Complete or SubjectComplete (다음으로)
             case .detailResult(.delegate(.showComplete)):
+                return .run { send in
+                    let result = await Result { try await apiClient.fetchUserQuizStatus() }
+                    await send(.fetchStatusForCompletionResponse(result))
+                }
+
+            case .fetchStatusForCompletionResponse(.success(let status)):
+                if status.isCompleted {
+                    state.currentStep = .subjectComplete
+                    state.subjectComplete = QuizSubjectCompleteFeature.State()
+                    print("QuizFlow: 주제 완료 화면으로 이동")
+                } else {
+                    state.currentStep = .complete
+                    state.complete = QuizCompleteFeature.State()
+                    print("QuizFlow: 일반 완료 화면으로 이동")
+                }
+                return .none
+
+            case .fetchStatusForCompletionResponse(.failure(let error)):
+                print("QuizFlow: status 조회 실패, 일반 완료 화면으로 fallback: \(error)")
                 state.currentStep = .complete
                 state.complete = QuizCompleteFeature.State()
-                print("QuizFlow: 완료 화면으로 이동")
                 return .none
                 
             // ReviewSummary → 뒤로가기 (DetailResult로)
@@ -198,7 +221,17 @@ struct QuizFlowFeature {
                 print("QuizFlow: 히스토리로 이동")
                 return .send(.delegate(.completed(destination: .history)))
                 
-            case .contentSummary, .quizGuide, .quiz, .result, .detailResult, .reviewSummary, .complete, .delegate:
+            // SubjectComplete → 주제 추가
+            case .subjectComplete(.delegate(.navigateToAddSubject)):
+                print("QuizFlow: 주제 추가로 이동")
+                return .send(.delegate(.completed(destination: .addSubject)))
+
+            // SubjectComplete → 홈으로
+            case .subjectComplete(.delegate(.navigateToHome)):
+                print("QuizFlow: 홈으로 이동")
+                return .send(.delegate(.completed(destination: .home)))
+
+            case .contentSummary, .quizGuide, .quiz, .result, .detailResult, .reviewSummary, .complete, .subjectComplete, .delegate:
                 return .none
             }
         }
@@ -219,6 +252,9 @@ struct QuizFlowFeature {
         }
         .ifLet(\.complete, action: \.complete) {
             QuizCompleteFeature()
+        }
+        .ifLet(\.subjectComplete, action: \.subjectComplete) {
+            QuizSubjectCompleteFeature()
         }
     }
 }
@@ -263,9 +299,14 @@ struct QuizFlowView: View {
                     QuizReviewSummaryView(store: reviewSummaryStore)
                 }
                 
-            case .complete: 
+            case .complete:
                 if let completeStore = store.scope(state: \.complete, action: \.complete) {
                     QuizCompleteView(store: completeStore)
+                }
+
+            case .subjectComplete:
+                if let subjectCompleteStore = store.scope(state: \.subjectComplete, action: \.subjectComplete) {
+                    SubjectFinView(store: subjectCompleteStore)
                 }
             }
         }
