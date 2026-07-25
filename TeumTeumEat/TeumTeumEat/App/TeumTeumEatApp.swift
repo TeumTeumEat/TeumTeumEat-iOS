@@ -28,12 +28,18 @@ struct TeumTeumEatApp: App {
     
     var body: some Scene {
         WindowGroup {
-            // MARK: - [TEMP] SubjectFinView 확인용 - 확인 후 원복 필요
-            SubjectFinView(
-                store: Store(initialState: QuizSubjectCompleteFeature.State()) {
-                    QuizSubjectCompleteFeature()
+            AppView(
+                store: Store(initialState: AppFeature.State()) {
+                    AppFeature()
+                } withDependencies: {
+                    $0.categoryAPIClient = .liveValue
                 }
             )
+            .onOpenURL(perform: { url in
+                if AuthApi.isKakaoTalkLoginUrl(url) {
+                    _ = AuthController.handleOpenUrl(url: url)
+                }
+            })
         }
     }
 }
