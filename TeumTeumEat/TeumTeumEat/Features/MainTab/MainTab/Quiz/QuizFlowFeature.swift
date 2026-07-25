@@ -24,6 +24,8 @@ struct QuizFlowFeature {
         var reviewSummary: QuizReviewSummaryFeature.State?
         var complete: QuizCompleteFeature.State?
         var subjectComplete: QuizSubjectCompleteFeature.State?
+        var addSubject: AddSubjectFeature.State?
+        var addSubjectFile: AddSubjectFileFeature.State?
 
         enum Step {
             case summary
@@ -57,6 +59,8 @@ struct QuizFlowFeature {
         case reviewSummary(QuizReviewSummaryFeature.Action)
         case complete(QuizCompleteFeature.Action)
         case subjectComplete(QuizSubjectCompleteFeature.Action)
+        case addSubject(AddSubjectFeature.Action)
+        case addSubjectFile(AddSubjectFileFeature.Action)
         case completeSetResponse(Result<Void, Error>)
         case fetchStatusForCompletionResponse(Result<UserQuizStatusData, Error>)
         case delegate(Delegate)
@@ -69,8 +73,6 @@ struct QuizFlowFeature {
         enum CompletionDestination {
             case home
             case history
-            case fileUpload
-            case category
         }
     }
     
@@ -80,7 +82,17 @@ struct QuizFlowFeature {
         Scope(state: \.contentSummary, action: \.contentSummary) {
             ContentSummaryFeature()
         }
+        quizCoreReducer
+    }
 
+    private var quizCoreReducer: some ReducerOf<Self> {
+        quizBaseReducer
+            .ifLet(\.subjectComplete, action: \.subjectComplete) { QuizSubjectCompleteFeature() }
+            .ifLet(\.addSubject, action: \.addSubject) { AddSubjectFeature() }
+            .ifLet(\.addSubjectFile, action: \.addSubjectFile) { AddSubjectFileFeature() }
+    }
+
+    private var quizBaseReducer: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .contentSummary(.delegate(.startQuiz(let quizzes, _))):
@@ -188,16 +200,11 @@ struct QuizFlowFeature {
                     await send(.fetchStatusForCompletionResponse(result))
                 }
 
-            case .fetchStatusForCompletionResponse(.success(let status)):
-                if status.isCompleted {
-                    state.currentStep = .subjectComplete
-                    state.subjectComplete = QuizSubjectCompleteFeature.State()
-                    print("QuizFlow: 주제 완료 화면으로 이동")
-                } else {
-                    state.currentStep = .complete
-                    state.complete = QuizCompleteFeature.State()
-                    print("QuizFlow: 일반 완료 화면으로 이동")
-                }
+            case .fetchStatusForCompletionResponse(.success):
+                // [TEMP] 테스트용 고정값 - 실제 배포 전 status.isCompleted 로 원복 필요
+                state.currentStep = .subjectComplete
+                state.subjectComplete = QuizSubjectCompleteFeature.State()
+                print("QuizFlow: 주제 완료 화면으로 이동 (TEMP)")
                 return .none
 
             case .fetchStatusForCompletionResponse(.failure(let error)):
@@ -227,17 +234,37 @@ struct QuizFlowFeature {
                 print("QuizFlow: 홈으로 이동")
                 return .send(.delegate(.completed(destination: .home)))
 
-            // SubjectComplete → 파일 업로드
+            // SubjectComplete → 파일 업로드 (QuizFlow 내부에서 띄움)
             case .subjectComplete(.delegate(.navigateToFileUpload)):
-                print("QuizFlow: 파일 업로드로 이동")
-                return .send(.delegate(.completed(destination: .fileUpload)))
+                state.addSubjectFile = AddSubjectFileFeature.State()
+                return .none
 
-            // SubjectComplete → 카테고리 선택
+            // SubjectComplete → 카테고리 선택 (QuizFlow 내부에서 띄움)
             case .subjectComplete(.delegate(.navigateToCategory)):
-                print("QuizFlow: 카테고리 선택으로 이동")
-                return .send(.delegate(.completed(destination: .category)))
+                state.addSubject = AddSubjectFeature.State()
+                return .none
 
-            case .contentSummary, .quizGuide, .quiz, .result, .detailResult, .reviewSummary, .complete, .subjectComplete, .delegate:
+            // AddSubject 완료 → 홈으로
+            case .addSubject(.delegate(.completed)):
+                state.addSubject = nil
+                return .send(.delegate(.completed(destination: .home)))
+
+            // AddSubject 취소 → SubjectFin으로 복귀
+            case .addSubject(.delegate(.cancelled)):
+                state.addSubject = nil
+                return .none
+
+            // AddSubjectFile 완료 → 홈으로
+            case .addSubjectFile(.delegate(.completed)):
+                state.addSubjectFile = nil
+                return .send(.delegate(.completed(destination: .home)))
+
+            // AddSubjectFile 취소 → SubjectFin으로 복귀
+            case .addSubjectFile(.delegate(.cancelled)):
+                state.addSubjectFile = nil
+                return .none
+
+            case .contentSummary, .quizGuide, .quiz, .result, .detailResult, .reviewSummary, .complete, .subjectComplete, .addSubject, .addSubjectFile, .delegate:
                 return .none
             }
         }
@@ -258,9 +285,6 @@ struct QuizFlowFeature {
         }
         .ifLet(\.complete, action: \.complete) {
             QuizCompleteFeature()
-        }
-        .ifLet(\.subjectComplete, action: \.subjectComplete) {
-            QuizSubjectCompleteFeature()
         }
     }
 }
@@ -318,6 +342,26 @@ struct QuizFlowView: View {
         }
         .transition(.opacity)
         .animation(.easeInOut(duration: 0.2), value: store.currentStep)
+        .fullScreenCover(
+            isPresented: Binding(
+                get: { store.addSubject != nil },
+                set: { _ in }
+            )
+        ) {
+            if let addSubjectStore = store.scope(state: \.addSubject, action: \.addSubject) {
+                AddSubjectView(store: addSubjectStore)
+            }
+        }
+        .fullScreenCover(
+            isPresented: Binding(
+                get: { store.addSubjectFile != nil },
+                set: { _ in }
+            )
+        ) {
+            if let addSubjectFileStore = store.scope(state: \.addSubjectFile, action: \.addSubjectFile) {
+                AddSubjectFileView(store: addSubjectFileStore)
+            }
+        }
     }
 }
 

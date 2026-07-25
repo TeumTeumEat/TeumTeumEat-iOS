@@ -14,17 +14,18 @@ struct MainTabFeature {
     struct State: Equatable {
         var selectedTab: Tab = .home
         var isRegisterMenuExpanded: Bool = false
-        
+
         // 각 탭의 Feature State
         var home: HomeFeature.State = .init()
         var quiz: HistoryFeature.State = .init()
         var register: RegisterFeature.State = .init()
-        
+
         var newGoalFlow: NewGoalFlowFeature.State?
         var addSubject: AddSubjectFeature.State?
         var addSubjectFile: AddSubjectFileFeature.State?
         var quizFlow: QuizFlowFeature.State?
         var myPage: MyPageFeature.State?
+
         
         enum Tab {
             case home
@@ -167,16 +168,6 @@ struct MainTabFeature {
                     case .history:
                         state.selectedTab = .quiz
                         return .send(.quiz(.onAppear))
-
-                    case .category:
-                        state.selectedTab = .home
-                        state.addSubject = AddSubjectFeature.State()
-                        return .send(.home(.onAppear))
-
-                    case .fileUpload:
-                        state.selectedTab = .home
-                        state.addSubjectFile = AddSubjectFileFeature.State()
-                        return .send(.home(.onAppear))
                     }
                     
                 case .quizFlow(.delegate(.cancelled)):
@@ -187,18 +178,20 @@ struct MainTabFeature {
                 case .addSubject(.delegate(.completed)):
                     state.addSubject = nil
                     print("주제 추가 완료 - 홈 새로고침")
+                    state.selectedTab = .home
                     return .send(.home(.onAppear))
-                     
+
                 case .addSubject(.delegate(.cancelled)):
                     state.addSubject = nil
                     print("주제 추가 취소 - Sheet 닫힘")
                     return .none
-                    
+
                 case .addSubjectFile(.delegate(.completed)):
                     state.addSubjectFile = nil
                     print("파일 주제 추가 완료 - 홈 새로고침")
+                    state.selectedTab = .home
                     return .send(.home(.onAppear))
-                    
+
                 case .addSubjectFile(.delegate(.cancelled)):
                     print("파일 주제 추가 취소 - Sheet 닫힘")
                     state.addSubjectFile = nil
