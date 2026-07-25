@@ -168,9 +168,14 @@ struct MainTabFeature {
                         state.selectedTab = .quiz
                         return .send(.quiz(.onAppear))
 
-                    case .addSubject:
+                    case .category:
                         state.selectedTab = .home
                         state.addSubject = AddSubjectFeature.State()
+                        return .send(.home(.onAppear))
+
+                    case .fileUpload:
+                        state.selectedTab = .home
+                        state.addSubjectFile = AddSubjectFileFeature.State()
                         return .send(.home(.onAppear))
                     }
                     

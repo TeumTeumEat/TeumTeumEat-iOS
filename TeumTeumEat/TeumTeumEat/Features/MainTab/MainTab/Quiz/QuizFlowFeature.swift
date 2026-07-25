@@ -69,7 +69,8 @@ struct QuizFlowFeature {
         enum CompletionDestination {
             case home
             case history
-            case addSubject
+            case fileUpload
+            case category
         }
     }
     
@@ -221,15 +222,20 @@ struct QuizFlowFeature {
                 print("QuizFlow: 히스토리로 이동")
                 return .send(.delegate(.completed(destination: .history)))
                 
-            // SubjectComplete → 주제 추가
-            case .subjectComplete(.delegate(.navigateToAddSubject)):
-                print("QuizFlow: 주제 추가로 이동")
-                return .send(.delegate(.completed(destination: .addSubject)))
-
             // SubjectComplete → 홈으로
             case .subjectComplete(.delegate(.navigateToHome)):
                 print("QuizFlow: 홈으로 이동")
                 return .send(.delegate(.completed(destination: .home)))
+
+            // SubjectComplete → 파일 업로드
+            case .subjectComplete(.delegate(.navigateToFileUpload)):
+                print("QuizFlow: 파일 업로드로 이동")
+                return .send(.delegate(.completed(destination: .fileUpload)))
+
+            // SubjectComplete → 카테고리 선택
+            case .subjectComplete(.delegate(.navigateToCategory)):
+                print("QuizFlow: 카테고리 선택으로 이동")
+                return .send(.delegate(.completed(destination: .category)))
 
             case .contentSummary, .quizGuide, .quiz, .result, .detailResult, .reviewSummary, .complete, .subjectComplete, .delegate:
                 return .none

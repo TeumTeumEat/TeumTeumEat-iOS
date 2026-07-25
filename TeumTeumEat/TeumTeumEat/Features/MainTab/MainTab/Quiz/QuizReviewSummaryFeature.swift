@@ -203,17 +203,23 @@ struct QuizCompleteView: View {
 @Reducer
 struct QuizSubjectCompleteFeature {
     @ObservableState
-    struct State: Equatable {}
+    struct State: Equatable {
+        var showSubjectTypeModal: Bool = false
+    }
 
     enum Action {
         case homeButtonTapped
         case addSubjectButtonTapped
+        case subjectTypeModalDismissed
+        case fileUploadTapped
+        case categorySelectTapped
         case delegate(Delegate)
     }
 
     enum Delegate {
         case navigateToHome
-        case navigateToAddSubject
+        case navigateToFileUpload
+        case navigateToCategory
     }
 
     var body: some ReducerOf<Self> {
@@ -222,7 +228,17 @@ struct QuizSubjectCompleteFeature {
             case .homeButtonTapped:
                 return .send(.delegate(.navigateToHome))
             case .addSubjectButtonTapped:
-                return .send(.delegate(.navigateToAddSubject))
+                state.showSubjectTypeModal = true
+                return .none
+            case .subjectTypeModalDismissed:
+                state.showSubjectTypeModal = false
+                return .none
+            case .fileUploadTapped:
+                state.showSubjectTypeModal = false
+                return .send(.delegate(.navigateToFileUpload))
+            case .categorySelectTapped:
+                state.showSubjectTypeModal = false
+                return .send(.delegate(.navigateToCategory))
             case .delegate:
                 return .none
             }
@@ -234,57 +250,121 @@ struct SubjectFinView: View {
     let store: StoreOf<QuizSubjectCompleteFeature>
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer()
+        ZStack {
+            // MARK: - 메인 화면
+            VStack(spacing: 0) {
+                Spacer()
 
-            VStack(spacing: 24) {
-                Image("subjectFin")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 240)
+                VStack(spacing: 24) {
+                    Image("char_exited_quiz_finish")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 240)
 
-                VStack(spacing: 8) {
-                    Text("주제를 완료했어요!")
-                        .font(Font.custom("Pretendard-SemiBold", size: 30))
-                        .foregroundColor(.black)
+                    VStack(spacing: 8) {
+                        Text("해당 주제를\n모두 완주했어요!")
+                            .font(Font.custom("Pretendard-SemiBold", size: 30))
+                            .foregroundColor(.black)
+                            .multilineTextAlignment(.center)
 
-                    Text("새로운 주제를 추가하고\n틈틈잇을 계속해보세요")
-                        .font(.body2_regular_16)
-                        .foregroundColor(.black)
-                        .multilineTextAlignment(.center)
+                        Text("새로운 여정을 시작해 볼까요?")
+                            .font(Font.custom("Pretendard-SemiBold", size: 20))
+                            .foregroundColor(.black)
+                            .multilineTextAlignment(.center)
+                    }
                 }
+
+                Spacer()
+
+                VStack(spacing: 16) {
+                    Button {
+                        store.send(.homeButtonTapped)
+                    } label: {
+                        Text("홈으로 가기")
+                            .font(.st_semibold_16)
+                            .foregroundColor(Color(hex: "2B8FFF"))
+                    }
+
+                    Button {
+                        store.send(.addSubjectButtonTapped)
+                    } label: {
+                        Text("새로운 틈틈잇 시작하기")
+                            .btSemiBold20_24()
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 60)
+                            .background(Color.blue500)
+                            .cornerRadius(16)
+                    }
+                }
+                .padding(.horizontal, 30)
+                .padding(.bottom, 34)
             }
+            .background(.white)
 
-            Spacer()
+            // MARK: - Dim + 주제 형태 선택 모달
+            if store.showSubjectTypeModal {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        store.send(.subjectTypeModalDismissed)
+                    }
 
-            HStack(spacing: 12) {
-                Button {
-                    store.send(.homeButtonTapped)
-                } label: {
-                    Text("홈으로")
-                        .btSemiBold20_24()
+                SubjectTypeSelectModal(
+                    onFileUpload: { store.send(.fileUploadTapped) },
+                    onCategorySelect: { store.send(.categorySelectTapped) },
+                    onDismiss: { store.send(.subjectTypeModalDismissed) }
+                )
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: store.showSubjectTypeModal)
+    }
+}
+
+// MARK: - 주제 형태 선택 모달
+struct SubjectTypeSelectModal: View {
+    let onFileUpload: () -> Void
+    let onCategorySelect: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+                // 타이틀
+            Text("주제 형태를 선택하세요")
+                .font(.t_bold_22)
+                .foregroundColor(.black)
+                .padding(.top, 28)
+
+            // 선택 버튼
+            HStack(spacing: 10) {
+                Button(action: onFileUpload) {
+                    Text("파일 업로드")
+                        .btMedium18_24()
                         .foregroundColor(Color(hex: "2B8FFF"))
                         .frame(maxWidth: .infinity)
-                        .frame(height: 60)
+                        .padding(.vertical, 16)
                         .background(Color(hex: "EAF4FF"))
                         .cornerRadius(16)
                 }
 
-                Button {
-                    store.send(.addSubjectButtonTapped)
-                } label: {
-                    Text("주제 추가")
-                        .btSemiBold20_24()
+                Button(action: onCategorySelect) {
+                    Text("카테고리 선택")
+                        .btMedium18_24()
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                        .background(Color.blue500)
+                        .padding(.vertical, 16)
+                        .background(Color(hex: "2B8FFF"))
                         .cornerRadius(16)
                 }
             }
-            .padding(.horizontal, 30)
-            .padding(.bottom, 34)
+            .padding(.horizontal, 20)
+            .padding(.top, 24)
+            .padding(.bottom, 28)
         }
-        .background(.white)
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(color: .black.opacity(0.15), radius: 20, x: 0, y: 4)
+        .padding(.horizontal, 36)
     }
 }
