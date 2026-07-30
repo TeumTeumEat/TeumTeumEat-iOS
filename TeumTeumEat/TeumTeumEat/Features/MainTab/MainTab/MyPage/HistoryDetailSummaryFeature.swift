@@ -180,7 +180,7 @@ struct HistoryDetailSummaryView: View {
                                         return f
                                     }()
                                     let displayDate = inputFormatter.date(from: store.date).map { outputFormatter.string(from: $0) } ?? store.date
-                                    VStack(alignment: .leading, spacing: 6) {
+                                    VStack(alignment: .leading, spacing: 12) {
                                         Text(store.title)
                                             .font(.title3)
                                             .fontWeight(.bold)
@@ -192,7 +192,7 @@ struct HistoryDetailSummaryView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.horizontal, 20)
                                     .padding(.top, 24)
-                                    .padding(.bottom, 8)
+                                    .padding(.bottom, 12)
                                 }
 
                                 Markdown(store.summaryText)
