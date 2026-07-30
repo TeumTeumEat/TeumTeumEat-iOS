@@ -559,7 +559,7 @@ struct QuizView: View {
                 .padding(.leading, 40)
                 .padding(.trailing, 20)
                 .padding(.top, 20)
-                .padding(.bottom, 30)
+                .padding(.bottom, 90)
             }
             
             // 카드 영역
