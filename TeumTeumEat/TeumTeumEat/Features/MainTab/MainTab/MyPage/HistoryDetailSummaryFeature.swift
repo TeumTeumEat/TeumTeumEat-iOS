@@ -192,7 +192,7 @@ struct HistoryDetailSummaryView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.horizontal, 20)
                                     .padding(.top, 24)
-                                    .padding(.bottom, 12)
+                                    .padding(.bottom, 24)
                                 }
 
                                 Markdown(store.summaryText)
