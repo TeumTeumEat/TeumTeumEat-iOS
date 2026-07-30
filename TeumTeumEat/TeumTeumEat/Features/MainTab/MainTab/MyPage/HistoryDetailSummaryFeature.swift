@@ -165,12 +165,42 @@ struct HistoryDetailSummaryView: View {
                     } else {
                         // Markdown 콘텐츠
                         ScrollView {
-                            Markdown(store.summaryText)
-                                .markdownTheme(.gitHub)
-                                .foregroundStyle(.black)
-                                .padding(.horizontal, 20)
-                                .padding(.top, 24)
-                                .padding(.bottom, 180)
+                            VStack(alignment: .leading, spacing: 0) {
+                                if !store.title.isEmpty {
+                                    let outputFormatter: DateFormatter = {
+                                        let f = DateFormatter()
+                                        f.dateFormat = "M월 d일"
+                                        f.locale = Locale(identifier: "ko_KR")
+                                        return f
+                                    }()
+                                    let inputFormatter: DateFormatter = {
+                                        let f = DateFormatter()
+                                        f.dateFormat = "yyyy-MM-dd"
+                                        f.locale = Locale(identifier: "ko_KR")
+                                        return f
+                                    }()
+                                    let displayDate = inputFormatter.date(from: store.date).map { outputFormatter.string(from: $0) } ?? store.date
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text(store.title)
+                                            .font(.title3)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.black)
+                                        Text(displayDate)
+                                            .font(.subheadline)
+                                            .foregroundColor(.gray)
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 20)
+                                    .padding(.top, 24)
+                                    .padding(.bottom, 8)
+                                }
+
+                                Markdown(store.summaryText)
+                                    .markdownTheme(.gitHub)
+                                    .foregroundStyle(.black)
+                                    .padding(.horizontal, 20)
+                                    .padding(.bottom, 180)
+                            }
                         }
                         .scrollDismissesKeyboard(.interactively)
                         .background(Color.white)
