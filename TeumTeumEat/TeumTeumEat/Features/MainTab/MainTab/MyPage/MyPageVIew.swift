@@ -58,7 +58,7 @@ struct MyPageView: View {
                             store.send(.viewAllSubjectsTapped)
                         } label: {
                             HStack(spacing: 4) {
-                                Text("전체보기")
+                                Text("전체 보기")
                                     .cRegular14()
                                     .foregroundColor(.gray)
                                 
@@ -95,9 +95,9 @@ struct MyPageView: View {
                         .fill(Color.gray.opacity(0.2))
                         .frame(height: 10)
                     
-                    // 알림설정
+                    // 알림 설정
                     HStack {
-                        Text("알림설정")
+                        Text("알림 설정")
                             .bodyRegular16()
                             .foregroundColor(.black)
                         
@@ -133,7 +133,7 @@ struct MyPageView: View {
                             store.send(.viewAppSettingsTapped)
                         } label: {
                             HStack(spacing: 4) {
-                                Text("전체보기")
+                                Text("전체 보기")
                                     .bodyRegular14()
                                     .foregroundColor(.gray)
                                 

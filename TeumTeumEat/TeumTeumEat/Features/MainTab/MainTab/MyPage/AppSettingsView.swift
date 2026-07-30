@@ -189,7 +189,7 @@ struct AppSettingsView: View {
     
     private var alarmTimeSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("알림시간")
+            Text("알림 시간")
                 .titleSemibold16()
                 .foregroundColor(.black)
 
@@ -211,7 +211,7 @@ struct AppSettingsView: View {
     
     private var usageTimeSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("학습분량")
+            Text("학습 분량")
                 .titleSemibold16()
                 .foregroundColor(.black)
 
