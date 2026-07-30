@@ -189,7 +189,21 @@ extension ContentSummaryView {
                     .foregroundColor(.black)
 
                 if !store.createdAt.isEmpty {
-                    Text(String(store.createdAt.prefix(10)))
+                    let inputFormatter: DateFormatter = {
+                        let f = DateFormatter()
+                        f.dateFormat = "yyyy-MM-dd"
+                        f.locale = Locale(identifier: "ko_KR")
+                        return f
+                    }()
+                    let outputFormatter: DateFormatter = {
+                        let f = DateFormatter()
+                        f.dateFormat = "M월 d일"
+                        f.locale = Locale(identifier: "ko_KR")
+                        return f
+                    }()
+                    let dateString = String(store.createdAt.prefix(10))
+                    let displayDate = inputFormatter.date(from: dateString).map { outputFormatter.string(from: $0) } ?? dateString
+                    Text(displayDate)
                         .font(.subheadline)
                         .foregroundColor(.gray)
                 }
