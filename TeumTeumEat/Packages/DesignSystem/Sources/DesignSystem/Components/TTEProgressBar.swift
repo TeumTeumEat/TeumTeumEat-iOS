@@ -21,7 +21,7 @@ public struct TTEProgressBar: View {
         totalSteps: Int = 5,
         progressColor: Color = Color(hex: "2B8FFF"),
         backgroundColor: Color = Color(hex: "E0E0E0"),
-        height: CGFloat = 8,
+        height: CGFloat = 15,
         showStepText: Bool = true,
         cornerRadius: CGFloat = 16
     ) {
