@@ -182,7 +182,7 @@ extension ContentSummaryView {
     @ViewBuilder
     var titleHeader: some View {
         if !store.title.isEmpty {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 12) {
                 Text(store.title)
                     .font(.title3)
                     .fontWeight(.bold)
@@ -211,7 +211,7 @@ extension ContentSummaryView {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 20)
             .padding(.top, 24)
-            .padding(.bottom, 8)
+            .padding(.bottom, 12)
 
             Divider()
                 .padding(.horizontal, 20)
