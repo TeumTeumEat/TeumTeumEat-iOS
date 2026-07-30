@@ -379,7 +379,9 @@ struct HistoryView: View {
                                                         )
                                                     },
                                                     onItemTapped: { item in
-                                                        print("선택된 항목: \(item.title)")
+                                                        guard let id = Int(item.id),
+                                                              let history = category.histories.first(where: { $0.id == id }) else { return }
+                                                        store.send(.historyItemTapped(id: id, type: history.type, date: extractDateOnly(history.lastStudiedAt)))
                                                     }
                                                 )
                                             }
