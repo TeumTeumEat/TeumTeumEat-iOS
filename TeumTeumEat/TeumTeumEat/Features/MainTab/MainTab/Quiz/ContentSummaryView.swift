@@ -213,8 +213,6 @@ extension ContentSummaryView {
             .padding(.top, 24)
             .padding(.bottom, 12)
 
-            Divider()
-                .padding(.horizontal, 20)
         }
     }
 }
