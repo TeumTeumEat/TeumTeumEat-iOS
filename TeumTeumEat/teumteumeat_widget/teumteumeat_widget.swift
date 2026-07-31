@@ -66,19 +66,22 @@ struct SmallWidgetView: View {
     let entry: WidgetEntry
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
+            Image("Frame 7408")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 72, height: 72)
+
             HStack(spacing: 4) {
                 Text("🔥")
-                    .font(.system(size: 28))
-                Text("\(entry.streak)")
-                    .font(.system(size: 32, weight: .bold))
+                    .font(.system(size: 14))
+                Text("\(entry.streak)일 연속")
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundColor(.black)
             }
-            Text("\(entry.streak)일 연속")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.gray)
+
             Text(entry.studiedToday ? "오늘 완료! 🎉" : "오늘 아직\n안 먹었어요!")
-                .font(.system(size: 12))
+                .font(.system(size: 11))
                 .foregroundColor(entry.studiedToday ? .blue : .orange)
                 .multilineTextAlignment(.center)
         }
@@ -93,45 +96,42 @@ struct MediumWidgetView: View {
     let entry: WidgetEntry
 
     var body: some View {
-        HStack(spacing: 0) {
-            // 왼쪽: 스트릭
-            VStack(alignment: .leading, spacing: 6) {
-                Text("연속 학습")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.gray)
-                HStack(spacing: 4) {
-                    Text("🔥")
-                        .font(.system(size: 24))
-                    Text("\(entry.streak)일")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.black)
-                }
-                Text(entry.studiedToday ? "오늘 공부 완료! 🎉" : "오늘 아직 안 먹었어요! 🍽️")
-                    .font(.system(size: 12))
-                    .foregroundColor(entry.studiedToday ? .blue : .orange)
-            }
-
-            Spacer()
+        HStack(spacing: 16) {
+            // 캐릭터
+            Image("Frame 7408")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 90, height: 90)
 
             // 구분선
             Rectangle()
                 .fill(Color.gray.opacity(0.2))
-                .frame(width: 1, height: 60)
+                .frame(width: 1, height: 70)
+
+            // 정보
+            VStack(alignment: .leading, spacing: 10) {
+                Text(entry.studiedToday ? "오늘 완료! 🎉" : "오늘 아직 안 먹었어요! 🍽️")
+                    .font(.system(size: 12))
+                    .foregroundColor(entry.studiedToday ? .blue : .orange)
+
+                HStack(spacing: 4) {
+                    Text("🔥")
+                        .font(.system(size: 13))
+                    Text("\(entry.streak)일 연속")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.black)
+                }
+
+                HStack(spacing: 4) {
+                    Text("🥠")
+                        .font(.system(size: 13))
+                    Text("총 \(entry.totalStamps)개")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                }
+            }
 
             Spacer()
-
-            // 오른쪽: 총 도장
-            VStack(alignment: .trailing, spacing: 6) {
-                Text("총 도장")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.gray)
-                Text("\(entry.totalStamps)")
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(.black)
-                Text("개")
-                    .font(.system(size: 12))
-                    .foregroundColor(.gray)
-            }
         }
         .padding(.horizontal, 20)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
