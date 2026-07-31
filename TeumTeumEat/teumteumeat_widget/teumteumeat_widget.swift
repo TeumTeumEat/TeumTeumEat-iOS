@@ -8,63 +8,138 @@
 import WidgetKit
 import SwiftUI
 
+private let appGroupID = "group.com.TeumTeumEat"
+
+struct WidgetEntry: TimelineEntry {
+    let date: Date
+    let streak: Int
+    let totalStamps: Int
+    let studiedToday: Bool
+}
+
 struct Provider: TimelineProvider {
-    func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date())
+    func placeholder(in context: Context) -> WidgetEntry {
+        WidgetEntry(date: Date(), streak: 7, totalStamps: 42, studiedToday: true)
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> Void) {
-        completion(SimpleEntry(date: Date()))
+    func getSnapshot(in context: Context, completion: @escaping (WidgetEntry) -> Void) {
+        completion(makeEntry())
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<SimpleEntry>) -> Void) {
-        let entry = SimpleEntry(date: Date())
-        let timeline = Timeline(entries: [entry], policy: .atEnd)
+    func getTimeline(in context: Context, completion: @escaping (Timeline<WidgetEntry>) -> Void) {
+        let entry = makeEntry()
+        let nextUpdate = Calendar.current.date(byAdding: .hour, value: 1, to: Date())!
+        let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
         completion(timeline)
     }
+
+    private func makeEntry() -> WidgetEntry {
+        let defaults = UserDefaults(suiteName: appGroupID)
+        let streak = defaults?.integer(forKey: "widget_streak") ?? 0
+        let totalStamps = defaults?.integer(forKey: "widget_totalStamps") ?? 0
+        let studiedToday = defaults?.bool(forKey: "widget_studiedToday") ?? false
+        return WidgetEntry(date: Date(), streak: streak, totalStamps: totalStamps, studiedToday: studiedToday)
+    }
 }
 
-struct SimpleEntry: TimelineEntry {
-    let date: Date
-}
+// MARK: - Main View
 
 struct TeumTeumEatWidgetView: View {
     @Environment(\.widgetFamily) var widgetFamily
-    var entry: SimpleEntry
+    var entry: WidgetEntry
 
     var body: some View {
         switch widgetFamily {
         case .systemSmall:
-            SmallWidgetView()
+            SmallWidgetView(entry: entry)
         case .systemMedium:
-            MediumWidgetView()
+            MediumWidgetView(entry: entry)
         default:
-            SmallWidgetView()
+            SmallWidgetView(entry: entry)
         }
     }
 }
+
+// MARK: - Small Widget
 
 struct SmallWidgetView: View {
+    let entry: WidgetEntry
+
     var body: some View {
-        VStack {
-            Text("Small Widget")
-                .font(.headline)
+        VStack(spacing: 12) {
+            HStack(spacing: 4) {
+                Text("🔥")
+                    .font(.system(size: 28))
+                Text("\(entry.streak)")
+                    .font(.system(size: 32, weight: .bold))
+                    .foregroundColor(.black)
+            }
+            Text("\(entry.streak)일 연속")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.gray)
+            Text(entry.studiedToday ? "오늘 완료! 🎉" : "오늘 아직\n안 먹었어요!")
+                .font(.system(size: 12))
+                .foregroundColor(entry.studiedToday ? .blue : .orange)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .containerBackground(.fill.tertiary, for: .widget)
+        .containerBackground(.white, for: .widget)
     }
 }
 
+// MARK: - Medium Widget
+
 struct MediumWidgetView: View {
+    let entry: WidgetEntry
+
     var body: some View {
-        VStack {
-            Text("Medium Widget")
-                .font(.headline)
+        HStack(spacing: 0) {
+            // 왼쪽: 스트릭
+            VStack(alignment: .leading, spacing: 6) {
+                Text("연속 학습")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.gray)
+                HStack(spacing: 4) {
+                    Text("🔥")
+                        .font(.system(size: 24))
+                    Text("\(entry.streak)일")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(.black)
+                }
+                Text(entry.studiedToday ? "오늘 공부 완료! 🎉" : "오늘 아직 안 먹었어요! 🍽️")
+                    .font(.system(size: 12))
+                    .foregroundColor(entry.studiedToday ? .blue : .orange)
+            }
+
+            Spacer()
+
+            // 구분선
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(width: 1, height: 60)
+
+            Spacer()
+
+            // 오른쪽: 총 도장
+            VStack(alignment: .trailing, spacing: 6) {
+                Text("총 도장")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.gray)
+                Text("\(entry.totalStamps)")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundColor(.black)
+                Text("개")
+                    .font(.system(size: 12))
+                    .foregroundColor(.gray)
+            }
         }
+        .padding(.horizontal, 20)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .containerBackground(.fill.tertiary, for: .widget)
+        .containerBackground(.white, for: .widget)
     }
 }
+
+// MARK: - Widget
 
 struct teumteumeat_widget: Widget {
     let kind: String = "teumteumeat_widget"
@@ -79,14 +154,18 @@ struct teumteumeat_widget: Widget {
     }
 }
 
+// MARK: - Preview
+
 #Preview(as: .systemSmall) {
     teumteumeat_widget()
 } timeline: {
-    SimpleEntry(date: .now)
+    WidgetEntry(date: .now, streak: 7, totalStamps: 42, studiedToday: true)
+    WidgetEntry(date: .now, streak: 7, totalStamps: 42, studiedToday: false)
 }
 
 #Preview(as: .systemMedium) {
     teumteumeat_widget()
 } timeline: {
-    SimpleEntry(date: .now)
+    WidgetEntry(date: .now, streak: 7, totalStamps: 42, studiedToday: true)
+    WidgetEntry(date: .now, streak: 7, totalStamps: 42, studiedToday: false)
 }
