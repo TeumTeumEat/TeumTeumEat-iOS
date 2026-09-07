@@ -216,7 +216,15 @@ struct HomeFeature {
                 let wasCompletedYesterday = state.isTodayQuizCompleted
                 state.quizStatus = status
                 if !state.isUsingCoupon {
-                    state.isTodayQuizCompleted = status.hasSolvedToday
+                    // complete-set이 퀴즈 시작 시 차감되므로,
+                    // hasSolvedToday=false여도 availableQuizCount=0이면 더 이상 퀴즈 불가 → 부스러기 화면
+                    state.isTodayQuizCompleted = status.hasSolvedToday || status.availableQuizCount == 0
+                } else {
+                    // 쿠폰 사용 후: 추가 퀴즈 슬롯이 없으면 부스러기 화면으로 복귀
+                    // availableQuizCount > 0이면 isTodayQuizCompleted = false 유지 (새 퀴즈 가능)
+                    if status.availableQuizCount == 0 {
+                        state.isTodayQuizCompleted = true
+                    }
                 }
                 state.isUsingCoupon = false
 
