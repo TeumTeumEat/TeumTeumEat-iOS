@@ -73,7 +73,7 @@ public struct TTEAnswerCard: View {
             HStack {
                 Text("Q\(questionNumber)")
                     .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(Color(hex: "2B8FFF"))
+                    .foregroundColor(status.textColor)
                 
                 Spacer()
                 
@@ -99,7 +99,7 @@ public struct TTEAnswerCard: View {
             HStack(spacing: 4) {
                 Text("정답: \(correctAnswer)")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(status.textColor)
+                    .foregroundColor(.black)
             }
             
             // 해설
