@@ -281,6 +281,8 @@ struct MyView2: View {
                         .font(.headline)
                     
                     TTEQuizCard(
+                        availableWidth: 360,
+                        maxCardHeight: 520,
                         questionNumber: 1,
                         question: "SwiftUI는 선언형 프레임워크이다SwiftUI는 선언형 프레임워크이다SwiftUI는선언형 프레임워크이다SwiftUI선언형 프레임워크이다SwiftUI선언형 프레임워크이다SwiftUI선언형 프레임워크이다SwiftUI",
                         selectedAnswer: $quizAnswer1,
@@ -289,8 +291,10 @@ struct MyView2: View {
                         }
                     )
                     .padding(.horizontal, 20)
-                    
+
                     TTEQuizCard(
+                        availableWidth: 360,
+                        maxCardHeight: 520,
                         questionNumber: 2,
                         question: "TCA는 단방향 데이터 흐름 아키텍처이다",
                         selectedAnswer: $quizAnswer2
@@ -301,6 +305,8 @@ struct MyView2: View {
                 VStack(spacing: 30) {
                     // 선택 안함
                     TTEMultipleChoiceCard(
+                        availableWidth: 360,
+                        maxCardHeight: 520,
                         questionNumber: 1,
                         question: "Swift는 어떤 타입의 언어인가?",
                         choices: [
@@ -311,8 +317,10 @@ struct MyView2: View {
                         selectedChoice: $multipleChoice1
                     )
                     .padding(.horizontal, 20)
-                    
+
                     TTEMultipleChoiceCard(
+                        availableWidth: 360,
+                        maxCardHeight: 520,
                         questionNumber: 2,
                         question: "SwiftUI는 어떤 프레임워크인가?",
                         choices: [
@@ -323,8 +331,10 @@ struct MyView2: View {
                         selectedChoice: $multipleChoice2
                     )
                     .padding(.horizontal, 20)
-                    
+
                     TTEMultipleChoiceCard(
+                        availableWidth: 360,
+                        maxCardHeight: 520,
                         questionNumber: 3,
                         question: "TCA의 핵심 구성요소가 아닌 것은?",
                         choices: [
@@ -335,8 +345,10 @@ struct MyView2: View {
                         selectedChoice: $multipleChoice3
                     )
                     .padding(.horizontal, 20)
-                    
+
                     TTEMultipleChoiceCard(
+                        availableWidth: 360,
+                        maxCardHeight: 520,
                         questionNumber: 4,
                         question: "iOS 개발에서 사용하는 IDE는?",
                         choices: [
@@ -347,8 +359,10 @@ struct MyView2: View {
                         selectedChoice: $multipleChoice4
                     )
                     .padding(.horizontal, 20)
-                    
+
                     TTEMultipleChoiceCard(
+                        availableWidth: 360,
+                        maxCardHeight: 520,
                         questionNumber: 5,
                         question: "TCA(The Composable Architecture)는 Point-Free에서 만든 단방향 데이터 흐름 아키텍처 패턴이다. 다음 중 TCA의 특징이 아닌 것은?",
                         choices: [

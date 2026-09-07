@@ -31,15 +31,13 @@ struct TeumTeumEatApp: App {
             AppView(
                 store: Store(initialState: AppFeature.State()) {
                     AppFeature()
-                } withDependencies: {
-                    $0.categoryAPIClient = .liveValue
                 }
             )
-            .onOpenURL(perform: { url in
+            .onOpenURL { url in
                 if AuthApi.isKakaoTalkLoginUrl(url) {
                     _ = AuthController.handleOpenUrl(url: url)
                 }
-            })
+            }
         }
     }
 }
