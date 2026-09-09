@@ -66,27 +66,31 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     }
     
     // MARK: - MessagingDelegate
-    
+
     // FCM 토큰 갱신 시
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         print("FCM Token: \(fcmToken ?? "nil")")
-        
-        // 서버로 FCM 토큰 전송
-        if let token = fcmToken {
-            Task {
-                do {
-                    let apiClient = APIClient.liveValue
-                    
-                    try await apiClient.registerDeviceToken(
-                        token: token,
-                        deviceType: "IOS"
-                    )
-                    
-                    print("FCM 토큰 서버 전송 완료")
-                    
-                } catch {
-                    print("FCM 토큰 서버 전송 실패: \(error)")
-                }
+
+        // 로그인된 상태일 때만 서버로 FCM 토큰 전송 (미로그인 시 등록 스킵)
+        guard let token = fcmToken,
+              KeyChainManager.shared.getAccessToken() != nil else {
+            print("FCM 토큰 서버 전송 스킵 - 로그인 상태 아님")
+            return
+        }
+
+        Task {
+            do {
+                let apiClient = APIClient.liveValue
+
+                try await apiClient.registerDeviceToken(
+                    token: token,
+                    deviceType: "IOS"
+                )
+
+                print("FCM 토큰 서버 전송 완료")
+
+            } catch {
+                print("FCM 토큰 서버 전송 실패: \(error)")
             }
         }
     }

@@ -1037,29 +1037,54 @@ extension APIClient {
         }
     
     /// 디바이스 토큰 등록
-        func registerDeviceToken(token: String, deviceType: String) async throws {
-            let response: APIResponse<EmptyData> = try await request(
-                endpoint: "/api/v1/notifications/device-tokens",
-                method: .post,
-                body: RegisterDeviceTokenRequest(
-                    token: token,
-                    deviceType: deviceType
-                ),
-                requiresAuth: true
+    func registerDeviceToken(token: String, deviceType: String) async throws {
+        let response: APIResponse<EmptyData> = try await request(
+            endpoint: "/api/v1/notifications/device-tokens",
+            method: .post,
+            body: RegisterDeviceTokenRequest(
+                token: token,
+                deviceType: deviceType
+            ),
+            requiresAuth: true
+        )
+
+        print("registerDeviceToken - Response code: \(response.code)")
+
+        guard response.code == "OK" else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
             )
-            
-            print("registerDeviceToken - Response code: \(response.code)")
-            
-            guard response.code == "OK" else {
-                throw APIError.serverError(
-                    code: response.code,
-                    message: response.message,
-                    details: response.details
-                )
-            }
-            
-            print("Device token registered successfully")
         }
+
+        print("Device token registered successfully")
+    }
+
+    /// 디바이스 토큰 삭제 (로그아웃 시 호출)
+    func deleteDeviceToken(token: String, deviceType: String) async throws {
+        let response: APIResponse<EmptyData> = try await request(
+            endpoint: "/api/v1/notifications/device-tokens",
+            method: .delete,
+            body: RegisterDeviceTokenRequest(
+                token: token,
+                deviceType: deviceType
+            ),
+            requiresAuth: true
+        )
+
+        print("deleteDeviceToken - Response code: \(response.code)")
+
+        guard response.code == "OK" else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+
+        print("Device token deleted successfully")
+    }
 }
 
 
