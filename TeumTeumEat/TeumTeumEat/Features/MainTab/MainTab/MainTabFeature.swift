@@ -25,6 +25,7 @@ struct MainTabFeature {
         var addSubjectFile: AddSubjectFileFeature.State?
         var quizFlow: QuizFlowFeature.State?
         var myPage: MyPageFeature.State?
+        var wackpuBall: WackpuBallFeature.State?
 
         
         enum Tab {
@@ -46,6 +47,7 @@ struct MainTabFeature {
         case addSubjectFile(AddSubjectFileFeature.Action)
         case quizFlow(QuizFlowFeature.Action)
         case myPage(MyPageFeature.Action)
+        case wackpuBall(WackpuBallFeature.Action)
         case delegate(Delegate)
     }
     
@@ -128,6 +130,14 @@ struct MainTabFeature {
                     state.myPage = MyPageFeature.State()
                     print("Home에서 MyPage 열기")
                     return .none
+
+                case .home(.delegate(.openWackpuBallRequested)):
+                    state.wackpuBall = WackpuBallFeature.State()
+                    return .none
+
+                case .wackpuBall(.delegate(.dismissed)):
+                    state.wackpuBall = nil
+                    return .none
                     
                 // Home에서 QuizFlow 시작 (summaryData 포함)
                 case .home(.delegate(.startQuizFlow(let quizzes, let summaryData, let isQuizGuideSeen))):
@@ -173,7 +183,7 @@ struct MainTabFeature {
                 case .quizFlow(.delegate(.cancelled)):
                     state.quizFlow = nil
                     print("퀴즈 플로우 취소")
-                    return .none
+                    return .send(.home(.onAppear))
                     
                 case .addSubject(.delegate(.completed)):
                     state.addSubject = nil
@@ -201,7 +211,7 @@ struct MainTabFeature {
                     print("MainTabFeature: 회원탈퇴 요청 받음")
                     return .send(.delegate(.withdrawal))
 
-                case .home, .quiz, .register, .newGoalFlow, .addSubject, .addSubjectFile, .quizFlow, .myPage, .delegate:
+                case .home, .quiz, .register, .newGoalFlow, .addSubject, .addSubjectFile, .quizFlow, .myPage, .wackpuBall, .delegate:
                     return .none
                 }
             }
@@ -219,6 +229,9 @@ struct MainTabFeature {
         }
         .ifLet(\.myPage, action: \.myPage) {
             MyPageFeature()
+        }
+        .ifLet(\.wackpuBall, action: \.wackpuBall) {
+            WackpuBallFeature()
         }
     }
 }
