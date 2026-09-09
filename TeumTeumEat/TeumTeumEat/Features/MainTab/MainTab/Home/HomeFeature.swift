@@ -40,6 +40,7 @@ struct HomeFeature {
 
         var showCouponModal: Bool = false
         var isUsingCoupon: Bool = false
+        var showAdInterruptedToast: Bool = false
 
         var availableQuizCount: Int {
             quizStatus?.availableQuizCount ?? 0
@@ -103,8 +104,11 @@ struct HomeFeature {
         case dismissCouponModal
         case couponUseTapped
         case adRewardEarned
+        case adInterrupted
+        case adInterruptedToastDismissed
         case postAdRewardResponse(Result<Void, Error>)
         case refreshQuizStatusResponse(Result<UserQuizStatusData, Error>)
+        case wackpuBallTapped
         case delegate(Delegate)
     }
 
@@ -116,6 +120,7 @@ struct HomeFeature {
         )
         case openMyPageRequested
         case startNewGoalTapped
+        case openWackpuBallRequested
     }
     
     @Dependency(\.apiClient) var apiClient
@@ -431,6 +436,14 @@ struct HomeFeature {
                     }
                 }
 
+            case .adInterrupted:
+                state.showAdInterruptedToast = true
+                return .none
+
+            case .adInterruptedToastDismissed:
+                state.showAdInterruptedToast = false
+                return .none
+
             case .postAdRewardResponse(.success):
                 return .run { send in
                     do {
@@ -473,6 +486,9 @@ struct HomeFeature {
             case .goalCompletedSelectExistingTapped:
                 state.showGoalCompletedAlert = false
                 return .send(.delegate(.openMyPageRequested))
+
+            case .wackpuBallTapped:
+                return .send(.delegate(.openWackpuBallRequested))
 
             case .characterEatTapped:
                 if state.isGoalCompleted {
@@ -595,9 +611,31 @@ struct HomeView: View {
             }
             .background(Color.white)
             .navigationBarHidden(true)
+            // MARK: - [TEST] 왁뿌볼 테스트 버튼
+            .overlay(alignment: .bottom) {
+                Button {
+                    store.send(.wackpuBallTapped)
+                } label: {
+                    VStack(spacing: 4) {
+                        Text("⚽️")
+                            .font(.system(size: 22))
+                        Text("왁뿌볼")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 60, height: 60)
+                    .background(Color.blue500)
+                    .clipShape(Circle())
+                    .shadow(color: Color.blue500.opacity(0.4), radius: 8, x: 0, y: 4)
+                }
+                .padding(.bottom, 110)
+            }
             .onAppear {
                 store.send(.onAppear)
                 RewardedAdManager.shared.loadAd()
+                RewardedAdManager.shared.onAdInterrupted = {
+                    store.send(.adInterrupted)
+                }
             }
             // 쿠폰 모달
             .overlay {
@@ -656,6 +694,14 @@ struct HomeView: View {
                     set: { if !$0 { store.send(.retryToastDismissed) } }
                 ),
                 message: "잠시 후 다시 시도해 주세요."
+            )
+            // 광고 중단 토스트
+            .tteToast(
+                isPresented: Binding(
+                    get: { store.showAdInterruptedToast },
+                    set: { if !$0 { store.send(.adInterruptedToastDismissed) } }
+                ),
+                message: "광고를 끝까지 시청해야 쿠폰이 지급돼요."
             )
         }
     }
