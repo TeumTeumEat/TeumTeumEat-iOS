@@ -108,7 +108,6 @@ struct HomeFeature {
         case adInterruptedToastDismissed
         case postAdRewardResponse(Result<Void, Error>)
         case refreshQuizStatusResponse(Result<UserQuizStatusData, Error>)
-        case wackpuBallTapped
         case delegate(Delegate)
     }
 
@@ -120,7 +119,6 @@ struct HomeFeature {
         )
         case openMyPageRequested
         case startNewGoalTapped
-        case openWackpuBallRequested
     }
     
     @Dependency(\.apiClient) var apiClient
@@ -487,9 +485,6 @@ struct HomeFeature {
                 state.showGoalCompletedAlert = false
                 return .send(.delegate(.openMyPageRequested))
 
-            case .wackpuBallTapped:
-                return .send(.delegate(.openWackpuBallRequested))
-
             case .characterEatTapped:
                 if state.isGoalCompleted {
                     state.showGoalCompletedAlert = true
@@ -611,25 +606,6 @@ struct HomeView: View {
             }
             .background(Color.white)
             .navigationBarHidden(true)
-            // MARK: - [TEST] 왁뿌볼 테스트 버튼
-            .overlay(alignment: .bottom) {
-                Button {
-                    store.send(.wackpuBallTapped)
-                } label: {
-                    VStack(spacing: 4) {
-                        Text("⚽️")
-                            .font(.system(size: 22))
-                        Text("왁뿌볼")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundColor(.white)
-                    }
-                    .frame(width: 60, height: 60)
-                    .background(Color.blue500)
-                    .clipShape(Circle())
-                    .shadow(color: Color.blue500.opacity(0.4), radius: 8, x: 0, y: 4)
-                }
-                .padding(.bottom, 110)
-            }
             .onAppear {
                 store.send(.onAppear)
                 RewardedAdManager.shared.loadAd()

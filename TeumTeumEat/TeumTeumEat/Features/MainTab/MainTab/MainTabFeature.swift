@@ -25,9 +25,6 @@ struct MainTabFeature {
         var addSubjectFile: AddSubjectFileFeature.State?
         var quizFlow: QuizFlowFeature.State?
         var myPage: MyPageFeature.State?
-        var wackpuBall: WackpuBallFeature.State?
-
-        
         enum Tab {
             case home
             case quiz
@@ -47,7 +44,6 @@ struct MainTabFeature {
         case addSubjectFile(AddSubjectFileFeature.Action)
         case quizFlow(QuizFlowFeature.Action)
         case myPage(MyPageFeature.Action)
-        case wackpuBall(WackpuBallFeature.Action)
         case delegate(Delegate)
     }
     
@@ -131,14 +127,6 @@ struct MainTabFeature {
                     print("Home에서 MyPage 열기")
                     return .none
 
-                case .home(.delegate(.openWackpuBallRequested)):
-                    state.wackpuBall = WackpuBallFeature.State()
-                    return .none
-
-                case .wackpuBall(.delegate(.dismissed)):
-                    state.wackpuBall = nil
-                    return .none
-                    
                 // Home에서 QuizFlow 시작 (summaryData 포함)
                 case .home(.delegate(.startQuizFlow(let quizzes, let summaryData, let isQuizGuideSeen))):
                     state.quizFlow = QuizFlowFeature.State(
@@ -211,7 +199,7 @@ struct MainTabFeature {
                     print("MainTabFeature: 회원탈퇴 요청 받음")
                     return .send(.delegate(.withdrawal))
 
-                case .home, .quiz, .register, .newGoalFlow, .addSubject, .addSubjectFile, .quizFlow, .myPage, .wackpuBall, .delegate:
+                case .home, .quiz, .register, .newGoalFlow, .addSubject, .addSubjectFile, .quizFlow, .myPage, .delegate:
                     return .none
                 }
             }
@@ -229,9 +217,6 @@ struct MainTabFeature {
         }
         .ifLet(\.myPage, action: \.myPage) {
             MyPageFeature()
-        }
-        .ifLet(\.wackpuBall, action: \.wackpuBall) {
-            WackpuBallFeature()
         }
     }
 }

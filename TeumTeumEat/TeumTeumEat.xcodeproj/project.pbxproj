@@ -17,7 +17,6 @@
 		4679DBE82FEABD5100932776 /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 4679DBE72FEABD5100932776 /* FirebaseRemoteConfig */; };
 		46A46A30301C2E71005D0A0B /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 46A46A2F301C2E71005D0A0B /* WidgetKit.framework */; };
 		46A46A32301C2E71005D0A0B /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 46A46A31301C2E71005D0A0B /* SwiftUI.framework */; };
-		46A46A43301C2E74005D0A0B /* teumteumeat_widgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 46A46A2E301C2E70005D0A0B /* teumteumeat_widgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		46AE2AA12F0125BD0061B2EE /* KakaoSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 46AE2AA02F0125BD0061B2EE /* KakaoSDK */; };
 		46AE2AA32F0125BD0061B2EE /* KakaoSDKAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 46AE2AA22F0125BD0061B2EE /* KakaoSDKAuth */; };
 		46C646952F6982AC005BA910 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 46C646942F6982AC005BA910 /* GoogleMobileAds */; };
@@ -28,13 +27,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		46A46A41301C2E74005D0A0B /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 46FE66662EE1770D009E626A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 46A46A2D301C2E70005D0A0B;
-			remoteInfo = teumteumeat_widgetExtension;
-		};
 		46FE667C2EE17711009E626A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 46FE66662EE1770D009E626A /* Project object */;
@@ -58,7 +50,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				46A46A43301C2E74005D0A0B /* teumteumeat_widgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -239,7 +230,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				46A46A42301C2E74005D0A0B /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				46FE66702EE1770E009E626A /* TeumTeumEat */,
@@ -435,11 +425,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		46A46A42301C2E74005D0A0B /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 46A46A2D301C2E70005D0A0B /* teumteumeat_widgetExtension */;
-			targetProxy = 46A46A41301C2E74005D0A0B /* PBXContainerItemProxy */;
-		};
 		46FE667D2EE17711009E626A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 46FE666D2EE1770E009E626A /* TeumTeumEat */;
