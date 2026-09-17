@@ -317,8 +317,7 @@ struct HistoryView: View {
                 }
             }
     }
-}
-    
+
     private var dateTabView: some View {
         VStack(spacing: 16) {
             HistoryDateCard(fireCount: store.fireCount)
