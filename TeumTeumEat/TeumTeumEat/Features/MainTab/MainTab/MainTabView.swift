@@ -58,7 +58,7 @@ struct MainTabView: View {
                         }
                     )
                     .padding(.horizontal, 60)
-                    .padding(.bottom, store.selectedTab == .quiz ? 0 : 20)
+                    .padding(.bottom, 20)
                 }
             }
             .ignoresSafeArea(.keyboard)

@@ -549,9 +549,8 @@ struct HomeFeature {
 struct HomeView: View {
     let store: StoreOf<HomeFeature>
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                HomeNavigationBar(
+        VStack(spacing: 0) {
+            HomeNavigationBar(
                     fireCount: store.fireCount,
                     stampCount: store.stampCount,
                     onSettingTapped: {
@@ -679,7 +678,6 @@ struct HomeView: View {
                 ),
                 message: "광고를 끝까지 시청해야 쿠폰이 지급돼요."
             )
-        }
     }
 }
 

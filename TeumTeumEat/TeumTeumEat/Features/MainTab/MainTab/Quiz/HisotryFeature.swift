@@ -255,8 +255,7 @@ struct HistoryView: View {
     let store: StoreOf<HistoryFeature>
     
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
                 // 네비게이션 바 - 최상단 고정
                 HomeNavigationBar(
                     fireCount: store.fireCount,
@@ -317,11 +316,8 @@ struct HistoryView: View {
                     HistoryDetailSummaryView(store: detailStore)
                 }
             }
-            .onAppear {
-                store.send(.onAppear)
-            }
-        }
     }
+}
     
     private var dateTabView: some View {
         VStack(spacing: 16) {
