@@ -15,20 +15,14 @@ struct MainTabView: View {
         NavigationStack {
             ZStack(alignment: .bottom) {
                 // 메인 콘텐츠 영역
-                Group {
-                    switch store.selectedTab {
-                    case .home:
-                        HomeView(store: store.scope(state: \.home, action: \.home))
-                            .transition(.opacity)
-                    case .quiz:
-                        HistoryView(store: store.scope(state: \.quiz, action: \.quiz))
-                            .transition(.opacity)
-                    case .register:
-                        RegisterView(store: store.scope(state: \.register, action: \.register))
-                            .transition(.opacity)
-                    }
+                switch store.selectedTab {
+                case .home:
+                    HomeView(store: store.scope(state: \.home, action: \.home))
+                case .quiz:
+                    HistoryView(store: store.scope(state: \.quiz, action: \.quiz))
+                case .register:
+                    RegisterView(store: store.scope(state: \.register, action: \.register))
                 }
-                .animation(.easeInOut(duration: 0.2), value: store.selectedTab)
 
                 // 어두운 배경
                 if store.isRegisterMenuExpanded {

@@ -127,7 +127,10 @@ struct HomeFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                state.isLoading = true
+                // 이미 데이터가 있으면 로딩 스피너 표시 없이 백그라운드 리프레시
+                if state.currentGoal == nil {
+                    state.isLoading = true
+                }
                 state.errorMessage = nil
                 state.showErrorOverlay = false
                 state.retryCount = 0
