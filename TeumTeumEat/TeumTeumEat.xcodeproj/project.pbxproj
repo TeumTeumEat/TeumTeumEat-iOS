@@ -15,8 +15,6 @@
 		4679DBE42FEABD5100932776 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 4679DBE32FEABD5100932776 /* FirebaseCrashlytics */; };
 		4679DBE62FEABD5100932776 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 4679DBE52FEABD5100932776 /* FirebaseMessaging */; };
 		4679DBE82FEABD5100932776 /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 4679DBE72FEABD5100932776 /* FirebaseRemoteConfig */; };
-		46A46A30301C2E71005D0A0B /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 46A46A2F301C2E71005D0A0B /* WidgetKit.framework */; };
-		46A46A32301C2E71005D0A0B /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 46A46A31301C2E71005D0A0B /* SwiftUI.framework */; };
 		46AE2AA12F0125BD0061B2EE /* KakaoSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 46AE2AA02F0125BD0061B2EE /* KakaoSDK */; };
 		46AE2AA32F0125BD0061B2EE /* KakaoSDKAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 46AE2AA22F0125BD0061B2EE /* KakaoSDKAuth */; };
 		46C646952F6982AC005BA910 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 46C646942F6982AC005BA910 /* GoogleMobileAds */; };
@@ -57,7 +55,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		46A46A2E301C2E70005D0A0B /* teumteumeat_widgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = teumteumeat_widgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		46A46A2F301C2E71005D0A0B /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		46A46A31301C2E71005D0A0B /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		46E995162F1E6C3E009946C1 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
@@ -67,13 +64,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		46A46A47301C2E74005D0A0B /* Exceptions for "teumteumeat_widget" folder in "teumteumeat_widgetExtension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 46A46A2D301C2E70005D0A0B /* teumteumeat_widgetExtension */;
-		};
 		46FE73E12EF4E19A009E626A /* Exceptions for "TeumTeumEat" folder in "TeumTeumEat" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -86,9 +76,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		46A46A33301C2E71005D0A0B /* teumteumeat_widget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				46A46A47301C2E74005D0A0B /* Exceptions for "teumteumeat_widget" folder in "teumteumeat_widgetExtension" target */,
-			);
 			path = teumteumeat_widget;
 			sourceTree = "<group>";
 		};
@@ -113,15 +100,6 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		46A46A2B301C2E70005D0A0B /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				46A46A32301C2E71005D0A0B /* SwiftUI.framework in Frameworks */,
-				46A46A30301C2E71005D0A0B /* WidgetKit.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		46FE666B2EE1770E009E626A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -188,7 +166,6 @@
 				46FE666E2EE1770E009E626A /* TeumTeumEat.app */,
 				46FE667B2EE17711009E626A /* TeumTeumEatTests.xctest */,
 				46FE66852EE17711009E626A /* TeumTeumEatUITests.xctest */,
-				46A46A2E301C2E70005D0A0B /* teumteumeat_widgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -196,28 +173,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		46A46A2D301C2E70005D0A0B /* teumteumeat_widgetExtension */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 46A46A44301C2E74005D0A0B /* Build configuration list for PBXNativeTarget "teumteumeat_widgetExtension" */;
-			buildPhases = (
-				46A46A2A301C2E70005D0A0B /* Sources */,
-				46A46A2B301C2E70005D0A0B /* Frameworks */,
-				46A46A2C301C2E70005D0A0B /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				46A46A33301C2E71005D0A0B /* teumteumeat_widget */,
-			);
-			name = teumteumeat_widgetExtension;
-			packageProductDependencies = (
-			);
-			productName = teumteumeat_widgetExtension;
-			productReference = 46A46A2E301C2E70005D0A0B /* teumteumeat_widgetExtension.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
 		46FE666D2EE1770E009E626A /* TeumTeumEat */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 46FE668F2EE17711009E626A /* Build configuration list for PBXNativeTarget "TeumTeumEat" */;
@@ -311,9 +266,6 @@
 				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 1640;
 				TargetAttributes = {
-					46A46A2D301C2E70005D0A0B = {
-						CreatedOnToolsVersion = 26.3;
-					};
 					46FE666D2EE1770E009E626A = {
 						CreatedOnToolsVersion = 16.4;
 					};
@@ -356,19 +308,11 @@
 				46FE666D2EE1770E009E626A /* TeumTeumEat */,
 				46FE667A2EE17711009E626A /* TeumTeumEatTests */,
 				46FE66842EE17711009E626A /* TeumTeumEatUITests */,
-				46A46A2D301C2E70005D0A0B /* teumteumeat_widgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		46A46A2C301C2E70005D0A0B /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		46FE666C2EE1770E009E626A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -394,13 +338,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		46A46A2A301C2E70005D0A0B /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		46FE666A2EE1770E009E626A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -438,70 +375,6 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		46A46A45301C2E74005D0A0B /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 7K76RWRQBL;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = teumteumeat_widget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = teumteumeat_widget;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.TeumTeumEat.teumteumeat-widget";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		46A46A46301C2E74005D0A0B /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 7K76RWRQBL;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = teumteumeat_widget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = teumteumeat_widget;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.TeumTeumEat.teumteumeat-widget";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
 		46FE668D2EE17711009E626A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -652,7 +525,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.11;
+				MARKETING_VERSION = 1.0.12;
 				PRODUCT_BUNDLE_IDENTIFIER = com.TeumTeumEat;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -691,7 +564,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.11;
+				MARKETING_VERSION = 1.0.12;
 				PRODUCT_BUNDLE_IDENTIFIER = com.TeumTeumEat;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -779,15 +652,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		46A46A44301C2E74005D0A0B /* Build configuration list for PBXNativeTarget "teumteumeat_widgetExtension" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				46A46A45301C2E74005D0A0B /* Debug */,
-				46A46A46301C2E74005D0A0B /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		46FE66692EE1770D009E626A /* Build configuration list for PBXProject "TeumTeumEat" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
