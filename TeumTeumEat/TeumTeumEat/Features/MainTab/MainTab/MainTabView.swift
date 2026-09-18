@@ -150,9 +150,7 @@ struct CustomTabBar: View {
                 size: (selectedTab == .quiz || isRegisterMenuExpanded) ? .small : .large,
                 isSelected: !isRegisterMenuExpanded && selectedTab == .home
             ) {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    onTabSelected(.home)
-                }
+                onTabSelected(.home)
             }
 
             TTETabButton(
@@ -161,9 +159,7 @@ struct CustomTabBar: View {
                 isSelected: selectedTab == .quiz,
                 customIconSize: 30
             ) {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    onTabSelected(.quiz)
-                }
+                onTabSelected(.quiz)
             }
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedTab)
