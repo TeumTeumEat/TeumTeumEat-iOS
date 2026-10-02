@@ -162,11 +162,7 @@ extension OnboardingAPIClient: DependencyKey {
                             request.setValue(lastEventId, forHTTPHeaderField: "Last-Event-ID")
                         }
                         do {
-                            let config = URLSessionConfiguration.default
-                            config.timeoutIntervalForRequest = 600
-                            config.timeoutIntervalForResource = 600
-                            let session = URLSession(configuration: config)
-                            let (bytes, response) = try await session.bytes(for: request)
+                            let (bytes, response) = try await documentSSESession.bytes(for: request)
                             guard let http = response as? HTTPURLResponse else {
                                 continuation.finish(throwing: APIError.invalidResponse)
                                 return
@@ -253,6 +249,14 @@ public extension DependencyValues {
 }
 
 // MARK: - SSE Parser
+// SSE 전용 세션 (요청마다 새로 만들면 invalidate되지 않고 메모리에 남으므로 하나를 재사용)
+private let documentSSESession: URLSession = {
+    let config = URLSessionConfiguration.default
+    config.timeoutIntervalForRequest = 600
+    config.timeoutIntervalForResource = 600
+    return URLSession(configuration: config)
+}()
+
 private func parseSSEEvent(type: String, data: String) -> SSEDocumentStatus? {
     guard let jsonData = data.data(using: .utf8),
           let payload = try? JSONDecoder().decode(SSEDataPayload.self, from: jsonData) else {
