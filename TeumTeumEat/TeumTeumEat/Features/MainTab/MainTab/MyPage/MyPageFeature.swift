@@ -71,8 +71,9 @@ struct MyPageFeature {
         }
     }
     
-    @Dependency(\.apiClient) var apiClient
+    @Dependency(\.goalClient) var goalClient
     
+    @Dependency(\.userClient) var userClient
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -85,7 +86,7 @@ struct MyPageFeature {
                     // 병렬로 세 API 호출
                     async let goalsTask: Void = {
                         do {
-                            let goal = try await apiClient.fetchCurrentGoal()
+                            let goal = try await goalClient.fetchCurrentGoal()
                             if goal.isExpired || goal.isCompleted {
                                 await send(.selectedSubjectResponse(.success(nil)))
                             } else {
@@ -98,7 +99,7 @@ struct MyPageFeature {
                     
                     async let accountInfoTask: Void = {
                         do {
-                            let accountInfo = try await apiClient.fetchUserAccountInfo()
+                            let accountInfo = try await userClient.fetchUserAccountInfo()
                             await send(.accountInfoResponse(.success(accountInfo)))
                         } catch {
                             await send(.accountInfoResponse(.failure(error)))
@@ -107,7 +108,7 @@ struct MyPageFeature {
                     
                     async let notificationSettingsTask: Void = {
                         do {
-                            let settings = try await apiClient.fetchNotificationSettings()
+                            let settings = try await userClient.fetchNotificationSettings()
                             await send(.notificationSettingsResponse(.success(settings)))
                         } catch {
                             await send(.notificationSettingsResponse(.failure(error)))
@@ -168,7 +169,7 @@ struct MyPageFeature {
                         case .authorized:
                             // 권한 있음 → 바로 서버 업데이트
                             do {
-                                try await apiClient.updateNotificationSetting(pushEnabled: true)
+                                try await userClient.updateNotificationSetting(pushEnabled: true)
                                 await send(.updateNotificationSettingResponse(.success(())))
                             } catch {
                                 await send(.updateNotificationSettingResponse(.failure(error)))
@@ -185,7 +186,7 @@ struct MyPageFeature {
                                     .requestAuthorization(options: [.alert, .sound, .badge])
                                 
                                 if granted {
-                                    try await apiClient.updateNotificationSetting(pushEnabled: true)
+                                    try await userClient.updateNotificationSetting(pushEnabled: true)
                                     await send(.updateNotificationSettingResponse(.success(())))
                                 } else {
                                     await send(.updateNotificationSettingResponse(.failure(
@@ -206,7 +207,7 @@ struct MyPageFeature {
                     // OFF로 끄려고 할 때
                     return .run { send in
                         do {
-                            try await apiClient.updateNotificationSetting(pushEnabled: false)
+                            try await userClient.updateNotificationSetting(pushEnabled: false)
                             await send(.updateNotificationSettingResponse(.success(())))
                         } catch {
                             await send(.updateNotificationSettingResponse(.failure(error)))
@@ -218,7 +219,7 @@ struct MyPageFeature {
                 // 서버 업데이트 성공 → 서버에서 다시 가져오기
                 return .run { send in
                     do {
-                        let settings = try await apiClient.fetchNotificationSettings()
+                        let settings = try await userClient.fetchNotificationSettings()
                         await send(.notificationSettingsResponse(.success(settings)))
                     } catch {
                         await send(.notificationSettingsResponse(.failure(error)))
@@ -250,7 +251,7 @@ struct MyPageFeature {
                     Log.myPage.debug("케이스 2 감지: Toggle ON이지만 시스템 권한 OFF → 서버 동기화")
                     return .run { send in
                         do {
-                            try await apiClient.updateNotificationSetting(pushEnabled: false)
+                            try await userClient.updateNotificationSetting(pushEnabled: false)
                             await send(.updateNotificationSettingResponse(.success(())))
                         } catch {
                             await send(.updateNotificationSettingResponse(.failure(error)))
@@ -318,7 +319,7 @@ struct MyPageFeature {
                 state.showWithdrawalAlert = false
                 return .run { send in
                     do {
-                        try await apiClient.withdrawUser()
+                        try await userClient.withdrawUser()
                         await send(.withdrawalResponse(.success(())))
                     } catch {
                         await send(.withdrawalResponse(.failure(error)))

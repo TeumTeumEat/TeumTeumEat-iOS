@@ -128,8 +128,7 @@ struct AppSettingsFeature {
             case dismissed
         }
     }
-    @Dependency(\.apiClient) var apiClient
-
+    @Dependency(\.userClient) var userClient
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -142,7 +141,7 @@ struct AppSettingsFeature {
                     // 병렬로 두 API 호출
                     async let nameTask: Void = {
                         do {
-                            let name = try await apiClient.fetchUserName()
+                            let name = try await userClient.fetchUserName()
                             await send(.userNameResponse(.success(name)))
                         } catch {
                             await send(.userNameResponse(.failure(error)))
@@ -151,7 +150,7 @@ struct AppSettingsFeature {
                     
                     async let commuteTask: Void = {
                         do {
-                            let commuteInfo = try await apiClient.fetchCommuteInfo()
+                            let commuteInfo = try await userClient.fetchCommuteInfo()
                             await send(.commuteInfoResponse(.success(commuteInfo)))
                         } catch {
                             await send(.commuteInfoResponse(.failure(error)))
@@ -215,7 +214,7 @@ struct AppSettingsFeature {
                     let trimmedNickname = state.nickname.trimmingCharacters(in: .whitespaces)
                     effects.append(.run { send in
                         await send(.updateNameResponse(
-                            Result { try await apiClient.updateUserName(name: trimmedNickname) }
+                            Result { try await userClient.updateUserName(name: trimmedNickname) }
                         ))
                     })
                 }
@@ -232,7 +231,7 @@ struct AppSettingsFeature {
                     effects.append(.run { send in
                         await send(.updateCommuteResponse(
                             Result {
-                                try await apiClient.updateCommuteInfo(
+                                try await userClient.updateCommuteInfo(
                                     startTime: startTime,
                                     endTime: endTime,
                                     usageTime: usageTime

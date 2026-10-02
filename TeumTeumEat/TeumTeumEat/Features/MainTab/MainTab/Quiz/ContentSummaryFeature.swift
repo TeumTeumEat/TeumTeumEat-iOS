@@ -85,8 +85,7 @@ struct ContentSummaryFeature {
 
     private enum CancelID { case streaming }
 
-    @Dependency(\.apiClient) var apiClient
-
+    @Dependency(\.quizClient) var quizClient
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -106,7 +105,7 @@ struct ContentSummaryFeature {
                     guard let id = state.categoryId else { return .none }
                     return .run { send in
                         do {
-                            for try await event in apiClient.streamCategoryDocument(categoryId: id) {
+                            for try await event in quizClient.streamCategoryDocument(categoryId: id) {
                                 await send(.streamEventReceived(event))
                             }
                         } catch {
@@ -118,7 +117,7 @@ struct ContentSummaryFeature {
                     let docId = state.documentId
                     return .run { send in
                         do {
-                            for try await event in apiClient.streamPDFSummary(goalId: goalId, documentId: docId) {
+                            for try await event in quizClient.streamPDFSummary(goalId: goalId, documentId: docId) {
                                 await send(.streamEventReceived(event))
                             }
                         } catch {
@@ -151,7 +150,7 @@ struct ContentSummaryFeature {
                         }
                         return .run { send in
                             let result = await Result {
-                                try await apiClient.fetchCategoryDocumentIfExists(categoryId: id)
+                                try await quizClient.fetchCategoryDocumentIfExists(categoryId: id)
                             }
                             await send(.fallbackResponse(result))
                         }
@@ -162,7 +161,7 @@ struct ContentSummaryFeature {
                         let docId = state.documentId
                         return .run { send in
                             let result = await Result {
-                                try await apiClient.fetchPDFSummaryOnly(goalId: goalId, documentId: docId)
+                                try await quizClient.fetchPDFSummaryOnly(goalId: goalId, documentId: docId)
                             }
                             await send(.pdfFallbackResponse(result))
                         }
@@ -183,7 +182,7 @@ struct ContentSummaryFeature {
                     state.isQuizLoading = true
                     return .run { send in
                         let result = await Result {
-                            try await apiClient.fetchCategoryDocumentIfExists(categoryId: categoryId)
+                            try await quizClient.fetchCategoryDocumentIfExists(categoryId: categoryId)
                         }
                         await send(.fetchDocumentMetaCompleted(result))
                     }
@@ -195,7 +194,7 @@ struct ContentSummaryFeature {
                     let docId = state.documentId
                     return .run { send in
                         let result = await Result {
-                            try await apiClient.createAndFetchPDFQuizzes(goalId: goalId, documentId: docId)
+                            try await quizClient.createAndFetchPDFQuizzes(goalId: goalId, documentId: docId)
                         }
                         await send(.fetchQuizzesCompleted(result))
                     }
@@ -219,7 +218,7 @@ struct ContentSummaryFeature {
                         // isStreaming = true 유지 — fallback GET 동안 로딩 표시
                         return .run { send in
                             let result = await Result {
-                                try await apiClient.fetchCategoryDocumentIfExists(categoryId: id)
+                                try await quizClient.fetchCategoryDocumentIfExists(categoryId: id)
                             }
                             await send(.fallbackResponse(result))
                         }
@@ -228,7 +227,7 @@ struct ContentSummaryFeature {
                         let docId = state.documentId
                         return .run { send in
                             let result = await Result {
-                                try await apiClient.fetchPDFSummaryOnly(goalId: goalId, documentId: docId)
+                                try await quizClient.fetchPDFSummaryOnly(goalId: goalId, documentId: docId)
                             }
                             await send(.pdfFallbackResponse(result))
                         }
@@ -258,7 +257,7 @@ struct ContentSummaryFeature {
                 guard needsQuizzesC else { return .none }
                 return .run { send in
                     let quizResult = await Result {
-                        try await apiClient.fetchUserQuizzes(documentId: docIdC, documentType: .category)
+                        try await quizClient.fetchUserQuizzes(documentId: docIdC, documentType: .category)
                     }
                     await send(.fetchQuizzesCompleted(quizResult))
                 }
@@ -283,7 +282,7 @@ struct ContentSummaryFeature {
                 guard needsQuizzesP else { return .none }
                 return .run { send in
                     let quizResult = await Result {
-                        try await apiClient.fetchUserQuizzes(documentId: docIdP, documentType: .document)
+                        try await quizClient.fetchUserQuizzes(documentId: docIdP, documentType: .document)
                     }
                     await send(.fetchQuizzesCompleted(quizResult))
                 }
@@ -301,7 +300,7 @@ struct ContentSummaryFeature {
                 // summaryText는 SSE로 이미 완성된 상태 — 서버 저장본으로 덮어쓰지 않음
                 return .run { [docId = doc.documentId] send in
                     let result = await Result {
-                        try await apiClient.fetchUserQuizzes(documentId: docId, documentType: .category)
+                        try await quizClient.fetchUserQuizzes(documentId: docId, documentType: .category)
                     }
                     await send(.fetchQuizzesCompleted(result))
                 }

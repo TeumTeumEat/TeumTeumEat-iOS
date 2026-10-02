@@ -34,8 +34,7 @@ struct SubjectListFeature {
         }
     }
     
-    @Dependency(\.apiClient) var apiClient
-    
+    @Dependency(\.goalClient) var goalClient
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -44,7 +43,7 @@ struct SubjectListFeature {
                 state.errorMessage = nil
                 return .run { send in
                     do {
-                        let goals = try await apiClient.fetchGoals()
+                        let goals = try await goalClient.fetchGoals()
                         await send(.goalsResponse(.success(goals)))
                     } catch {
                         await send(.goalsResponse(.failure(error)))
@@ -74,7 +73,7 @@ struct SubjectListFeature {
                 
                 return .run { send in
                     do {
-                        try await apiClient.updateCurrentGoal(goalId: subject.goalId)
+                        try await goalClient.updateCurrentGoal(goalId: subject.goalId)
                         await send(.updateGoalResponse(.success(())))
                     } catch {
                         await send(.updateGoalResponse(.failure(error)))

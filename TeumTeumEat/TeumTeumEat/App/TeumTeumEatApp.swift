@@ -81,9 +81,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
         Task {
             do {
-                let apiClient = APIClient.liveValue
+                let userClient = UserClient.liveValue
 
-                try await apiClient.registerDeviceToken(
+                try await userClient.registerDeviceToken(
                     token: token,
                     deviceType: "IOS"
                 )

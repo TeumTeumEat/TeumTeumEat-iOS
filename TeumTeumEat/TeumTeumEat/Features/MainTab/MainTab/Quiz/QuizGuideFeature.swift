@@ -32,15 +32,16 @@ struct QuizGuideFeature {
         case startQuiz  // 퀴즈 시작
     }
     
-    @Dependency(\.apiClient) var apiClient
+    @Dependency(\.quizClient) var quizClient
     
+    @Dependency(\.userClient) var userClient
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .onAppear:
                 return .run { send in
                     await send(.commuteInfoLoaded(
-                        Result { try await apiClient.fetchCommuteInfo() }
+                        Result { try await userClient.fetchCommuteInfo() }
                     ))
                 }
 
@@ -67,7 +68,7 @@ struct QuizGuideFeature {
                     state.isSubmitting = true
                     return .run { send in
                         do {
-                            try await apiClient.updateQuizGuideSeen()
+                            try await quizClient.updateQuizGuideSeen()
                             await send(.updateQuizGuideResponse(.success(())))
                         } catch {
                             await send(.updateQuizGuideResponse(.failure(error)))

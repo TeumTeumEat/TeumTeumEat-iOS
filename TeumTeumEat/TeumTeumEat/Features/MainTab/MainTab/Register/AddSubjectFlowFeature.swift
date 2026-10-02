@@ -54,6 +54,7 @@ struct AddSubjectFlowFeature {
         case step(Step.Action)
         case delegate(Delegate)
 
+        @CasePathable
         enum Delegate {
             case completed
             case cancelled

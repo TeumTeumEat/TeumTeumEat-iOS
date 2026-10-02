@@ -42,8 +42,7 @@ struct HistoryDetailSummaryFeature {
         case dismissed
     }
     
-    @Dependency(\.apiClient) var apiClient
-    
+    @Dependency(\.historyClient) var historyClient
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -54,7 +53,7 @@ struct HistoryDetailSummaryFeature {
                 // type, id, date 모두 전달
                 return .run { [type = state.documentType, id = state.historyId, date = state.date] send in
                     do {
-                        let detail = try await apiClient.fetchHistorySummaryDetail(
+                        let detail = try await historyClient.fetchHistorySummaryDetail(
                             type: type,
                             id: id,
                             date: date

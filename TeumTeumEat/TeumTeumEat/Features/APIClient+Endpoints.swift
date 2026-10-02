@@ -727,21 +727,39 @@ extension APIClient {
                 request.httpMethod = "POST"
                 request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
                 request.setValue("0", forHTTPHeaderField: "Content-Length")
-                guard let token = KeyChainManager.shared.getAccessToken() else {
-                    continuation.finish(throwing: APIError.noAccessToken); return
-                }
-                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
                 do {
-                    let (bytes, response) = try await sseSession.bytes(for: request)
-                    guard let http = response as? HTTPURLResponse else {
-                        continuation.finish(throwing: APIError.invalidResponse); return
-                    }
-                    if http.statusCode != 200 {
+                    // 연결 (액세스 토큰 만료(AUTH-002) 시 재발급 후 1회 재연결)
+                    var didRefreshToken = false
+                    var connection: (bytes: URLSession.AsyncBytes, http: HTTPURLResponse)?
+                    while connection == nil {
+                        guard let token = KeyChainManager.shared.getAccessToken() else {
+                            continuation.finish(throwing: APIError.noAccessToken); return
+                        }
+                        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+                        let (bytes, response) = try await sseSession.bytes(for: request)
+                        guard let http = response as? HTTPURLResponse else {
+                            continuation.finish(throwing: APIError.invalidResponse); return
+                        }
+                        if http.statusCode == 200 {
+                            connection = (bytes, http)
+                            break
+                        }
+
                         Log.network.error("\(tag) HTTP 오류: \(http.statusCode)")
                         var data = Data()
                         for try await byte in bytes { data.append(byte) }
-                        if let err = try? JSONDecoder().decode(SSEErrorResponse.self, from: data) {
+                        let err = try? JSONDecoder().decode(SSEErrorResponse.self, from: data)
+
+                        if err?.code == "AUTH-002", !didRefreshToken {
+                            Log.network.debug("\(tag) 액세스 토큰 만료 → 재발급 후 재연결")
+                            didRefreshToken = true
+                            try await self.refreshAccessToken()
+                            continue
+                        }
+
+                        if let err {
                             Log.network.error("\(tag) 서버 에러: code=\(err.code) message=\(err.message)")
                             continuation.finish(throwing: APIError.serverError(
                                 code: err.code, message: err.message, details: nil))
@@ -754,6 +772,8 @@ extension APIClient {
                         }
                         return
                     }
+                    guard let connection else { return }
+                    let (bytes, http) = connection
 
                     Log.network.debug("\(tag) 연결 성공 (status \(http.statusCode)), 라인 수신 시작")
                     Log.network.debug("\(tag) Response Headers: \(http.allHeaderFields)")
