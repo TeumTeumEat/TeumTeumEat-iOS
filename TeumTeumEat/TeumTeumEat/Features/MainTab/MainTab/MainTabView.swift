@@ -70,12 +70,7 @@ struct MainTabView: View {
         .fullScreenCover(
             item: $store.scope(state: \.destination?.addSubject, action: \.destination.addSubject)
         ) { addSubjectStore in
-            AddSubjectView(store: addSubjectStore)
-        }
-        .fullScreenCover(
-            item: $store.scope(state: \.destination?.addSubjectFile, action: \.destination.addSubjectFile)
-        ) { addSubjectFileStore in
-            AddSubjectFileView(store: addSubjectFileStore)
+            AddSubjectFlowView(store: addSubjectStore)
         }
         .fullScreenCover(
             item: $store.scope(state: \.destination?.quizFlow, action: \.destination.quizFlow)

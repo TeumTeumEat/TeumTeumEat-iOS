@@ -15,8 +15,7 @@ struct MainTabFeature {
     @Reducer
     enum Destination {
         case newGoalFlow(NewGoalFlowFeature)
-        case addSubject(AddSubjectFeature)
-        case addSubjectFile(AddSubjectFileFeature)
+        case addSubject(AddSubjectFlowFeature)
         case quizFlow(QuizFlowFeature)
         case myPage(MyPageFeature)
     }
@@ -100,9 +99,9 @@ struct MainTabFeature {
                 state.isRegisterMenuExpanded = false
                 switch item {
                 case .category:
-                    state.destination = .addSubject(AddSubjectFeature.State())
+                    state.destination = .addSubject(AddSubjectFlowFeature.State(contentType: .category))
                 case .fileUpload:
-                    state.destination = .addSubjectFile(AddSubjectFileFeature.State())
+                    state.destination = .addSubject(AddSubjectFlowFeature.State(contentType: .fileUpload))
                 }
                 return .none
 
@@ -184,16 +183,14 @@ struct MainTabFeature {
                 Log.app.debug("퀴즈 플로우 취소")
                 return .send(.home(.onAppear))
 
-            // MARK: - AddSubject / AddSubjectFile
-            case .destination(.presented(.addSubject(.delegate(.completed)))),
-                 .destination(.presented(.addSubjectFile(.delegate(.completed)))):
+            // MARK: - AddSubject
+            case .destination(.presented(.addSubject(.delegate(.completed)))):
                 state.destination = nil
                 Log.app.debug("주제 추가 완료 - 홈 새로고침")
                 state.selectedTab = .home
                 return .send(.home(.onAppear))
 
-            case .destination(.presented(.addSubject(.delegate(.cancelled)))),
-                 .destination(.presented(.addSubjectFile(.delegate(.cancelled)))):
+            case .destination(.presented(.addSubject(.delegate(.cancelled)))):
                 state.destination = nil
                 Log.app.debug("주제 추가 취소 - 화면 닫힘")
                 return .none

@@ -11,22 +11,14 @@ import OnboardingFeature
 struct NewGoalFlowFeature {
     @ObservableState
     struct State: Equatable {
-        var step: Step = .contentSelection
+        // 콘텐츠 선택 화면은 유지 (주제 추가에서 뒤로 오면 선택 상태 그대로)
         var contentSelection: ContentSelectionFeature.State = .init()
-        var addSubject: AddSubjectFeature.State?
-        var addSubjectFile: AddSubjectFileFeature.State?
-
-        enum Step: Equatable {
-            case contentSelection
-            case addSubject
-            case addSubjectFile
-        }
+        var addSubject: AddSubjectFlowFeature.State?
     }
 
     enum Action {
         case contentSelection(ContentSelectionFeature.Action)
-        case addSubject(AddSubjectFeature.Action)
-        case addSubjectFile(AddSubjectFileFeature.Action)
+        case addSubject(AddSubjectFlowFeature.Action)
         case delegate(Delegate)
 
         enum Delegate {
@@ -45,11 +37,9 @@ struct NewGoalFlowFeature {
             case .contentSelection(.nextTapped):
                 switch state.contentSelection.selectedType {
                 case .category:
-                    state.step = .addSubject
-                    state.addSubject = AddSubjectFeature.State()
+                    state.addSubject = AddSubjectFlowFeature.State(contentType: .category)
                 case .fileUpload:
-                    state.step = .addSubjectFile
-                    state.addSubjectFile = AddSubjectFileFeature.State()
+                    state.addSubject = AddSubjectFlowFeature.State(contentType: .fileUpload)
                 case nil:
                     break
                 }
@@ -62,27 +52,15 @@ struct NewGoalFlowFeature {
                 return .send(.delegate(.completed))
 
             case .addSubject(.delegate(.cancelled)):
-                state.step = .contentSelection
                 state.addSubject = nil
                 return .none
 
-            case .addSubjectFile(.delegate(.completed)):
-                return .send(.delegate(.completed))
-
-            case .addSubjectFile(.delegate(.cancelled)):
-                state.step = .contentSelection
-                state.addSubjectFile = nil
-                return .none
-
-            case .contentSelection, .addSubject, .addSubjectFile, .delegate:
+            case .contentSelection, .addSubject, .delegate:
                 return .none
             }
         }
         .ifLet(\.addSubject, action: \.addSubject) {
-            AddSubjectFeature()
-        }
-        .ifLet(\.addSubjectFile, action: \.addSubjectFile) {
-            AddSubjectFileFeature()
+            AddSubjectFlowFeature()
         }
     }
 }
@@ -91,22 +69,12 @@ struct NewGoalFlowView: View {
     let store: StoreOf<NewGoalFlowFeature>
 
     var body: some View {
-        switch store.step {
-        case .contentSelection:
+        if let addSubjectStore = store.scope(state: \.addSubject, action: \.addSubject) {
+            AddSubjectFlowView(store: addSubjectStore)
+                .transition(AnyTransition.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
+        } else {
             ContentSelectionView(store: store.scope(state: \.contentSelection, action: \.contentSelection))
                 .transition(AnyTransition.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .leading)))
-
-        case .addSubject:
-            if let addSubjectStore = store.scope(state: \.addSubject, action: \.addSubject) {
-                AddSubjectView(store: addSubjectStore)
-                    .transition(AnyTransition.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
-            }
-
-        case .addSubjectFile:
-            if let addSubjectFileStore = store.scope(state: \.addSubjectFile, action: \.addSubjectFile) {
-                AddSubjectFileView(store: addSubjectFileStore)
-                    .transition(AnyTransition.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
-            }
         }
     }
 }
