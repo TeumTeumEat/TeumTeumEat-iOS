@@ -95,29 +95,25 @@ struct AddSubjectFlowFeature {
 
             // MARK: - Difficulty Selection
             case .step(.difficulty(.backTapped)):
-                // 난이도에서 뒤로가기 → 첫 단계(카테고리 / 파일)로 복원
+                // 난이도에서 뒤로가기 → 현재 선택 임시저장 후 첫 단계(카테고리 / 파일)로 복원
+                saveDifficulty(&state)
                 state.step = makeFirstStepState(state)
                 return .none
 
             case .step(.difficulty(.nextTapped)):
-                if case let .difficulty(difficulty) = state.step {
-                    if let selected = difficulty.selectedDifficulty {
-                        state.selectedDifficulty = selected.rawValue
-                    }
-                    state.customPrompt = difficulty.customPrompt
-                }
+                saveDifficulty(&state)
                 state.step = .duration(makeDurationState(state))
                 return .none
 
             // MARK: - Duration Selection
             case .step(.duration(.backTapped)):
+                // 기간에서 뒤로가기 → 현재 선택 임시저장 후 난이도로
+                saveDuration(&state)
                 state.step = .difficulty(makeDifficultyState(state))
                 return .none
 
             case .step(.duration(.nextTapped)):
-                if case let .duration(duration) = state.step, let weeks = duration.selectedWeeks {
-                    state.selectedWeeks = weeks.rawValue
-                }
+                saveDuration(&state)
                 state.step = .summary(makeSummaryState(state))
                 return .none
 
@@ -167,6 +163,21 @@ struct AddSubjectFlowFeature {
         state.selectedMainCategory = main
         state.selectedSubCategory = sub
         state.selectedDetailCategory = detail
+    }
+
+    /// 난이도 화면의 현재 선택을 저장 (다음 / 뒤로가기 공통)
+    private func saveDifficulty(_ state: inout State) {
+        guard case let .difficulty(difficulty) = state.step else { return }
+        if let selected = difficulty.selectedDifficulty {
+            state.selectedDifficulty = selected.rawValue
+        }
+        state.customPrompt = difficulty.customPrompt
+    }
+
+    /// 기간 화면의 현재 선택을 저장 (다음 / 뒤로가기 공통)
+    private func saveDuration(_ state: inout State) {
+        guard case let .duration(duration) = state.step, let weeks = duration.selectedWeeks else { return }
+        state.selectedWeeks = weeks.rawValue
     }
 
     /// 첫 단계 화면 복원 (카테고리는 마지막으로 보던 단계까지, 파일은 선택한 파일 정보)

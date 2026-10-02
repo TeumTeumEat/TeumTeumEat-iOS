@@ -164,6 +164,13 @@ public struct OnboardingFeature {
             return .none
 
         case .difficultySelection(.backTapped):
+            // 뒤로가기 시에도 현재 선택 임시저장
+            if let difficultySelection = state.difficultySelection {
+                if let difficulty = difficultySelection.selectedDifficulty {
+                    state.onboardingData.difficulty = difficulty.rawValue
+                }
+                state.onboardingData.customPrompt = difficultySelection.customPrompt
+            }
             state.difficultySelection = nil
             
             if state.onboardingData.contentType == .fileUpload {
@@ -294,6 +301,10 @@ public struct OnboardingFeature {
             
         // DurationSelection
         case .durationSelection(.backTapped):
+            // 뒤로가기 시에도 현재 선택 임시저장
+            if let weeks = state.durationSelection?.selectedWeeks {
+                state.onboardingData.programWeeks = weeks.rawValue
+            }
             state.durationSelection = nil
             
             // Difficulty State 생성 (복원)
