@@ -10,34 +10,39 @@ import ComposableArchitecture
 
 @Reducer
 struct QuizFlowFeature {
+    /// 퀴즈 흐름의 단계 (현재 단계 = 현재 화면 상태)
+    /// 단계가 바뀌면 이전 단계 화면의 effect는 자동으로 취소됨
+    @Reducer
+    enum Step {
+        case summary(ContentSummaryFeature)
+        case quizGuide(QuizGuideFeature)
+        case quiz(QuizFeature)
+        case result(QuizResultFeature)
+        case detailResult(QuizDetailResultFeature)
+        case reviewSummary(QuizReviewSummaryFeature)
+        case complete(QuizCompleteFeature)
+        case subjectComplete(QuizSubjectCompleteFeature)
+    }
+
+    /// 주제 완료 화면에서 띄우는 새 주제 추가 화면
+    @Reducer
+    enum Destination {
+        case addSubject(AddSubjectFeature)
+        case addSubjectFile(AddSubjectFileFeature)
+    }
+
     @ObservableState
     struct State: Equatable {
+        var step: Step.State
+
+        // 단계 사이에 공유하는 값
         var quizzes: [UserQuiz]
         var isQuizGuideSeen: Bool
+        var summaryText: String = ""
+        var submitResults: [Int: SubmitQuizAnswerData] = [:]
 
-        var currentStep: Step
-        var contentSummary: ContentSummaryFeature.State
-        var quizGuide: QuizGuideFeature.State?
-        var quiz: QuizFeature.State?
-        var result: QuizResultFeature.State?
-        var detailResult: QuizDetailResultFeature.State?
-        var reviewSummary: QuizReviewSummaryFeature.State?
-        var complete: QuizCompleteFeature.State?
-        var subjectComplete: QuizSubjectCompleteFeature.State?
-        var addSubject: AddSubjectFeature.State?
-        var addSubjectFile: AddSubjectFileFeature.State?
+        @Presents var destination: Destination.State?
 
-        enum Step {
-            case summary
-            case quizGuide
-            case quiz
-            case result
-            case detailResult
-            case reviewSummary
-            case complete
-            case subjectComplete
-        }
-        
         init(
             quizzes: [UserQuiz],
             summaryData: ContentSummaryFeature.State,
@@ -45,22 +50,13 @@ struct QuizFlowFeature {
         ) {
             self.quizzes = quizzes
             self.isQuizGuideSeen = isQuizGuideSeen
-            self.currentStep = .summary
-            self.contentSummary = summaryData
+            self.step = .summary(summaryData)
         }
     }
-    
+
     enum Action {
-        case contentSummary(ContentSummaryFeature.Action)
-        case quizGuide(QuizGuideFeature.Action)
-        case quiz(QuizFeature.Action)
-        case result(QuizResultFeature.Action)
-        case detailResult(QuizDetailResultFeature.Action)
-        case reviewSummary(QuizReviewSummaryFeature.Action)
-        case complete(QuizCompleteFeature.Action)
-        case subjectComplete(QuizSubjectCompleteFeature.Action)
-        case addSubject(AddSubjectFeature.Action)
-        case addSubjectFile(AddSubjectFileFeature.Action)
+        case step(Step.Action)
+        case destination(PresentationAction<Destination.Action>)
         case completeSetResponse(Result<Void, Error>)
         case fetchStatusForCompletionResponse(Result<UserQuizStatusData, Error>)
         case delegate(Delegate)
@@ -75,71 +71,35 @@ struct QuizFlowFeature {
             case history
         }
     }
-    
+
     @Dependency(\.apiClient) var apiClient
 
     var body: some ReducerOf<Self> {
-        Scope(state: \.contentSummary, action: \.contentSummary) {
-            ContentSummaryFeature()
+        Scope(state: \.step, action: \.step) {
+            Step.body
         }
-        quizCoreReducer
-    }
 
-    private var quizCoreReducer: some ReducerOf<Self> {
-        quizBaseReducer
-            .ifLet(\.subjectComplete, action: \.subjectComplete) { QuizSubjectCompleteFeature() }
-            .ifLet(\.addSubject, action: \.addSubject) { AddSubjectFeature() }
-            .ifLet(\.addSubjectFile, action: \.addSubjectFile) { AddSubjectFileFeature() }
-    }
-
-    private var quizBaseReducer: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .contentSummary(.delegate(.startQuiz(let quizzes, _))):
+            // MARK: - Summary → QuizGuide / Quiz
+            case .step(.summary(.delegate(.startQuiz(let quizzes, _)))):
+                if case let .summary(summary) = state.step {
+                    state.summaryText = summary.summaryText  // 결과 화면의 "글 보기"에서 사용
+                }
                 state.quizzes = quizzes  // ContentSummary에서 로드한 실제 퀴즈 목록 저장
                 if !state.isQuizGuideSeen {
-                    state.currentStep = .quizGuide
-                    state.quizGuide = QuizGuideFeature.State()
+                    state.step = .quizGuide(QuizGuideFeature.State())
                     Log.quiz.debug("QuizFlow: 퀴즈 가이드로 이동 (isQuizGuideSeen=false)")
                     return .none
-                } else {
-                    state.currentStep = .quiz
-                    let convertedQuizzes = quizzes.map { Quiz(from: $0) }
-                    state.quiz = QuizFeature.State(quizzes: convertedQuizzes)
-                    AnalyticsManager.logQuizStart(quizCount: quizzes.count)
-                    Log.quiz.debug("QuizFlow: 퀴즈로 바로 이동 - complete-set 호출")
-                    return .run { send in
-                        do {
-                            try await apiClient.completeQuizSet()
-                            await send(.completeSetResponse(.success(())))
-                        } catch {
-                            await send(.completeSetResponse(.failure(error)))
-                        }
-                    }
                 }
+                return startQuiz(&state)
 
-            case .contentSummary(.delegate(.cancelled)):
+            case .step(.summary(.delegate(.cancelled))):
                 Log.quiz.debug("QuizFlow: ContentSummary에서 취소")
                 return .send(.delegate(.cancelled))
 
-            case .quizGuide(.delegate(.startQuiz)):
-                guard !state.quizzes.isEmpty else {
-                    Log.quiz.debug("[QuizFlow] 퀴즈가 없어 시작 불가 - completeQuizSet 호출 건너뜀")
-                    return .none
-                }
-                state.currentStep = .quiz
-                let convertedQuizzes = state.quizzes.map { Quiz(from: $0) }
-                state.quiz = QuizFeature.State(quizzes: convertedQuizzes)
-                AnalyticsManager.logQuizStart(quizCount: state.quizzes.count)
-                Log.quiz.debug("QuizFlow: 안내 완료, 퀴즈 시작 - complete-set 호출")
-                return .run { send in
-                    do {
-                        try await apiClient.completeQuizSet()
-                        await send(.completeSetResponse(.success(())))
-                    } catch {
-                        await send(.completeSetResponse(.failure(error)))
-                    }
-                }
+            case .step(.quizGuide(.delegate(.startQuiz))):
+                return startQuiz(&state)
 
             case .completeSetResponse(.success):
                 Log.quiz.debug("[QuizFlow] complete-set 성공")
@@ -148,57 +108,54 @@ struct QuizFlowFeature {
             case .completeSetResponse(.failure(let error)):
                 Log.quiz.error("[QuizFlow] complete-set 실패: \(error)")
                 return .none
-                
-            case .quiz(.delegate(.dismissed)):
+
+            // MARK: - Quiz → Result
+            case .step(.quiz(.delegate(.dismissed))):
                 Log.quiz.debug("QuizFlow: 퀴즈 뒤로가기 → 취소")
                 return .send(.delegate(.cancelled))
 
-            case .quiz(.delegate(.completed)):
-                state.currentStep = .result
-
-                let quizState = state.quiz
-                let submitResults = quizState?.submitResults ?? [:]
-                let correctCount = submitResults.values.filter { $0.isCorrect }.count
+            case .step(.quiz(.delegate(.completed))):
+                if case let .quiz(quizState) = state.step {
+                    state.submitResults = quizState.submitResults
+                }
+                let correctCount = state.submitResults.values.filter { $0.isCorrect }.count
                 AnalyticsManager.logQuizComplete(quizCount: state.quizzes.count, correctCount: correctCount)
 
-                state.result = QuizResultFeature.State(
-                    submitResults: submitResults,
+                state.step = .result(QuizResultFeature.State(
+                    submitResults: state.submitResults,
                     totalQuizCount: state.quizzes.count
-                )
+                ))
                 Log.quiz.debug("QuizFlow: 결과 화면으로 이동")
                 return .none
-                
-            case .result(.delegate(.showDetailResults)):
-                state.currentStep = .detailResult
-                
-                let resultState = state.result
-                state.detailResult = QuizDetailResultFeature.State(
-                    quizzes: state.quizzes,
-                    submitResults: resultState?.submitResults ?? [:],
-                    totalQuizCount: state.quizzes.count
-                )
+
+            // MARK: - Result
+            case .step(.result(.delegate(.showDetailResults))):
+                state.step = .detailResult(makeDetailResultState(state))
                 Log.quiz.debug("QuizFlow: 상세 결과로 이동")
                 return .none
-                
-            case .result(.delegate(.navigateToHome)):
+
+            case .step(.result(.delegate(.navigateToHome))):
                 Log.quiz.debug("QuizFlow: 홈으로 이동")
                 return .send(.delegate(.completed(destination: .home)))
-                
-            case .result(.delegate(.navigateToHistory)):
+
+            case .step(.result(.delegate(.navigateToHistory))):
                 Log.quiz.debug("QuizFlow: 히스토리로 이동")
                 return .send(.delegate(.completed(destination: .history)))
-                
-            // DetailResult → ReviewSummary (글 보기)
-            case .detailResult(.delegate(.showReviewSummary)):
-                state.currentStep = .reviewSummary
-                state.reviewSummary = QuizReviewSummaryFeature.State(
-                    summaryText: state.contentSummary.summaryText
-                )
+
+            // MARK: - DetailResult → ReviewSummary (글 보기)
+            case .step(.detailResult(.delegate(.showReviewSummary))):
+                state.step = .reviewSummary(QuizReviewSummaryFeature.State(summaryText: state.summaryText))
                 Log.quiz.debug("QuizFlow: 요약본 다시 보기로 이동")
                 return .none
-                
-            // DetailResult → Complete or SubjectComplete (다음으로)
-            case .detailResult(.delegate(.showComplete)):
+
+            // ReviewSummary → 뒤로가기 (DetailResult로, 공유 값으로 다시 생성)
+            case .step(.reviewSummary(.delegate(.back))):
+                state.step = .detailResult(makeDetailResultState(state))
+                Log.quiz.debug("QuizFlow: 상세 결과로 복귀")
+                return .none
+
+            // MARK: - DetailResult → Complete or SubjectComplete (다음으로)
+            case .step(.detailResult(.delegate(.showComplete))):
                 return .run { send in
                     let result = await Result { try await apiClient.fetchUserQuizStatus() }
                     await send(.fetchStatusForCompletionResponse(result))
@@ -206,169 +163,126 @@ struct QuizFlowFeature {
 
             case .fetchStatusForCompletionResponse(.success(let status)):
                 if status.isCompleted {
-                    state.currentStep = .subjectComplete
-                    state.subjectComplete = QuizSubjectCompleteFeature.State()
+                    state.step = .subjectComplete(QuizSubjectCompleteFeature.State())
                     Log.quiz.debug("QuizFlow: 주제 완료 화면으로 이동")
                 } else {
-                    state.currentStep = .complete
-                    state.complete = QuizCompleteFeature.State()
+                    state.step = .complete(QuizCompleteFeature.State())
                     Log.quiz.debug("QuizFlow: 일반 완료 화면으로 이동")
                 }
                 return .none
 
             case .fetchStatusForCompletionResponse(.failure(let error)):
                 Log.quiz.error("QuizFlow: status 조회 실패, 일반 완료 화면으로 fallback: \(error)")
-                state.currentStep = .complete
-                state.complete = QuizCompleteFeature.State()
+                state.step = .complete(QuizCompleteFeature.State())
                 return .none
-                
-            // ReviewSummary → 뒤로가기 (DetailResult로)
-            case .reviewSummary(.delegate(.back)):
-                state.currentStep = .detailResult
-                Log.quiz.debug("QuizFlow: 상세 결과로 복귀")
-                return .none
-                
-            // Complete → 홈으로
-            case .complete(.delegate(.navigateToHome)):
+
+            // MARK: - Complete / SubjectComplete
+            case .step(.complete(.delegate(.navigateToHome))),
+                 .step(.subjectComplete(.delegate(.navigateToHome))):
                 Log.quiz.debug("QuizFlow: 홈으로 이동")
                 return .send(.delegate(.completed(destination: .home)))
-                
-            // Complete → 히스토리로
-            case .complete(.delegate(.navigateToHistory)):
+
+            case .step(.complete(.delegate(.navigateToHistory))):
                 Log.quiz.debug("QuizFlow: 히스토리로 이동")
                 return .send(.delegate(.completed(destination: .history)))
-                
-            // SubjectComplete → 홈으로
-            case .subjectComplete(.delegate(.navigateToHome)):
-                Log.quiz.debug("QuizFlow: 홈으로 이동")
+
+            // SubjectComplete → 새 주제 추가 (QuizFlow 내부에서 띄움)
+            case .step(.subjectComplete(.delegate(.navigateToFileUpload))):
+                state.destination = .addSubjectFile(AddSubjectFileFeature.State())
+                return .none
+
+            case .step(.subjectComplete(.delegate(.navigateToCategory))):
+                state.destination = .addSubject(AddSubjectFeature.State())
+                return .none
+
+            // 새 주제 추가 완료 → 홈으로
+            case .destination(.presented(.addSubject(.delegate(.completed)))),
+                 .destination(.presented(.addSubjectFile(.delegate(.completed)))):
+                state.destination = nil
                 return .send(.delegate(.completed(destination: .home)))
 
-            // SubjectComplete → 파일 업로드 (QuizFlow 내부에서 띄움)
-            case .subjectComplete(.delegate(.navigateToFileUpload)):
-                state.addSubjectFile = AddSubjectFileFeature.State()
+            // 새 주제 추가 취소 → 주제 완료 화면으로 복귀
+            case .destination(.presented(.addSubject(.delegate(.cancelled)))),
+                 .destination(.presented(.addSubjectFile(.delegate(.cancelled)))):
+                state.destination = nil
                 return .none
 
-            // SubjectComplete → 카테고리 선택 (QuizFlow 내부에서 띄움)
-            case .subjectComplete(.delegate(.navigateToCategory)):
-                state.addSubject = AddSubjectFeature.State()
-                return .none
-
-            // AddSubject 완료 → 홈으로
-            case .addSubject(.delegate(.completed)):
-                state.addSubject = nil
-                return .send(.delegate(.completed(destination: .home)))
-
-            // AddSubject 취소 → SubjectFin으로 복귀
-            case .addSubject(.delegate(.cancelled)):
-                state.addSubject = nil
-                return .none
-
-            // AddSubjectFile 완료 → 홈으로
-            case .addSubjectFile(.delegate(.completed)):
-                state.addSubjectFile = nil
-                return .send(.delegate(.completed(destination: .home)))
-
-            // AddSubjectFile 취소 → SubjectFin으로 복귀
-            case .addSubjectFile(.delegate(.cancelled)):
-                state.addSubjectFile = nil
-                return .none
-
-            case .contentSummary, .quizGuide, .quiz, .result, .detailResult, .reviewSummary, .complete, .subjectComplete, .addSubject, .addSubjectFile, .delegate:
+            case .step, .destination, .delegate:
                 return .none
             }
         }
-        .ifLet(\.quizGuide, action: \.quizGuide) {
-            QuizGuideFeature()
+        .ifLet(\.$destination, action: \.destination)
+    }
+
+    /// 퀴즈 시작 (Summary / QuizGuide 공통) - 일일 퀴즈 횟수 차감(complete-set) 포함
+    private func startQuiz(_ state: inout State) -> Effect<Action> {
+        // 퀴즈 로딩 실패 등으로 목록이 비어 있으면 빈 퀴즈 화면으로 진입하지 않음
+        guard !state.quizzes.isEmpty else {
+            Log.quiz.error("[QuizFlow] 퀴즈가 없어 시작 불가 - completeQuizSet 호출 건너뜀")
+            return .none
         }
-        .ifLet(\.quiz, action: \.quiz) {
-            QuizFeature()
+        state.step = .quiz(QuizFeature.State(quizzes: state.quizzes.map { Quiz(from: $0) }))
+        AnalyticsManager.logQuizStart(quizCount: state.quizzes.count)
+        Log.quiz.debug("QuizFlow: 퀴즈 시작 - complete-set 호출")
+        return .run { send in
+            await send(.completeSetResponse(Result { try await apiClient.completeQuizSet() }))
         }
-        .ifLet(\.result, action: \.result) {
-            QuizResultFeature()
-        }
-        .ifLet(\.detailResult, action: \.detailResult) {
-            QuizDetailResultFeature()
-        }
-        .ifLet(\.reviewSummary, action: \.reviewSummary) {
-            QuizReviewSummaryFeature()
-        }
-        .ifLet(\.complete, action: \.complete) {
-            QuizCompleteFeature()
-        }
+    }
+
+    private func makeDetailResultState(_ state: State) -> QuizDetailResultFeature.State {
+        QuizDetailResultFeature.State(
+            quizzes: state.quizzes,
+            submitResults: state.submitResults,
+            totalQuizCount: state.quizzes.count
+        )
     }
 }
 
+extension QuizFlowFeature.Step.State: Equatable {}
+extension QuizFlowFeature.Destination.State: Equatable {}
+
 // MARK: - View
 struct QuizFlowView: View {
-    let store: StoreOf<QuizFlowFeature>
-    
+    @Bindable var store: StoreOf<QuizFlowFeature>
+
     var body: some View {
         Group {
-            switch store.currentStep {
-            case .summary:
-                ContentSummaryView(
-                    store: store.scope(
-                        state: \.contentSummary,
-                        action: \.contentSummary
-                    )
-                )
-                
-            case .quizGuide:
-                if let quizGuideStore = store.scope(state: \.quizGuide, action: \.quizGuide) {
-                    QuizGuideView(store: quizGuideStore)
-                }
-                
-            case .quiz:
-                if let quizStore = store.scope(state: \.quiz, action: \.quiz) {
-                    QuizView(store: quizStore)
-                }
-                
-            case .result:
-                if let resultStore = store.scope(state: \.result, action: \.result) {
-                    QuizResultView(store: resultStore)
-                }
-                
-            case .detailResult:
-                if let detailResultStore = store.scope(state: \.detailResult, action: \.detailResult) {
-                    QuizDetailResultView(store: detailResultStore)
-                }
-                
-            case .reviewSummary:
-                if let reviewSummaryStore = store.scope(state: \.reviewSummary, action: \.reviewSummary) {
-                    QuizReviewSummaryView(store: reviewSummaryStore)
-                }
-                
-            case .complete:
-                if let completeStore = store.scope(state: \.complete, action: \.complete) {
-                    QuizCompleteView(store: completeStore)
-                }
+            switch store.scope(state: \.step, action: \.step).case {
+            case let .summary(summaryStore):
+                ContentSummaryView(store: summaryStore)
 
-            case .subjectComplete:
-                if let subjectCompleteStore = store.scope(state: \.subjectComplete, action: \.subjectComplete) {
-                    SubjectFinView(store: subjectCompleteStore)
-                }
+            case let .quizGuide(quizGuideStore):
+                QuizGuideView(store: quizGuideStore)
+
+            case let .quiz(quizStore):
+                QuizView(store: quizStore)
+
+            case let .result(resultStore):
+                QuizResultView(store: resultStore)
+
+            case let .detailResult(detailResultStore):
+                QuizDetailResultView(store: detailResultStore)
+
+            case let .reviewSummary(reviewSummaryStore):
+                QuizReviewSummaryView(store: reviewSummaryStore)
+
+            case let .complete(completeStore):
+                QuizCompleteView(store: completeStore)
+
+            case let .subjectComplete(subjectCompleteStore):
+                SubjectFinView(store: subjectCompleteStore)
             }
         }
         // 단계 전환 시 opacity 애니메이션을 쓰면 fullScreenCover 위에서 화면이 검게 번쩍이므로 즉시 전환
         .fullScreenCover(
-            isPresented: Binding(
-                get: { store.addSubject != nil },
-                set: { _ in }
-            )
-        ) {
-            if let addSubjectStore = store.scope(state: \.addSubject, action: \.addSubject) {
-                AddSubjectView(store: addSubjectStore)
-            }
+            item: $store.scope(state: \.destination?.addSubject, action: \.destination.addSubject)
+        ) { addSubjectStore in
+            AddSubjectView(store: addSubjectStore)
         }
         .fullScreenCover(
-            isPresented: Binding(
-                get: { store.addSubjectFile != nil },
-                set: { _ in }
-            )
-        ) {
-            if let addSubjectFileStore = store.scope(state: \.addSubjectFile, action: \.addSubjectFile) {
-                AddSubjectFileView(store: addSubjectFileStore)
-            }
+            item: $store.scope(state: \.destination?.addSubjectFile, action: \.destination.addSubjectFile)
+        ) { addSubjectFileStore in
+            AddSubjectFileView(store: addSubjectFileStore)
         }
     }
 }

@@ -133,8 +133,9 @@ struct ContentSummaryView: View {
                                     .background(Color.blue500)
                                     .cornerRadius(12)
                             }
-                            .disabled(store.isStreaming)
-                            .opacity(store.isStreaming ? 0.5 : 1.0)
+                            // 퀴즈 로딩 실패로 목록이 비어 있으면 시작 불가
+                            .disabled(store.isStreaming || store.quizzes.isEmpty)
+                            .opacity(store.isStreaming || store.quizzes.isEmpty ? 0.5 : 1.0)
                             .padding(.horizontal, 20)
                         }
                     }
