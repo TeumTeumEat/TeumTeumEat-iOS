@@ -47,6 +47,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         
         // Firebase 초기화
+        // 콘솔에 [FirebaseAnalytics][I-ACS...] 정보 로그가 과도하게 찍히지 않도록 에러만 출력 (configure 전에 설정해야 적용됨)
+        FirebaseConfiguration.shared.setLoggerLevel(.error)
         FirebaseApp.configure()
 
         // AdMob 초기화
