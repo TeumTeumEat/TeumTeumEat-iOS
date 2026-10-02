@@ -8,7 +8,6 @@
 import SwiftUI
 import ComposableArchitecture
 import OnboardingFeature
-import WidgetKit
 
 @Reducer
 struct HistoryFeature {
@@ -136,19 +135,6 @@ struct HistoryFeature {
                  state.fireCount = data.currentStreak
                  state.stampCount = data.totalStamps
                  Log.history.debug("Calendar data loaded: \(data.currentStreak) stamped dates, total: \(data.totalStamps)")
-
-                 // App Group에 위젯 데이터 저장
-                 if let userDefaults = UserDefaults(suiteName: "group.com.TeumTeumEat") {
-                     let today = {
-                         let formatter = DateFormatter()
-                         formatter.dateFormat = "yyyy-MM-dd"
-                         return formatter.string(from: Date())
-                     }()
-                     userDefaults.set(data.currentStreak, forKey: "widget_streak")
-                     userDefaults.set(data.totalStamps, forKey: "widget_totalStamps")
-                     userDefaults.set(data.stampedDates.contains(today), forKey: "widget_studiedToday")
-                 }
-                 WidgetCenter.shared.reloadAllTimelines()
                  return .none
 
              case .calendarDataLoaded(.failure(let error)):
