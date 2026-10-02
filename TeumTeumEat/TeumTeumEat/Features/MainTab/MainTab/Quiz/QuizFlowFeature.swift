@@ -282,7 +282,6 @@ struct QuizFlowView: View {
 
 import SwiftUI
 import ComposableArchitecture
-import WidgetKit
 
 @Reducer
 struct QuizFeature {
@@ -394,10 +393,6 @@ struct QuizFeature {
                 
                 if state.isLastQuiz {
                     state.isCompleted = true
-                    if let userDefaults = UserDefaults(suiteName: "group.com.TeumTeumEat") {
-                        userDefaults.set(true, forKey: "widget_studiedToday")
-                    }
-                    WidgetCenter.shared.reloadAllTimelines()
                     return .none
                 } else {
                     state.currentIndex += 1
