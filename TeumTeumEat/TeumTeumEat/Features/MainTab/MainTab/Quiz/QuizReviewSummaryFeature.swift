@@ -33,7 +33,7 @@ struct QuizReviewSummaryFeature {
         Reduce { state, action in
             switch action {
             case .backButtonTapped:
-                print("QuizReviewSummary: 뒤로가기")
+                Log.quiz.debug("QuizReviewSummary: 뒤로가기")
                 return .send(.delegate(.back))
                 
             case .delegate:
@@ -123,11 +123,11 @@ struct QuizCompleteFeature {
         Reduce { state, action in
             switch action {
             case .homeButtonTapped:
-                print("QuizComplete: 홈으로 이동")
+                Log.quiz.debug("QuizComplete: 홈으로 이동")
                 return .send(.delegate(.navigateToHome))
                 
             case .historyButtonTapped:
-                print("QuizComplete: 히스토리로 이동")
+                Log.quiz.debug("QuizComplete: 히스토리로 이동")
                 return .send(.delegate(.navigateToHistory))
                 
             case .delegate:

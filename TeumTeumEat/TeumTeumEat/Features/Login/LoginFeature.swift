@@ -51,26 +51,26 @@ struct LoginFeature {
         Reduce { state, action in
             switch action {
             case .kakaoLoginTapped:
-                print("카카오 로그인 버튼 탭")
+                Log.auth.debug("카카오 로그인 버튼 탭")
                 state.isLoading = true
                 state.errorMessage = nil
                 
                 return .run { send in
                     do {
-                        print("카카오 SDK 로그인 시작...")
+                        Log.auth.debug("카카오 SDK 로그인 시작...")
                         let kakaoIdToken = try await loginWithKakaoSDK()
-                        print("카카오 SDK 로그인 성공!")
-                        print("Token Length: \(kakaoIdToken.count)")
-                        print("서버 로그인 시도 (termsAgreed: false)")
+                        Log.auth.debug("카카오 SDK 로그인 성공!")
+                        Log.auth.debug("Token Length: \(kakaoIdToken.count)")
+                        Log.auth.debug("서버 로그인 시도 (termsAgreed: false)")
                         await send(.loginAttempt(idToken: kakaoIdToken, authCode: nil, provider: .kakao, termsAgreed: false, name: nil))
                     } catch {
-                        print("카카오 로그인 전체 실패:", error)
+                        Log.auth.error("카카오 로그인 전체 실패: \(error)")
                         await send(.loginResponse(.failure(error)))
                     }
                 }
                 
             case .appleLoginSuccess(let idToken, let authCode, let name):
-                print("애플 로그인 성공 - 서버 로그인 시도")
+                Log.auth.debug("애플 로그인 성공 - 서버 로그인 시도")
                 return .send(.loginAttempt(
                     idToken: idToken,
                     authCode: authCode,
@@ -82,7 +82,7 @@ struct LoginFeature {
             case .appleLoginFailure(let error):
                 state.isLoading = false
                 state.errorMessage = error.localizedDescription
-                print("애플 로그인 실패: \(error)")
+                Log.auth.error("애플 로그인 실패: \(error)")
                 return .none
                 
             case .loginAttempt(let idToken, let authCode, let provider, let termsAgreed, let name):
@@ -93,9 +93,9 @@ struct LoginFeature {
                 state.pendingProvider = provider
                 state.pendingName = name
                 
-                print("서버 로그인 요청")
-                print("idToken: \(String(idToken.prefix(20)))...")
-                print("termsAgreed: \(termsAgreed)")
+                Log.auth.debug("서버 로그인 요청")
+                Log.auth.debug("idToken: \(String(idToken.prefix(20)))...")
+                Log.auth.debug("termsAgreed: \(termsAgreed)")
                 
                 return .run { send in
                     do {
@@ -107,24 +107,24 @@ struct LoginFeature {
                             name: name
                         )
                         
-                        print("서버 응답 수신")
-                        print("Response Code: \(response.code)")
-                        print("Message: \(response.message)")
+                        Log.auth.debug("서버 응답 수신")
+                        Log.auth.debug("Response Code: \(response.code)")
+                        Log.auth.debug("Message: \(response.message)")
                         
                         if let data = response.data {
-                            print("isOnboardingCompleted: \(data.isOnboardingCompleted)")
+                            Log.auth.debug("isOnboardingCompleted: \(data.isOnboardingCompleted)")
                         }
                         await send(.loginResponse(.success(response)))
                     } catch {
                         await send(.loginResponse(.failure(error)))
-                        print("서버 로그인 실패")
-                        print("Error: \(error.localizedDescription)")
+                        Log.auth.error("서버 로그인 실패")
+                        Log.auth.error("Error: \(error.localizedDescription)")
                     }
                 }
                 
             case .loginResponse(.success(let response)):
                 state.isLoading = false
-                print("응답 처리")
+                Log.auth.debug("응답 처리")
                 if response.code == "OK" {
                     // 로그인 성공 (기존 유저 또는 약관 동의 완료한 신규 유저)
                     guard let data = response.data else {
@@ -133,10 +133,10 @@ struct LoginFeature {
                     }
 
                     // 토큰 저장
-                    print("토큰 저장 중...")
+                    Log.auth.debug("토큰 저장 중...")
                     KeyChainManager.shared.saveAccessToken(data.accessToken)
                     KeyChainManager.shared.saveRefreshToken(data.refreshToken)
-                    print("토큰 저장 완료")
+                    Log.auth.debug("토큰 저장 완료")
 
                     // Analytics
                     let method = state.pendingProvider?.rawValue.lowercased() ?? "unknown"
@@ -146,11 +146,11 @@ struct LoginFeature {
                         AnalyticsManager.logLogin(method: method)
                     }
 
-                    print("다음 화면 분기:")
+                    Log.auth.debug("다음 화면 분기:")
                     if data.isOnboardingCompleted {
-                        print("   → 메인 화면 (온보딩 완료)")
+                        Log.auth.debug("   → 메인 화면 (온보딩 완료)")
                     } else {
-                        print("   → 온보딩 화면 (온보딩 미완료)")
+                        Log.auth.debug("   → 온보딩 화면 (온보딩 미완료)")
                     }
 
                     return .send(.delegate(.loginSuccess(
@@ -161,7 +161,7 @@ struct LoginFeature {
 
                 } else if response.code == "AUTH-006" {
                     // 신규 유저 → 약관 동의 필요
-                    print("약관 동의 필요 (신규 유저)")
+                    Log.auth.debug("약관 동의 필요 (신규 유저)")
                     state.isNewUser = true
                     state.showTermsSheet = true
                     return .none
@@ -175,7 +175,7 @@ struct LoginFeature {
             case .loginResponse(.failure(let error)):
                 state.isLoading = false
                 state.errorMessage = error.localizedDescription
-                print("서버 로그인 실패: \(error)")
+                Log.auth.error("서버 로그인 실패: \(error)")
                 return .none
                 
             case .dismissTermsSheet:
@@ -183,7 +183,7 @@ struct LoginFeature {
                 return .none
                 
             case .agreeTermsTapped:
-                print("약관 동의 확인 - 재로그인 시도")
+                Log.auth.debug("약관 동의 확인 - 재로그인 시도")
                 state.showTermsSheet = false
                 
                 guard let idToken = state.pendingIdToken,
@@ -217,7 +217,7 @@ extension LoginFeature {
                     if let error = error {
                         continuation.resume(throwing: error)
                     } else if let token = oauthToken {
-                        print("카카오톡 로그인 성공")
+                        Log.auth.debug("카카오톡 로그인 성공")
                         continuation.resume(returning: token.idToken ?? "")
                     }
                 }
@@ -226,7 +226,7 @@ extension LoginFeature {
                     if let error = error {
                         continuation.resume(throwing: error)
                     } else if let token = oauthToken {
-                        print("카카오 계정 로그인 성공")
+                        Log.auth.debug("카카오 계정 로그인 성공")
                         continuation.resume(returning: token.idToken ?? "")
                     }
                 }
@@ -235,11 +235,11 @@ extension LoginFeature {
     }
     
     private func loginToServer(idToken: String, authCode: String?, provider: SocialProvider, termsAgreed: Bool, name: String?) async throws -> SocialLoginResponse {
-        print("서버 API 호출 시작")
+        Log.auth.debug("서버 API 호출 시작")
         let baseURL = Config.baseURL
         let endPoint = "/api/v1/auth/oauth/register?provider=\(provider.rawValue)"
         let fullPath = baseURL + endPoint
-        print("fullpath: \(fullPath)")
+        Log.auth.debug("fullpath: \(fullPath)")
         
         let url = URL(string: "\(fullPath)")!
         var request = URLRequest(url: url)
@@ -257,69 +257,69 @@ extension LoginFeature {
 
         if let headers = request.allHTTPHeaderFields {
             for (key, value) in headers {
-                print("   \(key): \(value)")
+                Log.auth.debug("   \(key): \(value)")
             }
         } else {
-            print("헤더 없음")
+            Log.auth.debug("헤더 없음")
         }
         
-        print("Request Body:")
+        Log.auth.debug("Request Body:")
         if let bodyData = request.httpBody,
            let bodyString = String(data: bodyData, encoding: .utf8) {
-            print("   Raw Data: \(bodyString)")
+            Log.auth.debug("   Raw Data: \(bodyString)")
             
             if let jsonObject = try? JSONSerialization.jsonObject(with: bodyData),
                let prettyData = try? JSONSerialization.data(withJSONObject: jsonObject, options: .prettyPrinted),
                let prettyString = String(data: prettyData, encoding: .utf8) {
-                print("\n   Formatted JSON:")
-                print(prettyString.split(separator: "\n").map { "   \($0)" }.joined(separator: "\n"))
+                Log.auth.debug("\n   Formatted JSON:")
+                Log.auth.debug(prettyString.split(separator: "\n").map { "   \($0)" }.joined(separator: "\n"))
             }
         } else {
-            print("바디 없음")
+            Log.auth.debug("바디 없음")
         }
         
-        print("Request Body 구조:")
-        print("   idToken: \(String(idToken.prefix(30)))... (길이: \(idToken.count))")
-        print("   authCode: \(authCode != nil ? "\(String(authCode!.prefix(30)))... (길이: \(authCode!.count))" : "nil")")
-        print("   termsAgreed: \(termsAgreed)")
-        print("   name: \(name ?? "nil")")
+        Log.auth.debug("Request Body 구조:")
+        Log.auth.debug("   idToken: \(String(idToken.prefix(30)))... (길이: \(idToken.count))")
+        Log.auth.debug("   authCode: \(authCode != nil ? "\(String(authCode!.prefix(30)))... (길이: \(authCode!.count))" : "nil")")
+        Log.auth.debug("   termsAgreed: \(termsAgreed)")
+        Log.auth.debug("   name: \(name ?? "nil")")
         
         
         let (data, httpResponse) = try await URLSession.shared.data(for: request)
         
-        print("서버 응답 수신")
+        Log.auth.debug("서버 응답 수신")
         
         if let httpResponse = httpResponse as? HTTPURLResponse {
-            print("HTTP Status Code: \(httpResponse.statusCode)")
+            Log.auth.debug("HTTP Status Code: \(httpResponse.statusCode)")
             
-            print("Response Headers:")
+            Log.auth.debug("Response Headers:")
             for (key, value) in httpResponse.allHeaderFields {
-                print("   \(key): \(value)")
+                Log.auth.debug("   \(key): \(value)")
             }
         }
         
-        print("Response Body:")
+        Log.auth.debug("Response Body:")
         
         if let jsonString = String(data: data, encoding: .utf8) {
-            print("\n   Raw JSON:")
-            print("   \(jsonString)")
+            Log.auth.debug("\n   Raw JSON:")
+            Log.auth.debug("   \(jsonString)")
             
             if let jsonObject = try? JSONSerialization.jsonObject(with: data),
                let prettyData = try? JSONSerialization.data(withJSONObject: jsonObject, options: .prettyPrinted),
                let prettyString = String(data: prettyData, encoding: .utf8) {
-                print("\n   Formatted JSON:")
-                print(prettyString.split(separator: "\n").map { "   \($0)" }.joined(separator: "\n"))
+                Log.auth.debug("\n   Formatted JSON:")
+                Log.auth.debug(prettyString.split(separator: "\n").map { "   \($0)" }.joined(separator: "\n"))
             }
         }
 
-        print("JSON Decoding")
+        Log.auth.debug("JSON Decoding")
         let response = try JSONDecoder().decode(SocialLoginResponse.self, from: data)
         
-        print("Decode 성공!")
-        print("   code: \(response.code)")
-        print("   message: \(response.message)")
+        Log.auth.debug("Decode 성공!")
+        Log.auth.debug("   code: \(response.code)")
+        Log.auth.debug("   message: \(response.message)")
         if let data = response.data {
-            print("   data.isOnboardingCompleted: \(data.isOnboardingCompleted)")
+            Log.auth.debug("   data.isOnboardingCompleted: \(data.isOnboardingCompleted)")
         }
         return response
     }

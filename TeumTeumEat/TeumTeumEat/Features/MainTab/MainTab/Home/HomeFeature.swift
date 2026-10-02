@@ -135,7 +135,7 @@ struct HomeFeature {
                 return .none
 
             case .fetchCalendarHistoryResponse(.failure(let error)):
-                print("[Home] 캘린더 조회 실패: \(error)")
+                Log.home.error("[Home] 캘린더 조회 실패: \(error)")
                 return .none
                 
             // Step 1 완료 → Step 2 시작
@@ -146,7 +146,7 @@ struct HomeFeature {
 
                 state.currentGoal = goal
 
-                print("[Home] Step1 완료 - type: \(goal.type)")
+                Log.home.debug("[Home] Step1 완료 - type: \(goal.type)")
                 
                 // Step 2: 퀴즈 상태는 항상 확인 (날짜 변경 감지용)
                 return .run { send in
@@ -165,7 +165,7 @@ struct HomeFeature {
                 state.errorOverlayMessage = overlayMsg
                 state.showErrorOverlay = true
                 state.isRetryingError = false
-                print("[Home] Step1 실패: \(error)")
+                Log.home.error("[Home] Step1 실패: \(error)")
                 return .none
                 
             // Step 2 완료 (요약글/퀴즈는 ContentSummaryFeature가 SSE로 직접 처리)
@@ -184,13 +184,13 @@ struct HomeFeature {
                 }
                 state.isUsingCoupon = false
 
-                print("[Home] Step2 완료 - hasSolvedToday: \(status.hasSolvedToday)")
+                Log.home.debug("[Home] Step2 완료 - hasSolvedToday: \(status.hasSolvedToday)")
 
                 if status.isCompleted {
                     state.isGoalCompleted = true
                     state.showGoalCompletedAlert = true
                     state.isLoading = false
-                    print("[Home] Goal 완료 - 모든 퀴즈 세트 완료")
+                    Log.home.debug("[Home] Goal 완료 - 모든 퀴즈 세트 완료")
                     return .run { send in
                         await send(.fetchActiveGoalsResponse(
                             Result { try await apiClient.fetchGoals() }
@@ -218,7 +218,7 @@ struct HomeFeature {
                 state.errorOverlayMessage = overlayMsg
                 state.showErrorOverlay = true
                 state.isRetryingError = false
-                print("[Home] Step2 실패: \(error)")
+                Log.home.error("[Home] Step2 실패: \(error)")
                 return .none
                 
             case .retryFromErrorOverlay:
@@ -296,7 +296,7 @@ struct HomeFeature {
                 }
 
             case .postAdRewardResponse(.failure(let error)):
-                print("광고 보상 API 실패: \(error)")
+                Log.home.error("광고 보상 API 실패: \(error)")
                 return .none
 
             case .refreshQuizStatusResponse(.success(let status)):
@@ -305,7 +305,7 @@ struct HomeFeature {
                 return .none
 
             case .refreshQuizStatusResponse(.failure(let error)):
-                print("퀴즈 상태 새로고침 실패: \(error)")
+                Log.home.error("퀴즈 상태 새로고침 실패: \(error)")
                 return .none
 
             case .fetchActiveGoalsResponse(.success(let goals)):
@@ -335,7 +335,7 @@ struct HomeFeature {
                 }
 
                 if state.isTodayQuizCompleted {
-                    print("오늘 퀴즈를 이미 완료했습니다")
+                    Log.home.debug("오늘 퀴즈를 이미 완료했습니다")
                     return .none
                 }
                 
@@ -378,7 +378,7 @@ struct HomeFeature {
                     )))
 
                 } else {
-                    print("요약 데이터가 아직 없습니다")
+                    Log.home.debug("요약 데이터가 아직 없습니다")
                     return .none
                 }
                 

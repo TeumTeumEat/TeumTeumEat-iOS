@@ -32,19 +32,19 @@ public struct CategorySelectionFeature {
         // Computed properties
         public var rootCategories: [String] {
             let result = Array(Set(categories.compactMap { $0.mainCategory })).sorted()
-            print("rootCategories: \(result)")
+            Log.onboarding.debug("rootCategories: \(result)")
             return result
         }
         public var mainCategories: [String] {
             guard let root = selectedRootCategory else {
-                print("mainCategories: selectedRootCategory is nil")
+                Log.onboarding.debug("mainCategories: selectedRootCategory is nil")
                 return []
             }
             let mains = categories
                 .filter { $0.mainCategory == root }
                 .compactMap { $0.subCategory }
             let result = Array(Set(mains)).sorted()
-            print("mainCategories for \(root): \(result)")
+            Log.onboarding.debug("mainCategories for \(root): \(result)")
             return result
         }
 
@@ -159,10 +159,10 @@ public struct CategorySelectionFeature {
             case .categoriesLoaded(.failure(let error)):
                 state.isLoading = false
                 
-                print("Category Load Error:")
-                print("Error Type: \(type(of: error))")
-                print("Error: \(error)")
-                print("LocalizedDescription: \(error.localizedDescription)")
+                Log.onboarding.error("Category Load Error:")
+                Log.onboarding.error("Error Type: \(type(of: error))")
+                Log.onboarding.error("Error: \(error)")
+                Log.onboarding.error("LocalizedDescription: \(error.localizedDescription)")
                 
                 if let apiError = error as? CategoryAPIError {
                     state.loadError = apiError.errorDescription

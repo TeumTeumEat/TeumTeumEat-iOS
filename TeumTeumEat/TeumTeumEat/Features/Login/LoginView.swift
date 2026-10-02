@@ -108,10 +108,10 @@ struct LoginView: View {
                         }
 
                         let fullName = appleIDCredential.fullName
-                        print("[Apple] fullName 객체: \(String(describing: fullName))")
-                        print("[Apple] givenName: \(String(describing: fullName?.givenName))")
-                        print("[Apple] familyName: \(String(describing: fullName?.familyName))")
-                        print("[Apple] nickname: \(String(describing: fullName?.nickname))")
+                        Log.auth.debug("[Apple] fullName 객체: \(String(describing: fullName))")
+                        Log.auth.debug("[Apple] givenName: \(String(describing: fullName?.givenName))")
+                        Log.auth.debug("[Apple] familyName: \(String(describing: fullName?.familyName))")
+                        Log.auth.debug("[Apple] nickname: \(String(describing: fullName?.nickname))")
 
                         let name: String
                         if let components = fullName {
@@ -123,16 +123,16 @@ struct LoginView: View {
                             name = "TestUser"
                         }
 
-                        print("[Apple] 조합된 name: '\(name)' → 전송값: '\(name)'")
-                        print("애플 로그인 성공")
-                        print("Authorization Code: \(authCode ?? "없음")")
+                        Log.auth.debug("[Apple] 조합된 name: '\(name)' → 전송값: '\(name)'")
+                        Log.auth.debug("애플 로그인 성공")
+                        Log.auth.debug("Authorization Code: \(authCode ?? "없음")")
 
                         // TCA 액션 전송
                         store.send(.appleLoginSuccess(idToken: identityToken, authCode: authCode, name: name))
                     }
                     
                 case .failure(let error):
-                    print("애플 로그인 실패: \(error)")
+                    Log.auth.error("애플 로그인 실패: \(error)")
                     store.send(.appleLoginFailure(error))
                 }
             }

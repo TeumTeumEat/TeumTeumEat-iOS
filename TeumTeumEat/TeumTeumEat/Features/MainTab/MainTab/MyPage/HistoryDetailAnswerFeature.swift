@@ -61,13 +61,13 @@ struct HistoryDetailAnswerFeature {
             case .fetchQuizDetailsResponse(.success(let detail)):
                 state.isLoading = false
                 state.quizzes = detail.quizzes
-                print("Quiz history loaded: \(detail.quizzes.count) quizzes")
+                Log.myPage.debug("Quiz history loaded: \(detail.quizzes.count) quizzes")
                 return .none
                 
             case .fetchQuizDetailsResponse(.failure(let error)):
                 state.isLoading = false
                 state.errorMessage = "퀴즈 정보를 불러오는데 실패했습니다."
-                print("Failed to load quiz history: \(error)")
+                Log.myPage.error("Failed to load quiz history: \(error)")
                 return .none
                 
             case .closeButtonTapped:

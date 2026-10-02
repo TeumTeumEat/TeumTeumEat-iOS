@@ -41,7 +41,7 @@ struct AppFeature {
             switch action {
                 
             case .mainTab(.delegate(.logout)):
-                print("AppFeature: 로그아웃 요청 받음")
+                Log.app.debug("AppFeature: 로그아웃 요청 받음")
                 return .send(.logout)
                 
             case .logout:
@@ -61,7 +61,7 @@ struct AppFeature {
                 // 로그인 화면으로
                 state.login = LoginFeature.State()
 
-                print("로그아웃 완료 - 로그인 화면으로 이동")
+                Log.app.debug("로그아웃 완료 - 로그인 화면으로 이동")
 
                 return .none
             // Splash
@@ -72,17 +72,17 @@ struct AppFeature {
                 case .authenticated(let isOnboardingCompleted):
                     if isOnboardingCompleted {
                         // 온보딩 완료 → 메인 화면
-                        print("토큰 있음 & 온보딩 완료 → 메인")
+                        Log.app.debug("토큰 있음 & 온보딩 완료 → 메인")
                         state.mainTab = MainTabFeature.State()
                     } else {
                         // 온보딩 미완료 → 온보딩 화면
-                        print("토큰 있음 & 온보딩 미완료 → 온보딩")
+                        Log.app.debug("토큰 있음 & 온보딩 미완료 → 온보딩")
                         state.onboarding = OnboardingFeature.State()
                     }
                     
                 case .unauthenticated:
                     // 토큰 없음 → 로그인 화면
-                    print("토큰 없음 → 로그인")
+                    Log.app.debug("토큰 없음 → 로그인")
                     state.login = LoginFeature.State()
                 }
                 return .none
@@ -94,7 +94,7 @@ struct AppFeature {
 
                 if isOnboardingCompleted {
                     // 온보딩 완료 → 메인 화면
-                    print("로그인 성공 & 온보딩 완료 - 메인 화면으로 이동")
+                    Log.app.debug("로그인 성공 & 온보딩 완료 - 메인 화면으로 이동")
                     state.mainTab = MainTabFeature.State()
                 } else {
                     // 온보딩 미완료 → 온보딩 화면
@@ -109,7 +109,7 @@ struct AppFeature {
             // Onboarding Delegate
             case .onboarding(.complete(.startButtonTapped)):
                 state.onboarding = nil
-                print("온보딩 완료 - 메인 화면으로 이동 예정")
+                Log.app.debug("온보딩 완료 - 메인 화면으로 이동 예정")
                 UserDefaultsManager.isOnboardingCompleted = true
                 AnalyticsManager.logOnboardingComplete()
                 state.mainTab = MainTabFeature.State()
@@ -120,11 +120,11 @@ struct AppFeature {
                 }
                 
             case .mainTab(.delegate(.withdrawal)):
-                print("AppFeature: 회원탈퇴 요청 받음")
+                Log.app.debug("AppFeature: 회원탈퇴 요청 받음")
                 return .send(.withdrawal)
                 
             case .withdrawal:
-                print("회원탈퇴 처리 시작")
+                Log.app.debug("회원탈퇴 처리 시작")
                 
                 // 토큰 삭제
                 KeyChainManager.shared.deleteAll()
@@ -137,7 +137,7 @@ struct AppFeature {
                 // 로그인 화면으로
                 state.login = LoginFeature.State()
                 
-                print("회원탈퇴 완료 - 로그인 화면으로 이동")
+                Log.app.debug("회원탈퇴 완료 - 로그인 화면으로 이동")
                 
                 return .none
                 
@@ -167,29 +167,29 @@ private func currentFCMToken() async -> String? {
 
 private func registerCurrentFCMToken(apiClient: APIClient) async {
     guard let fcmToken = await currentFCMToken() else {
-        print("FCM 토큰 없음 - 디바이스 토큰 등록 스킵")
+        Log.app.debug("FCM 토큰 없음 - 디바이스 토큰 등록 스킵")
         return
     }
 
     do {
         try await apiClient.registerDeviceToken(token: fcmToken, deviceType: "IOS")
-        print("디바이스 토큰 등록 완료")
+        Log.app.debug("디바이스 토큰 등록 완료")
     } catch {
-        print("디바이스 토큰 등록 실패: \(error)")
+        Log.app.error("디바이스 토큰 등록 실패: \(error)")
     }
 }
 
 private func deleteCurrentDeviceToken(apiClient: APIClient) async {
     guard let fcmToken = await currentFCMToken() else {
-        print("FCM 토큰 없음 - 디바이스 토큰 삭제 스킵")
+        Log.app.debug("FCM 토큰 없음 - 디바이스 토큰 삭제 스킵")
         return
     }
 
     do {
         try await apiClient.deleteDeviceToken(token: fcmToken, deviceType: "IOS")
-        print("디바이스 토큰 삭제 완료")
+        Log.app.debug("디바이스 토큰 삭제 완료")
     } catch {
         // 삭제 실패해도 로그아웃은 계속 진행
-        print("디바이스 토큰 삭제 실패 (로그아웃 계속 진행): \(error)")
+        Log.app.error("디바이스 토큰 삭제 실패 (로그아웃 계속 진행): \(error)")
     }
 }

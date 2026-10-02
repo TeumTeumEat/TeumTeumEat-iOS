@@ -69,13 +69,13 @@ struct HistoryDetailSummaryFeature {
                 state.isLoading = false
                 state.title = detail.title
                 state.summaryText = detail.summary
-                print("History detail loaded: \(detail.title)")
+                Log.myPage.debug("History detail loaded: \(detail.title)")
                 return .none
                 
             case .fetchDetailResponse(.failure(let error)):
                 state.isLoading = false
                 state.errorMessage = "상세 정보를 불러오는데 실패했습니다."
-                print("Failed to load history detail: \(error)")
+                Log.myPage.error("Failed to load history detail: \(error)")
                 return .none
                 
             case .closeButtonTapped:
@@ -87,12 +87,12 @@ struct HistoryDetailSummaryFeature {
                     documentType: state.documentType,
                     date: state.date
                 )
-                print(" 퀴즈 확인 버튼 클릭 - ID: \(state.historyId), Type: \(state.documentType), Date: \(state.date)")
+                Log.myPage.debug(" 퀴즈 확인 버튼 클릭 - ID: \(state.historyId), Type: \(state.documentType), Date: \(state.date)")
                 return .none
                 
             case .detailAnswer(.delegate(.dismissed)):
                 state.detailAnswer = nil
-                print("Quiz detail dismissed")
+                Log.myPage.debug("Quiz detail dismissed")
                 return .none
                 
             case .detailAnswer:

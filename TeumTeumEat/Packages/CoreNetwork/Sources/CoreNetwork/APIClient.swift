@@ -69,10 +69,10 @@ public struct APIClient {
         // 1. URL 구성
         let baseURL = Config.baseURL
         let fullPath = baseURL + endpoint
-        print("API Request: \(method.rawValue) \(fullPath)")
+        Log.network.debug("API Request: \(method.rawValue) \(fullPath)")
 
         guard let url = URL(string: fullPath) else {
-            print("Invalid URL: \(fullPath)")
+            Log.network.debug("Invalid URL: \(fullPath)")
             throw APIError.invalidURL
         }
 
@@ -84,7 +84,7 @@ public struct APIClient {
         // 3. 인증 토큰 추가
         if requiresAuth {
             guard let token = KeyChainManager.shared.getAccessToken() else {
-                print("No access token found in KeyChain")
+                Log.network.debug("No access token found in KeyChain")
                 throw APIError.noAccessToken
             }
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -95,10 +95,10 @@ public struct APIClient {
             do {
                 request.httpBody = try JSONEncoder().encode(body)
                 if let bodyString = String(data: request.httpBody!, encoding: .utf8) {
-                    print("Request Body: \(bodyString)")
+                    Log.network.debug("Request Body: \(bodyString)")
                 }
             } catch {
-                print("Failed to encode request body: \(error)")
+                Log.network.error("Failed to encode request body: \(error)")
                 throw APIError.encodingFailed(error)
             }
         }
@@ -112,11 +112,11 @@ public struct APIClient {
                 throw APIError.invalidResponse
             }
 
-            print("HTTP Status: \(httpResponse.statusCode)")
+            Log.network.debug("HTTP Status: \(httpResponse.statusCode)")
 
             // 7. 응답 데이터 로깅
             if let jsonString = String(data: data, encoding: .utf8) {
-                print("Response JSON: \(jsonString)")
+                Log.network.debug("Response JSON: \(jsonString)")
             }
 
             // 8. 상태 코드별 처리
@@ -126,7 +126,7 @@ public struct APIClient {
                     let decodedData = try JSONDecoder().decode(T.self, from: data)
                     return decodedData
                 } catch {
-                    print("Decoding Error: \(error)")
+                    Log.network.error("Decoding Error: \(error)")
                     throw APIError.decodingError(error)
                 }
 
@@ -140,19 +140,19 @@ public struct APIClient {
                     errorCode = errorResponse.code
                     errorMessage = errorResponse.message
                     errorDetails = errorResponse.details
-                    print("Server Error - Code: \(errorCode), Message: \(errorMessage)")
+                    Log.network.error("Server Error - Code: \(errorCode), Message: \(errorMessage)")
                 } catch {
                     errorCode = "HTTP-\(httpResponse.statusCode)"
                     errorMessage = "서버 오류 (상태 코드: \(httpResponse.statusCode))"
                     errorDetails = nil
-                    print("Failed to decode error response, fallback to HTTP status")
+                    Log.network.error("Failed to decode error response, fallback to HTTP status")
                 }
 
                 // AUTH-002: 액세스 토큰 만료 → 재발급 후 1회 retry
                 if errorCode == "AUTH-002", requiresAuth, !isRetry {
-                    print("Access token expired. Attempting token refresh...")
+                    Log.network.debug("Access token expired. Attempting token refresh...")
                     try await TokenRefreshCoordinator.shared.refresh(using: self)
-                    print("Token refreshed. Retrying original request...")
+                    Log.network.debug("Token refreshed. Retrying original request...")
                     return try await self.request(
                         endpoint: endpoint,
                         method: method,
@@ -175,7 +175,7 @@ public struct APIClient {
         } catch let error as APIError {
             throw error
         } catch {
-            print("Network Error: \(error)")
+            Log.network.error("Network Error: \(error)")
             throw APIError.networkError(error)
         }
     }
@@ -189,7 +189,7 @@ extension APIClient: DependencyKey {
 extension APIClient {
     fileprivate func performTokenReissue() async throws {
         guard let refreshToken = KeyChainManager.shared.getRefreshToken() else {
-            print("No refresh token found in KeyChain")
+            Log.network.debug("No refresh token found in KeyChain")
             throw APIError.noRefreshToken
         }
 
@@ -211,7 +211,7 @@ extension APIClient {
 
         KeyChainManager.shared.saveAccessToken(data.accessToken)
         KeyChainManager.shared.saveRefreshToken(data.refreshToken)
-        print("Token reissued and saved successfully")
+        Log.network.debug("Token reissued and saved successfully")
     }
 }
 

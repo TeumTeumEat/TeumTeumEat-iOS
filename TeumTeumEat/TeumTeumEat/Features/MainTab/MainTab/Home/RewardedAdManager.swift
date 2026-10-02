@@ -33,7 +33,7 @@ final class RewardedAdManager: NSObject, ObservableObject {
                 )
                 isAdReady = true
             } catch {
-                print("Rewarded ad load failed: \(error)")
+                Log.ad.error("Rewarded ad load failed: \(error)")
                 isAdReady = false
             }
         }
@@ -41,15 +41,15 @@ final class RewardedAdManager: NSObject, ObservableObject {
 
     func showAd(onRewarded: @escaping () -> Void) {
         guard !isAdShowing else {
-            print("Ad is already showing")
+            Log.ad.debug("Ad is already showing")
             return
         }
         guard let ad = rewardedAd else {
-            print("Ad not ready")
+            Log.ad.debug("Ad not ready")
             return
         }
         guard let topVC = topViewController() else {
-            print("topViewController를 찾을 수 없습니다")
+            Log.ad.debug("topViewController를 찾을 수 없습니다")
             return
         }
 
@@ -96,7 +96,7 @@ extension RewardedAdManager: FullScreenContentDelegate {
     // 광고가 클릭됨 (앱스토어 등 외부 링크 이동)
     func adDidRecordClick(_ ad: FullScreenPresentingAd) {
         didClickOutToAppStore = true
-        print("[AdManager] 광고 클릭 감지 (앱스토어 이동 가능성)")
+        Log.ad.debug("[AdManager] 광고 클릭 감지 (앱스토어 이동 가능성)")
     }
 
     // 광고가 완전히 종료됨
@@ -105,15 +105,15 @@ extension RewardedAdManager: FullScreenContentDelegate {
 
         if rewardEarned {
             // 정상 완료 - 보상은 ad.present 콜백에서 이미 지급됨
-            print("[AdManager] 광고 정상 완료")
+            Log.ad.debug("[AdManager] 광고 정상 완료")
         } else if didClickOutToAppStore {
             // AdMob iOS 버그: 앱스토어 바텀시트(SKStoreProductViewController) 닫힐 때
             // adDidDismissFullScreenContent가 잘못 호출됨.
             // 유저가 의도적으로 광고를 종료한 게 아니므로 보상 지급.
-            print("[AdManager] 앱스토어 클릭 후 시트 닫힘으로 광고 종료 - 보상 지급")
+            Log.ad.debug("[AdManager] 앱스토어 클릭 후 시트 닫힘으로 광고 종료 - 보상 지급")
             pendingRewardHandler?()
         } else {
-            print("[AdManager] 광고 시청 미완료로 보상 미지급")
+            Log.ad.debug("[AdManager] 광고 시청 미완료로 보상 미지급")
             onAdInterrupted?()
         }
 
@@ -130,7 +130,7 @@ extension RewardedAdManager: FullScreenContentDelegate {
         pendingRewardHandler = nil
         rewardEarned = false
         didClickOutToAppStore = false
-        print("[AdManager] 광고 표시 실패: \(error)")
+        Log.ad.error("[AdManager] 광고 표시 실패: \(error)")
         loadAd()
     }
 }

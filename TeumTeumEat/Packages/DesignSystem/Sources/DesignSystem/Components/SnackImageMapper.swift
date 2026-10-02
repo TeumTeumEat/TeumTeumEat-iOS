@@ -38,12 +38,6 @@ public struct SnackImageMapper {
             
             let index = hash % snackImages.count
             
-            print("SnackImageMapper")
-            print("- key: \(key)")
-            print("- hash: \(hash)")
-            print("- index: \(index)")
-            print("- result: \(snackImages[index])")
-            
             return snackImages[index]
         }
 }
