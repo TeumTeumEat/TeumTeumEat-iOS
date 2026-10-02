@@ -349,8 +349,7 @@ struct QuizFlowView: View {
                 }
             }
         }
-        .transition(.opacity)
-        .animation(.easeInOut(duration: 0.2), value: store.currentStep)
+        // 단계 전환 시 opacity 애니메이션을 쓰면 fullScreenCover 위에서 화면이 검게 번쩍이므로 즉시 전환
         .fullScreenCover(
             isPresented: Binding(
                 get: { store.addSubject != nil },
