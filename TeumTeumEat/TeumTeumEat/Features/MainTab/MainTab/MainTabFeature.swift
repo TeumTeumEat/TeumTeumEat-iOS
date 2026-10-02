@@ -18,7 +18,6 @@ struct MainTabFeature {
         // 각 탭의 Feature State
         var home: HomeFeature.State = .init()
         var quiz: HistoryFeature.State = .init()
-        var register: RegisterFeature.State = .init()
 
         var newGoalFlow: NewGoalFlowFeature.State?
         var addSubject: AddSubjectFeature.State?
@@ -28,7 +27,6 @@ struct MainTabFeature {
         enum Tab {
             case home
             case quiz
-            case register
         }
     }
     
@@ -38,7 +36,6 @@ struct MainTabFeature {
         case registerMenuItemTapped(RegisterMenuItem)
         case home(HomeFeature.Action)
         case quiz(HistoryFeature.Action)
-        case register(RegisterFeature.Action)
         case newGoalFlow(NewGoalFlowFeature.Action)
         case addSubject(AddSubjectFeature.Action)
         case addSubjectFile(AddSubjectFileFeature.Action)
@@ -64,9 +61,6 @@ struct MainTabFeature {
         Scope(state: \.quiz, action: \.quiz) {
             HistoryFeature()
         }
-        Scope(state: \.register, action: \.register) {
-            RegisterFeature()
-        }
         
             Reduce { state, action in
                 switch action {
@@ -75,9 +69,7 @@ struct MainTabFeature {
                     let previousTab = state.selectedTab
                     state.selectedTab = tab
 
-                    if tab != .register {
-                        state.isRegisterMenuExpanded = false
-                    }
+                    state.isRegisterMenuExpanded = false
 
                     // 홈 탭 새로고침은 HomeView.onAppear가 담당 (여기서도 보내면 API가 중복 호출됨)
 
@@ -196,7 +188,7 @@ struct MainTabFeature {
                     print("MainTabFeature: 회원탈퇴 요청 받음")
                     return .send(.delegate(.withdrawal))
 
-                case .home, .quiz, .register, .newGoalFlow, .addSubject, .addSubjectFile, .quizFlow, .myPage, .delegate:
+                case .home, .quiz, .newGoalFlow, .addSubject, .addSubjectFile, .quizFlow, .myPage, .delegate:
                     return .none
                 }
             }

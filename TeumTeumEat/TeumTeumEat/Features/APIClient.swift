@@ -230,30 +230,6 @@ extension DependencyValues {
 
 
 extension APIClient {
-    func fetchCategories() async throws -> [CategoryResponse] {
-        // APIResponse<CategoryData>로 디코딩
-        let response: APIResponse<CategoryData> = try await request(
-            endpoint: "/api/v1/categories",
-            method: .get,
-            requiresAuth: true
-        )
-        
-        // 응답 검증
-        guard response.code == "OK",
-              let categoryData = response.data else {
-            throw APIError.serverError(
-                code: response.code,
-                message: response.message,
-                details: response.details
-            )
-        }
-        
-        print("Categories loaded: \(categoryData.categoryResponses.count) items")
-        return categoryData.categoryResponses
-    }
-}
-
-extension APIClient {
     /// 유저 이름 수정
     func updateUserName(name: String) async throws {
         // APIResponse<EmptyData> 형태로 받기
@@ -305,38 +281,6 @@ extension APIClient {
 }
 
 extension APIClient {
-    /// 목표 생성
-      func createGoal(
-          type: CreateGoalRequest.GoalType,
-          studyPeriod: String,
-          difficulty: CreateGoalRequest.Difficulty,
-          prompt: String?,
-          categoryId: Int?
-      ) async throws {
-          let response: APIResponse<EmptyData> = try await request(
-              endpoint: "/api/v1/goals",
-              method: .post,
-              body: CreateGoalRequest(
-                  type: type,
-                  studyPeriod: studyPeriod,
-                  difficulty: difficulty,
-                  prompt: prompt,
-                  categoryId: categoryId
-              ),
-              requiresAuth: true
-          )
-          
-          guard response.code == "OK" else {
-              throw APIError.serverError(
-                  code: response.code,
-                  message: response.message,
-                  details: response.details
-              )
-          }
-          
-          print("Goal created successfully - Type: \(type.rawValue), Period: \(studyPeriod)")
-      }
-    
     /// 전체 목표 목록 조회
     func fetchGoals() async throws -> [GoalResponse] {
         let response: APIResponse<GoalListData> = try await request(
@@ -391,110 +335,6 @@ extension APIClient {
         }
         
         return goal
-    }
-    
-    /// PDF 문서 등록
-    func registerDocument(
-        goalId: Int,
-        fileName: String,
-        fileKey: String
-    ) async throws {
-        let response: APIResponse<EmptyData> = try await request(
-            endpoint: "/api/v1/goals/\(goalId)/documents",
-            method: .post,
-            body: RegisterDocumentRequest(
-                fileName: fileName,
-                fileKey: fileKey
-            ),
-            requiresAuth: true
-        )
-
-        guard response.code == "OK" else {
-            throw APIError.serverError(
-                code: response.code,
-                message: response.message,
-                details: response.details
-            )
-        }
-
-        print("Document registered successfully - GoalId: \(goalId), FileName: \(fileName)")
-    }
-    
-    func getPresignedURL(fileName: String, fileSize: Int64) async throws -> PresignedURLData {
-         let response: APIResponse<PresignedURLData> = try await request(
-             endpoint: "/api/v1/s3/presigned",
-             method: .post,
-             body: PresignedURLRequest(fileName: fileName, fileSize: fileSize),
-             requiresAuth: true
-         )
-         
-         guard response.code == "OK",
-               let data = response.data else {
-             throw APIError.serverError(
-                 code: response.code,
-                 message: response.message,
-                 details: response.details
-             )
-         }
-         
-         print("   PresignedURL received for file: \(fileName)")
-         print("   URL: \(data.presignedUrl)")
-         print("   Key: \(data.key)")
-         
-         return data
-     }
-    
-    /// S3에 PDF 파일 업로드
-    func uploadFileToS3(fileURL: URL, presignedURL: String) async throws {
-        guard let url = URL(string: presignedURL) else {
-            throw APIError.invalidURL
-        }
-        
-        // 파일 데이터 읽기
-        let fileData: Data
-        do {
-            fileData = try Data(contentsOf: fileURL)
-            print("File loaded - Size: \(fileData.count) bytes")
-        } catch {
-            print("Failed to load file: \(error)")
-            throw APIError.networkError(error)
-        }
-        
-        // URLRequest 생성
-        var request = URLRequest(url: url)
-        request.httpMethod = "PUT"
-        request.setValue("application/pdf", forHTTPHeaderField: "Content-Type")
-        request.httpBody = fileData
-        
-        print("Uploading file to S3...")
-        
-        // S3에 업로드
-        do {
-            let (_, response) = try await URLSession.shared.data(for: request)
-            
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw APIError.invalidResponse
-            }
-            
-            print("S3 Upload Status: \(httpResponse.statusCode)")
-            
-            // S3는 보통 200 또는 204 반환
-            guard (200...299).contains(httpResponse.statusCode) else {
-                throw APIError.serverError(
-                    code: "S3-\(httpResponse.statusCode)",
-                    message: "S3 업로드 실패 (상태 코드: \(httpResponse.statusCode))",
-                    details: nil
-                )
-            }
-            
-            print("File uploaded to S3 successfully")
-            
-        } catch let error as APIError {
-            throw error
-        } catch {
-            print("S3 Upload Error: \(error)")
-            throw APIError.networkError(error)
-        }
     }
 }
 
@@ -602,107 +442,6 @@ extension APIClient {
             )
         }
         return data
-    }
-
-    /// 오늘의 카테고리 자료(요약글) 조회 (없으면 생성 후 재조회)
-    func fetchDailyCategoryDocument(categoryId: Int) async throws -> CategoryDocumentData {
-        let dailyEndpoint = "/api/v1/categories/\(categoryId)/documents/daily"
-
-        // Step 1: GET으로 요약글 조회 시도
-        do {
-            let documentData = try await fetchCategoryDocumentGET(endpoint: dailyEndpoint)
-            print("[CategoryDocument] GET 성공 - documentId: \(documentData.documentId), hasSolvedToday: \(documentData.hasSolvedToday)")
-            return documentData
-        } catch let apiError as APIError {
-            if case .serverError(let code, _, _) = apiError, code == "COMMON-005" {
-                // 요약글 아직 없음 → 생성 필요
-                print("[CategoryDocument] COMMON-005 - 요약글 없음, 생성 시작")
-            } else {
-                throw apiError
-            }
-        }
-
-        // Step 2: 문서 없음 → POST로 생성 시도
-        do {
-            let _: APIResponse<EmptyData> = try await request(
-                endpoint: dailyEndpoint,
-                method: .post,
-                requiresAuth: true
-            )
-            print("[CategoryDocument] POST 생성 완료")
-        } catch let apiError as APIError {
-            if case .serverError(let code, _, _) = apiError, code == "QUIZ-003" {
-                // 이미 생성된 문서 있음 → GET으로 조회
-                print("[CategoryDocument] QUIZ-003 - 기존 문서 존재, GET으로 조회")
-            } else {
-                throw apiError
-            }
-        }
-
-        // Step 3: GET으로 최종 조회
-        let response: APIResponse<CategoryDocumentData> = try await request(
-            endpoint: dailyEndpoint,
-            method: .get,
-            requiresAuth: true
-        )
-
-        guard response.code == "OK", let documentData = response.data else {
-            throw APIError.serverError(
-                code: response.code,
-                message: response.message,
-                details: response.details
-            )
-        }
-
-        print("[CategoryDocument] GET 완료 - documentId: \(documentData.documentId), hasSolvedToday: \(documentData.hasSolvedToday)")
-        return documentData
-    }
-
-    private func fetchCategoryDocumentGET(endpoint: String) async throws -> CategoryDocumentData {
-        let response: APIResponse<CategoryDocumentData> = try await request(
-            endpoint: endpoint,
-            method: .get,
-            requiresAuth: true
-        )
-        guard response.code == "OK", let data = response.data else {
-            throw APIError.serverError(
-                code: response.code,
-                message: response.message,
-                details: response.details
-            )
-        }
-        return data
-    }
-    
-    /// PDF 요약글 조회 (없으면 생성 후 재조회)
-    func fetchDailyPDFSummary(goalId: Int, documentId: Int) async throws -> PDFSummaryData {
-        let endpoint = "/api/v1/goals/\(goalId)/documents/\(documentId)/summary"
-
-        // Step 1: GET으로 요약글 조회 시도
-        do {
-            let summaryData = try await fetchPDFSummaryGET(endpoint: endpoint)
-            print("[PDFSummary] GET 성공 - documentId: \(summaryData.documentId)")
-            return summaryData
-        } catch let apiError as APIError {
-            if case .serverError(let code, _, _) = apiError, code == "COMMON-005" {
-                print("[PDFSummary] COMMON-005 - 요약글 없음, 생성 시작")
-            } else {
-                throw apiError
-            }
-        }
-
-        // Step 2: 요약글 없음 → POST로 생성
-        let _: APIResponse<EmptyData> = try await request(
-            endpoint: endpoint,
-            method: .post,
-            requiresAuth: true
-        )
-        print("[PDFSummary] POST 생성 완료")
-
-        // Step 3: 생성 후 GET으로 재조회
-        let summaryData = try await fetchPDFSummaryGET(endpoint: endpoint)
-        print("[PDFSummary] GET 재조회 성공 - documentId: \(summaryData.documentId)")
-        return summaryData
     }
 
     /// PDF 요약글 GET only (이미 생성된 것만 반환, 없으면 에러)
@@ -1157,138 +896,12 @@ extension APIClient {
 }
 
 // MARK: - SSE Helpers (file-private)
-private struct SSEDataPayload: Decodable {
-    let status: String
-    let remain: Int?
-    let reason: String?
-}
-
 private struct SSEErrorResponse: Decodable {
     let code: String
     let message: String
 }
 
 extension APIClient {
-    func connectDocumentSSE(
-        goalId: Int,
-        documentId: Int,
-        lastEventId: String? = nil
-    ) -> AsyncThrowingStream<SSEDocumentStatus, Error> {
-        AsyncThrowingStream { continuation in
-            let task = Task {
-                let endpoint = "/api/v1/goals/\(goalId)/documents/\(documentId)/sse"
-                guard let url = URL(string: Config.baseURL + endpoint) else {
-                    continuation.finish(throwing: APIError.invalidURL)
-                    return
-                }
-
-                var request = URLRequest(url: url)
-                request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
-                request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
-
-                if let token = KeyChainManager.shared.getAccessToken() {
-                    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-                }
-                if let lastEventId = lastEventId {
-                    request.setValue(lastEventId, forHTTPHeaderField: "Last-Event-ID")
-                }
-
-                do {
-                    print("[SSE DEBUG] 요청 시작 - URL: \(url.absoluteString)")
-                    let sseConfig = URLSessionConfiguration.default
-                    sseConfig.timeoutIntervalForRequest = 600
-                    sseConfig.timeoutIntervalForResource = 600
-                    let sseSession = URLSession(configuration: sseConfig)
-                    let (bytes, response) = try await sseSession.bytes(for: request)
-                    print("[SSE DEBUG] 응답 수신 완료")
-
-                    guard let httpResponse = response as? HTTPURLResponse else {
-                        continuation.finish(throwing: APIError.invalidResponse)
-                        return
-                    }
-
-                    print("[SSE DEBUG] HTTP 상태 코드: \(httpResponse.statusCode)")
-
-                    if httpResponse.statusCode != 200 {
-                        var errorData = Data()
-                        for try await byte in bytes {
-                            errorData.append(byte)
-                        }
-                        if let errorResponse = try? JSONDecoder().decode(SSEErrorResponse.self, from: errorData) {
-                            continuation.finish(throwing: APIError.serverError(
-                                code: errorResponse.code,
-                                message: errorResponse.message,
-                                details: nil
-                            ))
-                        } else {
-                            continuation.finish(throwing: APIError.serverError(
-                                code: "SSE-\(httpResponse.statusCode)",
-                                message: "SSE 연결 실패 (상태 코드: \(httpResponse.statusCode))",
-                                details: nil
-                            ))
-                        }
-                        return
-                    }
-
-                    var eventType = ""
-                    var eventData = ""
-                    print("[SSE DEBUG] 이벤트 루프 시작")
-
-                    for try await line in bytes.lines {
-                        print("[SSE RAW] \(line)")
-                        // 빈 줄 또는 새 id: 가 오면 이전 이벤트 dispatch
-                        if line.isEmpty || line.hasPrefix("id:") {
-                            if !eventData.isEmpty,
-                               let event = parseSSEEvent(type: eventType, data: eventData) {
-                                print("[SSE DEBUG] 이벤트 dispatch: \(eventType) / \(eventData.prefix(80))")
-                                continuation.yield(event)
-                                if case .completed = event { continuation.finish(); return }
-                                if case .failed = event { continuation.finish(); return }
-                            }
-                            eventType = ""
-                            eventData = ""
-                        } else if line.hasPrefix("event:") {
-                            eventType = String(line.dropFirst(6)).trimmingCharacters(in: .whitespaces)
-                        } else if line.hasPrefix("data:") {
-                            let value = String(line.dropFirst(5)).trimmingCharacters(in: .whitespaces)
-                            if eventData.isEmpty {
-                                eventData = value
-                            } else {
-                                eventData += "\n" + value
-                            }
-                            // 서버가 COMPLETED/FAILED 후 trailing separator 없이 연결을 유지하는 경우를 대비해
-                            // 데이터가 쌓일 때마다 파싱 시도 → 완성된 JSON이면 즉시 dispatch
-                            if let event = parseSSEEvent(type: eventType, data: eventData) {
-                                if case .completed = event {
-                                    print("[SSE DEBUG] 이벤트 dispatch (즉시): \(eventType) COMPLETED")
-                                    continuation.yield(event)
-                                    continuation.finish()
-                                    return
-                                }
-                                if case .failed = event {
-                                    print("[SSE DEBUG] 이벤트 dispatch (즉시): \(eventType) FAILED")
-                                    continuation.yield(event)
-                                    continuation.finish()
-                                    return
-                                }
-                            }
-                        }
-                    }
-                    // 연결 종료 후 버퍼에 남은 이벤트 dispatch (COMPLETED가 마지막일 때)
-                    if !eventData.isEmpty,
-                       let event = parseSSEEvent(type: eventType, data: eventData) {
-                        print("[SSE DEBUG] 이벤트 dispatch (연결 종료 후): \(eventType) / \(eventData.prefix(80))")
-                        continuation.yield(event)
-                    }
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
-            }
-            continuation.onTermination = { _ in task.cancel() }
-        }
-    }
-
     func streamCategoryDocument(categoryId: Int) -> AsyncThrowingStream<CategoryStreamEvent, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
@@ -1514,23 +1127,6 @@ extension APIClient {
         case "message": return .textChunk(data.isEmpty ? "\n" : data)  // 빈 data = 줄바꿈
         case "title":   return data.isEmpty ? nil : .titleChunk(data)
         default:        return nil
-        }
-    }
-
-    private func parseSSEEvent(type: String, data: String) -> SSEDocumentStatus? {
-        guard let jsonData = data.data(using: .utf8),
-              let payload = try? JSONDecoder().decode(SSEDataPayload.self, from: jsonData) else {
-            return nil
-        }
-        switch payload.status {
-        case "CONNECTED": return .connected
-        case "PENDING":   return .pending
-        case "PROCESSING": return .processing(remainMs: payload.remain ?? 0)
-        case "COMPLETED":  return .completed
-        case "FAILED":
-            let reason = SSEFailureReason(rawValue: payload.reason ?? "") ?? .serverError
-            return .failed(reason: reason)
-        default: return nil
         }
     }
 }

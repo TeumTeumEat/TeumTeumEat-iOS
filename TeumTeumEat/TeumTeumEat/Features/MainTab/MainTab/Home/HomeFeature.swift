@@ -25,12 +25,9 @@ struct HomeFeature {
         // API 관련 상태
         var currentGoal: GoalResponse?
         var quizStatus: UserQuizStatusData?
-        var categoryDocument: CategoryDocumentData?
-        var quizzes: [UserQuiz] = []
         var calendarData: CalendarHistoryData?
         
         var isLoading: Bool = false
-        var errorMessage: String?
 
         var showErrorOverlay: Bool = false
         var errorOverlayMessage: String = ""
@@ -84,12 +81,6 @@ struct HomeFeature {
         // Step 2: 퀴즈 상태 확인
         case fetchQuizStatusResponse(Result<UserQuizStatusData, Error>)
         
-        // Step 3: 요약글 조회 (카테고리만, PDF는 ContentSummaryFeature가 SSE로 처리)
-        case fetchCategoryDocumentResponse(Result<CategoryDocumentData, Error>)
-
-        // Step 4: 퀴즈 조회
-        case fetchQuizzesResponse(Result<[UserQuiz], Error>)
-        
         case retryFromErrorOverlay
         case dismissErrorOverlay
         case retryToastDismissed
@@ -98,7 +89,6 @@ struct HomeFeature {
         case goalCompletedSelectExistingTapped
         case fetchActiveGoalsResponse(Result<[GoalResponse], Error>)
         case settingTapped
-        case toggleQuizStatus
         case characterEatTapped
         case speechBubbleTapped
         case dismissCouponModal
@@ -131,7 +121,6 @@ struct HomeFeature {
                 if state.currentGoal == nil {
                     state.isLoading = true
                 }
-                state.errorMessage = nil
                 state.showErrorOverlay = false
                 state.retryCount = 0
                 state.showRetryToast = false
@@ -155,21 +144,7 @@ struct HomeFeature {
                 state.isRetryingError = false
                 state.retryCount = 0
 
-                let previousGoal = state.currentGoal
                 state.currentGoal = goal
-
-                let isNewGoal: Bool = {
-                    guard let prev = previousGoal else { return true }
-                    if prev.type != goal.type { return true }
-                    if goal.type == "CATEGORY" { return prev.category?.categoryId != goal.category?.categoryId }
-                    if goal.type == "DOCUMENT" { return prev.documentId != goal.documentId }
-                    return false
-                }()
-
-                if isNewGoal {
-                    state.categoryDocument = nil
-                    state.quizzes = []
-                }
 
                 print("[Home] Step1 완료 - type: \(goal.type)")
                 
@@ -193,9 +168,8 @@ struct HomeFeature {
                 print("[Home] Step1 실패: \(error)")
                 return .none
                 
-            // Step 2 완료 → Step 3 시작
+            // Step 2 완료 (요약글/퀴즈는 ContentSummaryFeature가 SSE로 직접 처리)
             case .fetchQuizStatusResponse(.success(let status)):
-                let wasCompletedYesterday = state.isTodayQuizCompleted
                 state.quizStatus = status
                 if !state.isUsingCoupon {
                     // complete-set이 퀴즈 시작 시 차감되므로,
@@ -224,18 +198,6 @@ struct HomeFeature {
                     }
                 }
 
-                if wasCompletedYesterday && !status.hasSolvedToday {
-                    state.categoryDocument = nil
-                    state.quizzes = []
-                }
-                
-                guard let goal = state.currentGoal else {
-                    state.errorMessage = "목표 정보가 없습니다"
-                    state.isLoading = false
-                    return .none
-                }
-                
-                // Step 3: CATEGORY/DOCUMENT 모두 ContentSummaryFeature가 SSE로 직접 처리
                 state.isLoading = false
                 return .none
                 
@@ -259,76 +221,6 @@ struct HomeFeature {
                 print("[Home] Step2 실패: \(error)")
                 return .none
                 
-            // Step 3-A 완료 (카테고리) → Step 4 시작
-            case .fetchCategoryDocumentResponse(.success(let document)):
-                state.categoryDocument = document
-                print("[Home] Step3 완료 - CATEGORY documentId: \(document.documentId)")
-                
-                // Step 4: 퀴즈 조회
-                return .run { send in
-                    do {
-                        let quizzes = try await apiClient.fetchUserQuizzes(
-                            documentId: document.documentId,
-                            documentType: .category
-                        )
-                        await send(.fetchQuizzesResponse(.success(quizzes)))
-                    } catch {
-                        await send(.fetchQuizzesResponse(.failure(error)))
-                    }
-                }
-                
-            case .fetchCategoryDocumentResponse(.failure(let error)):
-                if let apiError = error as? APIError,
-                   case .serverError(let code, _, _) = apiError {
-                    if code == "GOAL-002" {
-                        state.isGoalCompleted = true
-                        state.showGoalCompletedAlert = true
-                        state.isLoading = false
-                        return .run { send in
-                            await send(.fetchActiveGoalsResponse(
-                                Result { try await apiClient.fetchGoals() }
-                            ))
-                        }
-                    }
-                    if code == "COMMON-005" {
-                        // 오늘 문서가 아직 없음 — ContentSummaryFeature가 SSE로 생성
-                        print("[Home] Step3 - 카테고리 문서 없음, SSE에서 생성 예정")
-                        state.categoryDocument = nil
-                        state.quizzes = []
-                        state.isLoading = false
-                        return .none
-                    }
-                }
-                state.isLoading = false
-                state.errorMessage = "카테고리 문서 조회 실패: \(error.localizedDescription)"
-                print("[Home] Step3 실패 (CATEGORY): \(error)")
-                return .none
-                
-            // Step 4 완료
-            case .fetchQuizzesResponse(.success(let quizzes)):
-                state.quizzes = quizzes
-                state.isLoading = false
-                print("[Home] Step4 완료 - 퀴즈 \(quizzes.count)개, 플로우 종료")
-                return .none
-
-            case .fetchQuizzesResponse(.failure(let error)):
-                if let apiError = error as? APIError,
-                   case .serverError(let code, _, _) = apiError,
-                   code == "GOAL-002" || code == "GOAL-003" {
-                    state.isGoalCompleted = true
-                    state.showGoalCompletedAlert = true
-                    state.isLoading = false
-                    return .run { send in
-                        await send(.fetchActiveGoalsResponse(
-                            Result { try await apiClient.fetchGoals() }
-                        ))
-                    }
-                }
-                state.isLoading = false
-                state.errorMessage = "퀴즈 조회 실패: \(error.localizedDescription)"
-                print("[Home] Step4 실패: \(error)")
-                return .none
-                
             case .retryFromErrorOverlay:
                 state.retryCount += 1
                 if state.retryCount >= 2 {
@@ -336,7 +228,6 @@ struct HomeFeature {
                 }
                 state.isRetryingError = true
                 state.isLoading = true
-                state.errorMessage = nil
 
                 return loadHomeData()
 
@@ -352,10 +243,6 @@ struct HomeFeature {
             case .settingTapped:
                 return .send(.delegate(.openMyPageRequested))
 
-            case .toggleQuizStatus:
-                state.isTodayQuizCompleted.toggle()
-                return .none
-
             case .speechBubbleTapped:
                 state.showCouponModal = true
                 return .none
@@ -370,7 +257,6 @@ struct HomeFeature {
                 state.isTodayQuizCompleted = false
                 state.isUsingCoupon = true
                 state.showCouponModal = false
-                state.quizzes = []
                 state.isLoading = true
                 return .run { send in
                     do {
@@ -833,17 +719,6 @@ struct SpeechBubbleView: View {
                         .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 2)
                 )
         }
-    }
-}
-
-struct Triangle: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.midX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
-        path.closeSubpath()
-        return path
     }
 }
 

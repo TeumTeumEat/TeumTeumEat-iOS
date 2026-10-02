@@ -20,8 +20,6 @@ struct MainTabView: View {
                     HomeView(store: store.scope(state: \.home, action: \.home))
                 case .quiz:
                     HistoryView(store: store.scope(state: \.quiz, action: \.quiz))
-                case .register:
-                    RegisterView(store: store.scope(state: \.register, action: \.register))
                 }
 
                 // 어두운 배경
