@@ -18,21 +18,20 @@ import FirebaseAnalytics
 @main
 struct TeumTeumEatApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    
+
+    // Scene body가 재계산돼도 앱 상태가 초기화되지 않도록 Store는 한 번만 생성
+    @MainActor static let store = Store(initialState: AppFeature.State()) {
+        AppFeature()
+    }
+
     init() {
         let APPKEY = Config.kakaoNativeAppKey
         KakaoSDK.initSDK(appKey: APPKEY)
-        let accessToken = KeyChainManager.shared.getAccessToken()
-        print(accessToken)
     }
-    
+
     var body: some Scene {
         WindowGroup {
-            AppView(
-                store: Store(initialState: AppFeature.State()) {
-                    AppFeature()
-                }
-            )
+            AppView(store: Self.store)
             .onOpenURL { url in
                 if AuthApi.isKakaoTalkLoginUrl(url) {
                     _ = AuthController.handleOpenUrl(url: url)
@@ -48,6 +47,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         
         // Firebase 초기화
+        // 콘솔에 [FirebaseAnalytics][I-ACS...] 정보 로그가 과도하게 찍히지 않도록 에러만 출력 (configure 전에 설정해야 적용됨)
+        FirebaseConfiguration.shared.setLoggerLevel(.error)
         FirebaseApp.configure()
 
         // AdMob 초기화

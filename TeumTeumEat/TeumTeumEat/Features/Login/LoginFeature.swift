@@ -60,7 +60,6 @@ struct LoginFeature {
                         print("카카오 SDK 로그인 시작...")
                         let kakaoIdToken = try await loginWithKakaoSDK()
                         print("카카오 SDK 로그인 성공!")
-                        print("ID Token: \(kakaoIdToken)")
                         print("Token Length: \(kakaoIdToken.count)")
                         print("서버 로그인 시도 (termsAgreed: false)")
                         await send(.loginAttempt(idToken: kakaoIdToken, authCode: nil, provider: .kakao, termsAgreed: false, name: nil))
@@ -113,8 +112,6 @@ struct LoginFeature {
                         print("Message: \(response.message)")
                         
                         if let data = response.data {
-                            print("AccessToken: \(String(data.accessToken))...")
-                            print("RefreshToken: \(String(data.refreshToken))...")
                             print("isOnboardingCompleted: \(data.isOnboardingCompleted)")
                         }
                         await send(.loginResponse(.success(response)))
@@ -221,7 +218,6 @@ extension LoginFeature {
                         continuation.resume(throwing: error)
                     } else if let token = oauthToken {
                         print("카카오톡 로그인 성공")
-                        print("\(String(describing: token.idToken))")
                         continuation.resume(returning: token.idToken ?? "")
                     }
                 }
@@ -231,7 +227,6 @@ extension LoginFeature {
                         continuation.resume(throwing: error)
                     } else if let token = oauthToken {
                         print("카카오 계정 로그인 성공")
-                        print("\(String(describing: token.idToken))")
                         continuation.resume(returning: token.idToken ?? "")
                     }
                 }
@@ -324,8 +319,6 @@ extension LoginFeature {
         print("   code: \(response.code)")
         print("   message: \(response.message)")
         if let data = response.data {
-            print("   data.accessToken: \(String(data.accessToken.prefix(20)))...")
-            print("   data.refreshToken: \(String(data.refreshToken.prefix(20)))...")
             print("   data.isOnboardingCompleted: \(data.isOnboardingCompleted)")
         }
         return response

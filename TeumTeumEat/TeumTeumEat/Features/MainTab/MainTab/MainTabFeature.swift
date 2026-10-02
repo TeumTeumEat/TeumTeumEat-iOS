@@ -79,10 +79,7 @@ struct MainTabFeature {
                         state.isRegisterMenuExpanded = false
                     }
 
-                    // 홈 탭으로 전환될 때 새로고침
-                    if tab == .home && previousTab != .home {
-                        return .send(.home(.onAppear))
-                    }
+                    // 홈 탭 새로고침은 HomeView.onAppear가 담당 (여기서도 보내면 API가 중복 호출됨)
 
                     // 히스토리 탭으로 전환될 때 새로고침
                     if tab == .quiz && previousTab != .quiz {

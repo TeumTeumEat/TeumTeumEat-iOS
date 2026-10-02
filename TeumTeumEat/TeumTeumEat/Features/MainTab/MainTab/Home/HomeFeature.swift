@@ -136,32 +136,7 @@ struct HomeFeature {
                 state.retryCount = 0
                 state.showRetryToast = false
 
-                // 병렬 처리: 캘린더 조회 + 목표 조회
-                let now = Date()
-                let calendar = Calendar.current
-                let year = calendar.component(.year, from: now)
-                let month = calendar.component(.month, from: now)
-                
-                return .merge(
-                    // 캘린더 조회 (독립적)
-                    .run { send in
-                        do {
-                            let calendarData = try await apiClient.fetchCalendarHistory(year: year, month: month)
-                            await send(.fetchCalendarHistoryResponse(.success(calendarData)))
-                        } catch {
-                            await send(.fetchCalendarHistoryResponse(.failure(error)))
-                        }
-                    },
-                    // 목표 조회 (Step 1 시작)
-                    .run { send in
-                        do {
-                            let goal = try await apiClient.fetchCurrentGoal()
-                            await send(.fetchCurrentGoalResponse(.success(goal)))
-                        } catch {
-                            await send(.fetchCurrentGoalResponse(.failure(error)))
-                        }
-                    }
-                )
+                return loadHomeData()
                 
             // 캘린더 조회 완료 (독립적 처리)
             case .fetchCalendarHistoryResponse(.success(let calendarData)):
@@ -207,6 +182,7 @@ struct HomeFeature {
                         await send(.fetchQuizStatusResponse(.failure(error)))
                     }
                 }
+                .cancellable(id: CancelID.quizStatus, cancelInFlight: true)
                 
             case .fetchCurrentGoalResponse(.failure(let error)):
                 state.isLoading = false
@@ -362,29 +338,7 @@ struct HomeFeature {
                 state.isLoading = true
                 state.errorMessage = nil
 
-                let now = Date()
-                let calendar = Calendar.current
-                let year = calendar.component(.year, from: now)
-                let month = calendar.component(.month, from: now)
-
-                return .merge(
-                    .run { send in
-                        do {
-                            let calendarData = try await apiClient.fetchCalendarHistory(year: year, month: month)
-                            await send(.fetchCalendarHistoryResponse(.success(calendarData)))
-                        } catch {
-                            await send(.fetchCalendarHistoryResponse(.failure(error)))
-                        }
-                    },
-                    .run { send in
-                        do {
-                            let goal = try await apiClient.fetchCurrentGoal()
-                            await send(.fetchCurrentGoalResponse(.success(goal)))
-                        } catch {
-                            await send(.fetchCurrentGoalResponse(.failure(error)))
-                        }
-                    }
-                )
+                return loadHomeData()
 
             case .dismissErrorOverlay:
                 state.showErrorOverlay = false
@@ -546,6 +500,44 @@ struct HomeFeature {
                 return .none
             }
         }
+    }
+
+    private enum CancelID {
+        case calendar
+        case currentGoal
+        case quizStatus
+    }
+
+    /// 캘린더 + 현재 목표 병렬 조회 (Step 1 시작)
+    /// 중복 호출 시 이전 요청을 취소해 응답 순서가 꼬이지 않도록 함
+    private func loadHomeData() -> Effect<Action> {
+        let now = Date()
+        let calendar = Calendar.current
+        let year = calendar.component(.year, from: now)
+        let month = calendar.component(.month, from: now)
+
+        return .merge(
+            // 캘린더 조회 (독립적)
+            .run { send in
+                do {
+                    let calendarData = try await apiClient.fetchCalendarHistory(year: year, month: month)
+                    await send(.fetchCalendarHistoryResponse(.success(calendarData)))
+                } catch {
+                    await send(.fetchCalendarHistoryResponse(.failure(error)))
+                }
+            }
+            .cancellable(id: CancelID.calendar, cancelInFlight: true),
+            // 목표 조회 (Step 1 시작)
+            .run { send in
+                do {
+                    let goal = try await apiClient.fetchCurrentGoal()
+                    await send(.fetchCurrentGoalResponse(.success(goal)))
+                } catch {
+                    await send(.fetchCurrentGoalResponse(.failure(error)))
+                }
+            }
+            .cancellable(id: CancelID.currentGoal, cancelInFlight: true)
+        )
     }
 }
 
