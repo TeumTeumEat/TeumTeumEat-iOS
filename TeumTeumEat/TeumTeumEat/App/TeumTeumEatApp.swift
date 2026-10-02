@@ -18,21 +18,20 @@ import FirebaseAnalytics
 @main
 struct TeumTeumEatApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    
+
+    // Scene body가 재계산돼도 앱 상태가 초기화되지 않도록 Store는 한 번만 생성
+    @MainActor static let store = Store(initialState: AppFeature.State()) {
+        AppFeature()
+    }
+
     init() {
         let APPKEY = Config.kakaoNativeAppKey
         KakaoSDK.initSDK(appKey: APPKEY)
-        let accessToken = KeyChainManager.shared.getAccessToken()
-        print(accessToken)
     }
-    
+
     var body: some Scene {
         WindowGroup {
-            AppView(
-                store: Store(initialState: AppFeature.State()) {
-                    AppFeature()
-                }
-            )
+            AppView(store: Self.store)
             .onOpenURL { url in
                 if AuthApi.isKakaoTalkLoginUrl(url) {
                     _ = AuthController.handleOpenUrl(url: url)
