@@ -17,99 +17,37 @@ public struct CategoryAPIClient {
 }
 
 extension CategoryAPIClient: DependencyKey {
+    // 공통 APIClient.request 사용 (토큰 만료 시 재발급 + 재시도 포함)
     public static let liveValue = CategoryAPIClient(
         fetchCategories: {
             do {
-                let baseURL = Config.baseURL
-                let endPoint = "/api/v1/categories"
-                let fullPath = baseURL + endPoint
-                Log.network.debug("Fetching categories from: \(fullPath)")
-                
-                guard let url = URL(string: fullPath) else {
-                    Log.network.debug("Invalid URL: \(fullPath)")
-                    throw CategoryAPIError.invalidResponse(
-                        message: "잘못된 URL입니다.",
-                        details: nil
-                    )
-                }
-                
-                // URLRequest 생성
-                var request = URLRequest(url: url)
-                request.httpMethod = "GET"
-                
-                //  KeyChain에서 토큰 가져오기
-                if let token = KeyChainManager.shared.getAccessToken() {
-                    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-                    Log.network.debug("Access Token added to request")
-                } else {
-                    Log.network.debug("No access token found in KeyChain")
-                    throw CategoryAPIError.invalidResponse(
-                        message: "인증 토큰이 없습니다.",
-                        details: "다시 로그인해주세요."
-                    )
-                }
-                
-                let (data, response) = try await URLSession.shared.data(for: request)
-                
-                // HTTP 응답 확인
-                if let httpResponse = response as? HTTPURLResponse {
-                    Log.network.debug("HTTP Status: \(httpResponse.statusCode)")
-                    
-                    guard (200...299).contains(httpResponse.statusCode) else {
-                        // 401 에러 처리
-                        if httpResponse.statusCode == 401 {
-                            throw CategoryAPIError.invalidResponse(
-                                message: "인증이 만료되었습니다.",
-                                details: "다시 로그인해주세요."
-                            )
-                        }
-                        throw CategoryAPIError.invalidResponse(
-                            message: "서버 오류 (상태 코드: \(httpResponse.statusCode))",
-                            details: nil
-                        )
-                    }
-                }
-                
-                // 응답 데이터 확인
-                if let jsonString = String(data: data, encoding: .utf8) {
-                    Log.network.debug("Response JSON:")
-                    Log.network.debug(jsonString)
-                }
-                
-                // Base Response로 디코딩
-                let apiResponse = try JSONDecoder().decode(
-                    APIResponse<CategoryData>.self,
-                    from: data
+                let response: APIResponse<CategoryData> = try await APIClient.liveValue.request(
+                    endpoint: "/api/v1/categories",
+                    method: .get,
+                    requiresAuth: true
                 )
-                
-                Log.network.debug("API Response Code: \(apiResponse.code)")
-                Log.network.debug("API Response Message: \(apiResponse.message)")
-                
-                // 에러 처리
-                guard apiResponse.code == "OK",
-                      let categoryData = apiResponse.data else {
-                    Log.network.debug("Invalid API Response")
+
+                guard response.code == "OK", let categoryData = response.data else {
                     throw CategoryAPIError.invalidResponse(
-                        message: apiResponse.message,
-                        details: apiResponse.details
+                        message: response.message,
+                        details: response.details
                     )
                 }
-                
+
                 Log.network.debug("Categories loaded: \(categoryData.categoryResponses.count) items")
                 return categoryData.categoryResponses
-                
-            } catch let decodingError as DecodingError {
-                Log.network.error("Decoding Error: \(decodingError)")
-                throw CategoryAPIError.invalidResponse(
-                    message: "데이터 파싱 오류",
-                    details: decodingError.localizedDescription
-                )
+
             } catch let error as CategoryAPIError {
-                Log.network.error("Category API Error: \(error)")
                 throw error
-            } catch {
-                Log.network.error("Network Error: \(error)")
-                throw CategoryAPIError.networkError(error)
+            } catch let error as APIError {
+                // 화면에서는 CategoryAPIError.errorDescription을 표시하므로 메시지를 유지해 변환
+                Log.network.error("Category API Error: \(error)")
+                switch error {
+                case .networkError(let underlying):
+                    throw CategoryAPIError.networkError(underlying)
+                default:
+                    throw CategoryAPIError.invalidResponse(message: error.userFriendlyMessage, details: nil)
+                }
             }
         }
     )

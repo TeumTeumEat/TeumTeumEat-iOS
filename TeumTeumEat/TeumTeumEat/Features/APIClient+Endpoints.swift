@@ -1,5 +1,5 @@
 //
-//  APIClient.swift
+//  APIClient+Endpoints.swift
 //  TeumTeumEat
 //
 //  Created by 임재현 on 12/30/25.
@@ -10,223 +10,8 @@ import Dependencies
 import CoreNetwork
 import OnboardingFeature
 
-enum HTTPMethod: String {
-    case get = "GET"
-    case post = "POST"
-    case put = "PUT"
-    case delete = "DELETE"
-    case patch = "PATCH"
-}
-
-// MARK: - Token Reissue Models
-private struct ReissueTokenRequest: Encodable {
-    let refreshToken: String
-}
-
-private struct ReissueTokenData: Decodable {
-    let accessToken: String
-    let refreshToken: String
-}
-
-// MARK: - Token Refresh Coordinator
-/// 동시에 여러 API 요청이 토큰 만료를 감지했을 때 중복 재발급을 방지하는 Actor
-private actor TokenRefreshCoordinator {
-    static let shared = TokenRefreshCoordinator()
-    private init() {}
-
-    private var refreshTask: Task<Void, Error>?
-
-    func refresh(using apiClient: APIClient) async throws {
-        if let task = refreshTask {
-            try await task.value
-            return
-        }
-
-        let task = Task<Void, Error> {
-            try await apiClient.performTokenReissue()
-        }
-        refreshTask = task
-
-        do {
-            try await task.value
-            refreshTask = nil
-        } catch {
-            refreshTask = nil
-            throw error
-        }
-    }
-}
-
-struct APIClient {
-    
-    func request<T: Decodable>(
-        endpoint: String,
-        method: HTTPMethod = .get,
-        body: Encodable? = nil,
-        requiresAuth: Bool = true,
-        isRetry: Bool = false
-    ) async throws -> T {
-        // 1. URL 구성
-        let baseURL = Config.baseURL
-        let fullPath = baseURL + endpoint
-        Log.network.debug("API Request: \(method.rawValue) \(fullPath)")
-        
-        guard let url = URL(string: fullPath) else {
-            Log.network.debug("Invalid URL: \(fullPath)")
-            throw APIError.invalidURL
-        }
-        
-        // 2. URLRequest 생성
-        var request = URLRequest(url: url)
-        request.httpMethod = method.rawValue
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        // 3. 인증 토큰 추가
-        if requiresAuth {
-            guard let token = KeyChainManager.shared.getAccessToken() else {
-                Log.network.debug("No access token found in KeyChain")
-                throw APIError.noAccessToken
-            }
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-        
-        // 4. Request Body 추가 (POST, PUT 등)
-        if let body = body {
-            do {
-                request.httpBody = try JSONEncoder().encode(body)
-                if let bodyString = String(data: request.httpBody!, encoding: .utf8) {
-                    Log.network.debug("Request Body: \(bodyString)")
-                }
-            } catch {
-                Log.network.error("Failed to encode request body: \(error)")
-                throw APIError.encodingFailed(error)
-            }
-        }
-        
-        // 5. 네트워크 요청
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            // 6. HTTP 응답 확인
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw APIError.invalidResponse
-            }
-            
-            Log.network.debug("HTTP Status: \(httpResponse.statusCode)")
-            
-            // 7. 응답 데이터 로깅
-            if let jsonString = String(data: data, encoding: .utf8) {
-                Log.network.debug("Response JSON: \(jsonString)")
-            }
-            
-            // 8. 상태 코드별 처리
-            switch httpResponse.statusCode {
-            case 200...299:
-                // 성공 - 데이터 디코딩
-                do {
-                    let decodedData = try JSONDecoder().decode(T.self, from: data)
-                    return decodedData
-                } catch {
-                    Log.network.error("Decoding Error: \(error)")
-                    throw APIError.decodingError(error)
-                }
-                
-            case 400...599:
-                // 에러 응답 디코딩 (sync only - try await는 이 블록 밖에서 처리)
-                let errorCode: String
-                let errorMessage: String
-                let errorDetails: String?
-
-                do {
-                    let errorResponse = try JSONDecoder().decode(APIErrorResponse.self, from: data)
-                    errorCode = errorResponse.code
-                    errorMessage = errorResponse.message
-                    errorDetails = errorResponse.details
-                    Log.network.error("Server Error - Code: \(errorCode), Message: \(errorMessage)")
-                } catch {
-                    errorCode = "HTTP-\(httpResponse.statusCode)"
-                    errorMessage = "서버 오류 (상태 코드: \(httpResponse.statusCode))"
-                    errorDetails = nil
-                    Log.network.error("Failed to decode error response, fallback to HTTP status")
-                }
-
-                // AUTH-002: 액세스 토큰 만료 → 재발급 후 1회 retry
-                if errorCode == "AUTH-002", requiresAuth, !isRetry {
-                    Log.network.debug("Access token expired. Attempting token refresh...")
-                    try await TokenRefreshCoordinator.shared.refresh(using: self)
-                    Log.network.debug("Token refreshed. Retrying original request...")
-                    return try await self.request(
-                        endpoint: endpoint,
-                        method: method,
-                        body: body,
-                        requiresAuth: requiresAuth,
-                        isRetry: true
-                    )
-                }
-
-                throw APIError.serverError(code: errorCode, message: errorMessage, details: errorDetails)
-                
-            default:
-                // 예상치 못한 상태 코드
-                throw APIError.serverError(
-                    code: "HTTP-\(httpResponse.statusCode)",
-                    message: "예상치 못한 응답 (상태 코드: \(httpResponse.statusCode))",
-                    details: nil
-                )
-            }
-            
-        } catch let error as APIError {
-            // 이미 APIError로 변환된 경우 그대로 throw
-            throw error
-        } catch {
-            // 네트워크 레이어 에러 (연결 실패, 타임아웃 등)
-            Log.network.error("Network Error: \(error)")
-            throw APIError.networkError(error)
-        }
-    }
-}
-
-extension APIClient: DependencyKey {
-    static let liveValue = APIClient()
-}
-
-// MARK: - Token Reissue
-extension APIClient {
-    /// 토큰 재발급 (TokenRefreshCoordinator 내부에서만 호출)
-    fileprivate func performTokenReissue() async throws {
-        guard let refreshToken = KeyChainManager.shared.getRefreshToken() else {
-            Log.network.debug("No refresh token found in KeyChain")
-            throw APIError.noRefreshToken
-        }
-
-        let response: APIResponse<ReissueTokenData> = try await request(
-            endpoint: "/api/v2/users/reissue",
-            method: .post,
-            body: ReissueTokenRequest(refreshToken: refreshToken),
-            requiresAuth: false,
-            isRetry: true
-        )
-
-        guard response.code == "OK", let data = response.data else {
-            throw APIError.serverError(
-                code: response.code,
-                message: response.message,
-                details: response.details
-            )
-        }
-
-        KeyChainManager.shared.saveAccessToken(data.accessToken)
-        KeyChainManager.shared.saveRefreshToken(data.refreshToken)
-        Log.network.debug("Token reissued and saved successfully")
-    }
-}
-
-extension DependencyValues {
-    var apiClient: APIClient {
-        get { self[APIClient.self] }
-        set { self[APIClient.self] = newValue }
-    }
-}
+// 공통 request / 토큰 재발급 / DependencyKey는 CoreNetwork.APIClient에 있음
+// 이 파일은 앱 기능별 엔드포인트만 정의
 
 
 extension APIClient {
@@ -901,12 +686,40 @@ private struct SSEErrorResponse: Decodable {
     let message: String
 }
 
+// SSE 전용 세션 (요청마다 새로 만들면 invalidate되지 않고 메모리에 남으므로 하나를 재사용)
+private let sseSession: URLSession = {
+    let config = URLSessionConfiguration.default
+    config.timeoutIntervalForRequest = 300
+    config.timeoutIntervalForResource = 300
+    return URLSession(configuration: config)
+}()
+
 extension APIClient {
     func streamCategoryDocument(categoryId: Int) -> AsyncThrowingStream<CategoryStreamEvent, Error> {
+        streamTextEvents(
+            endpoint: "/api/v1/categories/\(categoryId)/documents/daily/stream",
+            tag: "[SSE Category]",
+            connectionFailureMessage: "카테고리 스트림 연결 실패"
+        )
+    }
+
+    func streamPDFSummary(goalId: Int, documentId: Int) -> AsyncThrowingStream<CategoryStreamEvent, Error> {
+        streamTextEvents(
+            endpoint: "/api/v1/goals/\(goalId)/documents/\(documentId)/summary/stream",
+            tag: "[SSE PDF]",
+            connectionFailureMessage: "PDF 스트림 연결 실패"
+        )
+    }
+
+    /// 요약글 텍스트 SSE 스트림 (POST) 공통 처리
+    private func streamTextEvents(
+        endpoint: String,
+        tag: String,
+        connectionFailureMessage: String
+    ) -> AsyncThrowingStream<CategoryStreamEvent, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
-                let endpoint = "/api/v1/categories/\(categoryId)/documents/daily/stream"
-                Log.network.debug("[SSE Category] POST 요청 시작: \(Config.baseURL + endpoint)")
+                Log.network.debug("\(tag) POST 요청 시작: \(Config.baseURL + endpoint)")
                 guard let url = URL(string: Config.baseURL + endpoint) else {
                     continuation.finish(throwing: APIError.invalidURL); return
                 }
@@ -920,34 +733,30 @@ extension APIClient {
                 request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
                 do {
-                    let config = URLSessionConfiguration.default
-                    config.timeoutIntervalForRequest = 300
-                    config.timeoutIntervalForResource = 300
-                    let session = URLSession(configuration: config)
-                    let (bytes, response) = try await session.bytes(for: request)
+                    let (bytes, response) = try await sseSession.bytes(for: request)
                     guard let http = response as? HTTPURLResponse else {
                         continuation.finish(throwing: APIError.invalidResponse); return
                     }
                     if http.statusCode != 200 {
-                        Log.network.error("[SSE Category] HTTP 오류: \(http.statusCode)")
+                        Log.network.error("\(tag) HTTP 오류: \(http.statusCode)")
                         var data = Data()
                         for try await byte in bytes { data.append(byte) }
                         if let err = try? JSONDecoder().decode(SSEErrorResponse.self, from: data) {
-                            Log.network.error("[SSE Category] 서버 에러: code=\(err.code) message=\(err.message)")
+                            Log.network.error("\(tag) 서버 에러: code=\(err.code) message=\(err.message)")
                             continuation.finish(throwing: APIError.serverError(
                                 code: err.code, message: err.message, details: nil))
                         } else {
                             let rawBody = String(data: data, encoding: .utf8) ?? "(decode fail)"
-                            Log.network.error("[SSE Category] 에러 바디 파싱 실패, raw=\(rawBody.prefix(200))")
+                            Log.network.error("\(tag) 에러 바디 파싱 실패, raw=\(rawBody.prefix(200))")
                             continuation.finish(throwing: APIError.serverError(
                                 code: "SSE-\(http.statusCode)",
-                                message: "카테고리 스트림 연결 실패", details: nil))
+                                message: connectionFailureMessage, details: nil))
                         }
                         return
                     }
 
-                    Log.network.debug("[SSE Category] 연결 성공 (status \(http.statusCode)), 라인 수신 시작")
-                    Log.network.debug("[SSE Category] Response Headers: \(http.allHeaderFields)")
+                    Log.network.debug("\(tag) 연결 성공 (status \(http.statusCode)), 라인 수신 시작")
+                    Log.network.debug("\(tag) Response Headers: \(http.allHeaderFields)")
                     var eventType = ""
                     var eventData = ""
                     var rawBuffer: [String] = []
@@ -955,12 +764,11 @@ extension APIClient {
 
                     for try await line in bytes.lines {
                         lineCount += 1
-                        Log.network.debug("[SSE Category RAW #\(lineCount)] repr=\(line.debugDescription) bytes=\(line.utf8.count)")
+                        Log.network.debug("\(tag) RAW #\(lineCount) repr=\(line.debugDescription) bytes=\(line.utf8.count)")
                         if line.isEmpty {
                             // 표준 SSE 빈줄 구분자
-                            Log.network.debug("[SSE Category] --- 빈줄(이벤트 구분자) ---")
                             if !eventType.isEmpty {
-                                Log.network.debug("[SSE Category] dispatch event=\(eventType) data=\(eventData.prefix(120))")
+                                Log.network.debug("\(tag) dispatch event=\(eventType) data=\(eventData.prefix(120))")
                                 if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
                                     continuation.yield(event)
                                 }
@@ -970,7 +778,7 @@ extension APIClient {
                             // 새 event: 라인 도착 → 이전 이벤트를 먼저 flush
                             // 서버가 빈줄 없이 event:/data: 를 연속으로 전송하는 경우 대응
                             if !eventType.isEmpty {
-                                Log.network.debug("[SSE Category] flush (no empty line) event=\(eventType) data=\(eventData.prefix(120))")
+                                Log.network.debug("\(tag) flush (no empty line) event=\(eventType) data=\(eventData.prefix(120))")
                                 if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
                                     continuation.yield(event)
                                 }
@@ -983,11 +791,11 @@ extension APIClient {
                             eventData = eventData.isEmpty ? value : eventData + "\n" + value
                         } else {
                             // SSE 형식이 아닌 raw 라인 — JSON 에러 본문일 수 있음
-                            Log.network.debug("[SSE Category] non-SSE line: \(line.prefix(200))")
+                            Log.network.debug("\(tag) non-SSE line: \(line.prefix(200))")
                             rawBuffer.append(line)
                         }
                     }
-                    Log.network.debug("[SSE Category] 루프 종료 - 수신된 총 라인 수: \(lineCount)")
+                    Log.network.debug("\(tag) 루프 종료 - 수신된 총 라인 수: \(lineCount)")
                     // 마지막 이벤트 처리 (빈줄 없이 스트림이 종료된 경우)
                     if !eventType.isEmpty {
                         if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
@@ -999,117 +807,11 @@ extension APIClient {
                     if !rawBody.isEmpty,
                        let bodyData = rawBody.data(using: .utf8),
                        let err = try? JSONDecoder().decode(SSEErrorResponse.self, from: bodyData) {
-                        Log.network.error("[SSE Category] 스트림 내 JSON 에러 감지: code=\(err.code) message=\(err.message)")
+                        Log.network.error("\(tag) 스트림 내 JSON 에러 감지: code=\(err.code) message=\(err.message)")
                         continuation.finish(throwing: APIError.serverError(
                             code: err.code, message: err.message, details: nil))
                     } else {
-                        Log.network.debug("[SSE Category] 스트림 EOF → .completed yield")
-                        continuation.yield(.completed)
-                        continuation.finish()
-                    }
-                } catch {
-                    continuation.finish(throwing: error)
-                }
-            }
-            continuation.onTermination = { _ in task.cancel() }
-        }
-    }
-
-    func streamPDFSummary(goalId: Int, documentId: Int) -> AsyncThrowingStream<CategoryStreamEvent, Error> {
-        AsyncThrowingStream { continuation in
-            let task = Task {
-                let endpoint = "/api/v1/goals/\(goalId)/documents/\(documentId)/summary/stream"
-                Log.network.debug("[SSE PDF] POST 요청 시작: \(Config.baseURL + endpoint)")
-                guard let url = URL(string: Config.baseURL + endpoint) else {
-                    continuation.finish(throwing: APIError.invalidURL); return
-                }
-                var request = URLRequest(url: url)
-                request.httpMethod = "POST"
-                request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
-                request.setValue("0", forHTTPHeaderField: "Content-Length")
-                guard let token = KeyChainManager.shared.getAccessToken() else {
-                    continuation.finish(throwing: APIError.noAccessToken); return
-                }
-                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-                do {
-                    let config = URLSessionConfiguration.default
-                    config.timeoutIntervalForRequest = 300
-                    config.timeoutIntervalForResource = 300
-                    let session = URLSession(configuration: config)
-                    let (bytes, response) = try await session.bytes(for: request)
-                    guard let http = response as? HTTPURLResponse else {
-                        continuation.finish(throwing: APIError.invalidResponse); return
-                    }
-                    if http.statusCode != 200 {
-                        Log.network.error("[SSE PDF] HTTP 오류: \(http.statusCode)")
-                        var data = Data()
-                        for try await byte in bytes { data.append(byte) }
-                        if let err = try? JSONDecoder().decode(SSEErrorResponse.self, from: data) {
-                            Log.network.error("[SSE PDF] 서버 에러: code=\(err.code) message=\(err.message)")
-                            continuation.finish(throwing: APIError.serverError(
-                                code: err.code, message: err.message, details: nil))
-                        } else {
-                            let rawBody = String(data: data, encoding: .utf8) ?? "(decode fail)"
-                            Log.network.error("[SSE PDF] 에러 바디 파싱 실패, raw=\(rawBody.prefix(200))")
-                            continuation.finish(throwing: APIError.serverError(
-                                code: "SSE-\(http.statusCode)",
-                                message: "PDF 스트림 연결 실패", details: nil))
-                        }
-                        return
-                    }
-
-                    Log.network.debug("[SSE PDF] 연결 성공 (status \(http.statusCode)), 라인 수신 시작")
-                    Log.network.debug("[SSE PDF] Response Headers: \(http.allHeaderFields)")
-                    var eventType = ""
-                    var eventData = ""
-                    var rawBuffer: [String] = []
-                    var lineCount = 0
-
-                    for try await line in bytes.lines {
-                        lineCount += 1
-                        Log.network.debug("[SSE PDF RAW #\(lineCount)] repr=\(line.debugDescription) bytes=\(line.utf8.count)")
-                        if line.isEmpty {
-                            Log.network.debug("[SSE PDF] --- 빈줄(이벤트 구분자) ---")
-                            if !eventType.isEmpty {
-                                Log.network.debug("[SSE PDF] dispatch event=\(eventType) data=\(eventData.prefix(120))")
-                                if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
-                                    continuation.yield(event)
-                                }
-                                eventType = ""; eventData = ""
-                            }
-                        } else if line.hasPrefix("event:") {
-                            if !eventType.isEmpty {
-                                Log.network.debug("[SSE PDF] flush (no empty line) event=\(eventType) data=\(eventData.prefix(120))")
-                                if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
-                                    continuation.yield(event)
-                                }
-                            }
-                            eventType = String(line.dropFirst(6)).trimmingCharacters(in: .whitespaces)
-                            eventData = ""
-                        } else if line.hasPrefix("data:") {
-                            let value = String(line.dropFirst(5))
-                            eventData = eventData.isEmpty ? value : eventData + "\n" + value
-                        } else {
-                            Log.network.debug("[SSE PDF] non-SSE line: \(line.prefix(200))")
-                            rawBuffer.append(line)
-                        }
-                    }
-                    Log.network.debug("[SSE PDF] 루프 종료 - 수신된 총 라인 수: \(lineCount)")
-                    if !eventType.isEmpty {
-                        if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
-                            continuation.yield(event)
-                        }
-                    }
-                    let rawBody = rawBuffer.joined(separator: "\n")
-                    if !rawBody.isEmpty,
-                       let bodyData = rawBody.data(using: .utf8),
-                       let err = try? JSONDecoder().decode(SSEErrorResponse.self, from: bodyData) {
-                        Log.network.error("[SSE PDF] 스트림 내 JSON 에러 감지: code=\(err.code) message=\(err.message)")
-                        continuation.finish(throwing: APIError.serverError(
-                            code: err.code, message: err.message, details: nil))
-                    } else {
-                        Log.network.debug("[SSE PDF] 스트림 EOF → .completed yield")
+                        Log.network.debug("\(tag) 스트림 EOF → .completed yield")
                         continuation.yield(.completed)
                         continuation.finish()
                     }
