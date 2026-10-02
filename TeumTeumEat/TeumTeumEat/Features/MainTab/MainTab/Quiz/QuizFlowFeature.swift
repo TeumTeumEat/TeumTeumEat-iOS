@@ -27,8 +27,7 @@ struct QuizFlowFeature {
     /// 주제 완료 화면에서 띄우는 새 주제 추가 화면
     @Reducer
     enum Destination {
-        case addSubject(AddSubjectFeature)
-        case addSubjectFile(AddSubjectFileFeature)
+        case addSubject(AddSubjectFlowFeature)
     }
 
     @ObservableState
@@ -188,22 +187,20 @@ struct QuizFlowFeature {
 
             // SubjectComplete → 새 주제 추가 (QuizFlow 내부에서 띄움)
             case .step(.subjectComplete(.delegate(.navigateToFileUpload))):
-                state.destination = .addSubjectFile(AddSubjectFileFeature.State())
+                state.destination = .addSubject(AddSubjectFlowFeature.State(contentType: .fileUpload))
                 return .none
 
             case .step(.subjectComplete(.delegate(.navigateToCategory))):
-                state.destination = .addSubject(AddSubjectFeature.State())
+                state.destination = .addSubject(AddSubjectFlowFeature.State(contentType: .category))
                 return .none
 
             // 새 주제 추가 완료 → 홈으로
-            case .destination(.presented(.addSubject(.delegate(.completed)))),
-                 .destination(.presented(.addSubjectFile(.delegate(.completed)))):
+            case .destination(.presented(.addSubject(.delegate(.completed)))):
                 state.destination = nil
                 return .send(.delegate(.completed(destination: .home)))
 
             // 새 주제 추가 취소 → 주제 완료 화면으로 복귀
-            case .destination(.presented(.addSubject(.delegate(.cancelled)))),
-                 .destination(.presented(.addSubjectFile(.delegate(.cancelled)))):
+            case .destination(.presented(.addSubject(.delegate(.cancelled)))):
                 state.destination = nil
                 return .none
 
@@ -277,12 +274,7 @@ struct QuizFlowView: View {
         .fullScreenCover(
             item: $store.scope(state: \.destination?.addSubject, action: \.destination.addSubject)
         ) { addSubjectStore in
-            AddSubjectView(store: addSubjectStore)
-        }
-        .fullScreenCover(
-            item: $store.scope(state: \.destination?.addSubjectFile, action: \.destination.addSubjectFile)
-        ) { addSubjectFileStore in
-            AddSubjectFileView(store: addSubjectFileStore)
+            AddSubjectFlowView(store: addSubjectStore)
         }
     }
 }
