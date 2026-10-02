@@ -111,8 +111,11 @@ struct HomeFeature {
         case startNewGoalTapped
     }
     
-    @Dependency(\.apiClient) var apiClient
+    @Dependency(\.goalClient) var goalClient
     
+    @Dependency(\.quizClient) var quizClient
+    
+    @Dependency(\.historyClient) var historyClient
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -151,7 +154,7 @@ struct HomeFeature {
                 // Step 2: 퀴즈 상태는 항상 확인 (날짜 변경 감지용)
                 return .run { send in
                     do {
-                        let status = try await apiClient.fetchUserQuizStatus()
+                        let status = try await quizClient.fetchUserQuizStatus()
                         await send(.fetchQuizStatusResponse(.success(status)))
                     } catch {
                         await send(.fetchQuizStatusResponse(.failure(error)))
@@ -193,7 +196,7 @@ struct HomeFeature {
                     Log.home.debug("[Home] Goal 완료 - 모든 퀴즈 세트 완료")
                     return .run { send in
                         await send(.fetchActiveGoalsResponse(
-                            Result { try await apiClient.fetchGoals() }
+                            Result { try await goalClient.fetchGoals() }
                         ))
                     }
                 }
@@ -209,7 +212,7 @@ struct HomeFeature {
                     state.isLoading = false
                     return .run { send in
                         await send(.fetchActiveGoalsResponse(
-                            Result { try await apiClient.fetchGoals() }
+                            Result { try await goalClient.fetchGoals() }
                         ))
                     }
                 }
@@ -260,7 +263,7 @@ struct HomeFeature {
                 state.isLoading = true
                 return .run { send in
                     do {
-                        let status = try await apiClient.fetchUserQuizStatus()
+                        let status = try await quizClient.fetchUserQuizStatus()
                         await send(.fetchQuizStatusResponse(.success(status)))
                     } catch {
                         await send(.fetchQuizStatusResponse(.failure(error)))
@@ -270,7 +273,7 @@ struct HomeFeature {
             case .adRewardEarned:
                 return .run { send in
                     do {
-                        try await apiClient.postAdReward()
+                        try await quizClient.postAdReward()
                         await send(.postAdRewardResponse(.success(())))
                     } catch {
                         await send(.postAdRewardResponse(.failure(error)))
@@ -288,7 +291,7 @@ struct HomeFeature {
             case .postAdRewardResponse(.success):
                 return .run { send in
                     do {
-                        let status = try await apiClient.fetchUserQuizStatus()
+                        let status = try await quizClient.fetchUserQuizStatus()
                         await send(.refreshQuizStatusResponse(.success(status)))
                     } catch {
                         await send(.refreshQuizStatusResponse(.failure(error)))
@@ -406,7 +409,7 @@ struct HomeFeature {
             // 캘린더 조회 (독립적)
             .run { send in
                 do {
-                    let calendarData = try await apiClient.fetchCalendarHistory(year: year, month: month)
+                    let calendarData = try await historyClient.fetchCalendarHistory(year: year, month: month)
                     await send(.fetchCalendarHistoryResponse(.success(calendarData)))
                 } catch {
                     await send(.fetchCalendarHistoryResponse(.failure(error)))
@@ -416,7 +419,7 @@ struct HomeFeature {
             // 목표 조회 (Step 1 시작)
             .run { send in
                 do {
-                    let goal = try await apiClient.fetchCurrentGoal()
+                    let goal = try await goalClient.fetchCurrentGoal()
                     await send(.fetchCurrentGoalResponse(.success(goal)))
                 } catch {
                     await send(.fetchCurrentGoalResponse(.failure(error)))

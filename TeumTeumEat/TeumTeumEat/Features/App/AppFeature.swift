@@ -11,8 +11,7 @@ import FirebaseMessaging
 
 @Reducer
 struct AppFeature {
-    @Dependency(\.apiClient) var apiClient
-
+    @Dependency(\.userClient) var userClient
     @ObservableState
     struct State: Equatable {
         var splash: SplashFeature.State = .init()
@@ -46,8 +45,8 @@ struct AppFeature {
                 
             case .logout:
                 // 디바이스 토큰 삭제 후 KeyChain 삭제 (순서 중요: 인증 토큰이 있어야 API 호출 가능)
-                return .run { [apiClient] send in
-                    await deleteCurrentDeviceToken(apiClient: apiClient)
+                return .run { [userClient] send in
+                    await deleteCurrentDeviceToken(userClient: userClient)
                     await send(.logoutFinalize)
                 }
 
@@ -102,8 +101,8 @@ struct AppFeature {
                 }
 
                 // 로그인 성공 직후 디바이스 토큰 등록 (로그아웃 후 재로그인 포함)
-                return .run { [apiClient] _ in
-                    await registerCurrentFCMToken(apiClient: apiClient)
+                return .run { [userClient] _ in
+                    await registerCurrentFCMToken(userClient: userClient)
                 }
                 
             // Onboarding Delegate
@@ -115,8 +114,8 @@ struct AppFeature {
                 state.mainTab = MainTabFeature.State()
 
                 // 온보딩 완료 직후 디바이스 토큰 등록 (신규 유저 푸시 알림 누락 방지)
-                return .run { [apiClient] _ in
-                    await registerCurrentFCMToken(apiClient: apiClient)
+                return .run { [userClient] _ in
+                    await registerCurrentFCMToken(userClient: userClient)
                 }
                 
             case .mainTab(.delegate(.withdrawal)):
@@ -165,28 +164,28 @@ private func currentFCMToken() async -> String? {
     }
 }
 
-private func registerCurrentFCMToken(apiClient: APIClient) async {
+private func registerCurrentFCMToken(userClient: UserClient) async {
     guard let fcmToken = await currentFCMToken() else {
         Log.app.debug("FCM 토큰 없음 - 디바이스 토큰 등록 스킵")
         return
     }
 
     do {
-        try await apiClient.registerDeviceToken(token: fcmToken, deviceType: "IOS")
+        try await userClient.registerDeviceToken(token: fcmToken, deviceType: "IOS")
         Log.app.debug("디바이스 토큰 등록 완료")
     } catch {
         Log.app.error("디바이스 토큰 등록 실패: \(error)")
     }
 }
 
-private func deleteCurrentDeviceToken(apiClient: APIClient) async {
+private func deleteCurrentDeviceToken(userClient: UserClient) async {
     guard let fcmToken = await currentFCMToken() else {
         Log.app.debug("FCM 토큰 없음 - 디바이스 토큰 삭제 스킵")
         return
     }
 
     do {
-        try await apiClient.deleteDeviceToken(token: fcmToken, deviceType: "IOS")
+        try await userClient.deleteDeviceToken(token: fcmToken, deviceType: "IOS")
         Log.app.debug("디바이스 토큰 삭제 완료")
     } catch {
         // 삭제 실패해도 로그아웃은 계속 진행

@@ -31,7 +31,7 @@ struct SplashFeature {
         }
     }
 
-    @Dependency(\.apiClient) var apiClient
+    @Dependency(\.userClient) var userClient
     @Dependency(\.openURL) var openURL
 
     var body: some ReducerOf<Self> {
@@ -85,7 +85,7 @@ struct SplashFeature {
                         // 토큰 있음 → 서버에서 온보딩 상태 조회
                         Log.auth.debug("토큰 있음 - 온보딩 상태 조회 시작")
                         await send(.onboardingStatusResponse(
-                            Result { try await apiClient.fetchOnboardingStatus() }
+                            Result { try await userClient.fetchOnboardingStatus() }
                         ))
                     } else {
                         // 토큰 없음

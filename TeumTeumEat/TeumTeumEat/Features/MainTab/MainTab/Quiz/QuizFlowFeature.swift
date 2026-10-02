@@ -71,8 +71,7 @@ struct QuizFlowFeature {
         }
     }
 
-    @Dependency(\.apiClient) var apiClient
-
+    @Dependency(\.quizClient) var quizClient
     var body: some ReducerOf<Self> {
         Scope(state: \.step, action: \.step) {
             Step.body
@@ -156,7 +155,7 @@ struct QuizFlowFeature {
             // MARK: - DetailResult → Complete or SubjectComplete (다음으로)
             case .step(.detailResult(.delegate(.showComplete))):
                 return .run { send in
-                    let result = await Result { try await apiClient.fetchUserQuizStatus() }
+                    let result = await Result { try await quizClient.fetchUserQuizStatus() }
                     await send(.fetchStatusForCompletionResponse(result))
                 }
 
@@ -222,7 +221,7 @@ struct QuizFlowFeature {
         AnalyticsManager.logQuizStart(quizCount: state.quizzes.count)
         Log.quiz.debug("QuizFlow: 퀴즈 시작 - complete-set 호출")
         return .run { send in
-            await send(.completeSetResponse(Result { try await apiClient.completeQuizSet() }))
+            await send(.completeSetResponse(Result { try await quizClient.completeQuizSet() }))
         }
     }
 
@@ -332,8 +331,7 @@ struct QuizFeature {
         case dismissed
     }
     
-    @Dependency(\.apiClient) var apiClient
-    
+    @Dependency(\.quizClient) var quizClient
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -357,7 +355,7 @@ struct QuizFeature {
                 
                 return .run { send in
                     do {
-                        let result = try await apiClient.submitQuizAnswer(
+                        let result = try await quizClient.submitQuizAnswer(
                             quizId: quizId,
                             userAnswer: userAnswer
                         )

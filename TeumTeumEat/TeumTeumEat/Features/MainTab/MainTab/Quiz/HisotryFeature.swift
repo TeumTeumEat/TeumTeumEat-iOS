@@ -72,8 +72,9 @@ struct HistoryFeature {
         case openMyPageRequested
     }
     
-    @Dependency(\.apiClient) var apiClient
+    @Dependency(\.goalClient) var goalClient
     
+    @Dependency(\.historyClient) var historyClient
     var body: some ReducerOf<Self> {
          Reduce { state, action in
              switch action {
@@ -105,7 +106,7 @@ struct HistoryFeature {
                  return .run { send in
                      await send(.calendarDataLoaded(
                          Result {
-                             try await apiClient.fetchCalendarHistory(year: year, month: month)
+                             try await historyClient.fetchCalendarHistory(year: year, month: month)
                          }
                      ))
                  }
@@ -123,7 +124,7 @@ struct HistoryFeature {
                   return .run { send in
                       await send(.historyItemsLoaded(
                           Result {
-                              try await apiClient.fetchHistoryByDate(dateString)
+                              try await historyClient.fetchHistoryByDate(dateString)
                           }
                       ))
                   }
@@ -172,12 +173,12 @@ struct HistoryFeature {
                      await withTaskGroup(of: Void.self) { group in
                          group.addTask {
                              await send(.topicHistoriesLoaded(
-                                 Result { try await apiClient.fetchHistoryTopics() }
+                                 Result { try await historyClient.fetchHistoryTopics() }
                              ))
                          }
                          group.addTask {
                              await send(.activeGoalsLoaded(
-                                 Result { try await apiClient.fetchGoals() }
+                                 Result { try await goalClient.fetchGoals() }
                              ))
                          }
                      }
@@ -194,7 +195,7 @@ struct HistoryFeature {
                  state.calendarError = nil
                  return .run { [year = state.currentYear, month = state.currentMonth] send in
                      await send(.calendarDataLoaded(
-                         Result { try await apiClient.fetchCalendarHistory(year: year, month: month) }
+                         Result { try await historyClient.fetchCalendarHistory(year: year, month: month) }
                      ))
                  }
 
