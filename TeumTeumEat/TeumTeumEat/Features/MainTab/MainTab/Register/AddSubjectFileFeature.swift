@@ -175,11 +175,11 @@ struct AddSubjectFileFeature {
                 
             case .summary(.delegate(.complete)):
                 // Summary 완료 → Loading으로
-                print("주제 추가 시작 (파일)")
-                print("파일: \(state.uploadedFileURL?.lastPathComponent ?? "없음")")
-                print("난이도: \(state.selectedDifficulty ?? "")")
-                print("프롬프트: \(state.customPrompt)")
-                print("기간: \(state.selectedWeeks)주")
+                Log.register.debug("주제 추가 시작 (파일)")
+                Log.register.debug("파일: \(state.uploadedFileURL?.lastPathComponent ?? "없음")")
+                Log.register.debug("난이도: \(state.selectedDifficulty ?? "")")
+                Log.register.debug("프롬프트: \(state.customPrompt)")
+                Log.register.debug("기간: \(state.selectedWeeks)주")
                 
                 let onboardingData = OnboardingData(
                     userName: "",
@@ -209,7 +209,7 @@ struct AddSubjectFileFeature {
                 
             // MARK: - Loading & Complete
             case .loading(.loadingCompleted):
-                print("주제 추가 API 완료 (파일)")
+                Log.register.debug("주제 추가 API 완료 (파일)")
                 
                 // Complete 화면으로
                 state.loading = nil

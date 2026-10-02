@@ -69,11 +69,11 @@ struct AddSubjectFeature {
             // MARK: - Category Selection
             case .categorySelection(.delegate(.saveProgress(let root, let main, let sub, let detail))):
                 // 카테고리 진행 상황 저장 (뒤로가기 시)
-                print("AddSubject - saveProgress")
-                print("Root: \(root ?? "nil")")
-                print("Main: \(main ?? "nil")")
-                print("Sub: \(sub ?? "nil")")
-                print("Detail: \(detail?.name ?? "nil")")
+                Log.register.debug("AddSubject - saveProgress")
+                Log.register.debug("Root: \(root ?? "nil")")
+                Log.register.debug("Main: \(main ?? "nil")")
+                Log.register.debug("Sub: \(sub ?? "nil")")
+                Log.register.debug("Detail: \(detail?.name ?? "nil")")
                 
                 state.selectedRootCategory = root
                 state.selectedMainCategory = main
@@ -202,11 +202,11 @@ struct AddSubjectFeature {
                 
             case .summary(.delegate(.complete)):
                 // Summary 완료 → Loading으로
-                print("주제 추가 시작")
-                print("카테고리: \(state.selectedRootCategory ?? "") > \(state.selectedMainCategory ?? "") > \(state.selectedSubCategory ?? "") > \(state.selectedDetailCategory?.name ?? "")")
-                print("난이도: \(state.selectedDifficulty ?? "")")
-                print("프롬프트: \(state.customPrompt)")
-                print("기간: \(state.selectedWeeks)주")
+                Log.register.debug("주제 추가 시작")
+                Log.register.debug("카테고리: \(state.selectedRootCategory ?? "") > \(state.selectedMainCategory ?? "") > \(state.selectedSubCategory ?? "") > \(state.selectedDetailCategory?.name ?? "")")
+                Log.register.debug("난이도: \(state.selectedDifficulty ?? "")")
+                Log.register.debug("프롬프트: \(state.customPrompt)")
+                Log.register.debug("기간: \(state.selectedWeeks)주")
                 
                 let onboardingData = OnboardingData(
                     userName: "",

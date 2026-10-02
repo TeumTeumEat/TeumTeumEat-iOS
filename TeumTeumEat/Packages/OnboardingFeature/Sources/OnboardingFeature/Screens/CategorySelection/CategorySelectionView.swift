@@ -29,14 +29,10 @@ public struct CategorySelectionView: View {
                 )
             } else {
                 
-                let _ = print("현재 Step: \(store.currentStep)")
-                let _ = print("categories 개수: \(store.categories.count)")
                 switch store.currentStep {
                 case .rootCategory:
-                    let _ = print("RootCategory 화면 표시!")
                     RootCategoryStepView(store: store, showProgressBar: showProgressBar)
                 case .mainCategory:
-                    let _ = print("MainCategory 화면 표시!")
                     MainCategoryStepView(store: store, showProgressBar: showProgressBar)
                 case .subCategory:
                     SubCategoryStepView(store: store, showProgressBar: showProgressBar)

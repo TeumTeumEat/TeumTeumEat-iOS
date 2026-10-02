@@ -58,7 +58,7 @@ struct QuizGuideFeature {
 
             case .checkboxToggled:
                 state.isCheckboxSelected.toggle()
-                print("체크박스 토글: \(state.isCheckboxSelected)")
+                Log.quiz.debug("체크박스 토글: \(state.isCheckboxSelected)")
                 return .none
                 
             case .startQuizButtonTapped:
@@ -80,12 +80,12 @@ struct QuizGuideFeature {
                 
             case .updateQuizGuideResponse(.success):
                 state.isSubmitting = false
-                print("퀴즈 가이드 설정 업데이트 성공")
+                Log.quiz.debug("퀴즈 가이드 설정 업데이트 성공")
                 return .send(.delegate(.startQuiz))
                 
             case .updateQuizGuideResponse(.failure(let error)):
                 state.isSubmitting = false
-                print("퀴즈 가이드 설정 업데이트 실패: \(error)")
+                Log.quiz.error("퀴즈 가이드 설정 업데이트 실패: \(error)")
                 // 실패해도 퀴즈는 진행
                 return .send(.delegate(.startQuiz))
                 

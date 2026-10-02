@@ -69,10 +69,10 @@ struct APIClient {
         // 1. URL 구성
         let baseURL = Config.baseURL
         let fullPath = baseURL + endpoint
-        print("API Request: \(method.rawValue) \(fullPath)")
+        Log.network.debug("API Request: \(method.rawValue) \(fullPath)")
         
         guard let url = URL(string: fullPath) else {
-            print("Invalid URL: \(fullPath)")
+            Log.network.debug("Invalid URL: \(fullPath)")
             throw APIError.invalidURL
         }
         
@@ -84,7 +84,7 @@ struct APIClient {
         // 3. 인증 토큰 추가
         if requiresAuth {
             guard let token = KeyChainManager.shared.getAccessToken() else {
-                print("No access token found in KeyChain")
+                Log.network.debug("No access token found in KeyChain")
                 throw APIError.noAccessToken
             }
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -95,10 +95,10 @@ struct APIClient {
             do {
                 request.httpBody = try JSONEncoder().encode(body)
                 if let bodyString = String(data: request.httpBody!, encoding: .utf8) {
-                    print("Request Body: \(bodyString)")
+                    Log.network.debug("Request Body: \(bodyString)")
                 }
             } catch {
-                print("Failed to encode request body: \(error)")
+                Log.network.error("Failed to encode request body: \(error)")
                 throw APIError.encodingFailed(error)
             }
         }
@@ -112,11 +112,11 @@ struct APIClient {
                 throw APIError.invalidResponse
             }
             
-            print("HTTP Status: \(httpResponse.statusCode)")
+            Log.network.debug("HTTP Status: \(httpResponse.statusCode)")
             
             // 7. 응답 데이터 로깅
             if let jsonString = String(data: data, encoding: .utf8) {
-                print("Response JSON: \(jsonString)")
+                Log.network.debug("Response JSON: \(jsonString)")
             }
             
             // 8. 상태 코드별 처리
@@ -127,7 +127,7 @@ struct APIClient {
                     let decodedData = try JSONDecoder().decode(T.self, from: data)
                     return decodedData
                 } catch {
-                    print("Decoding Error: \(error)")
+                    Log.network.error("Decoding Error: \(error)")
                     throw APIError.decodingError(error)
                 }
                 
@@ -142,19 +142,19 @@ struct APIClient {
                     errorCode = errorResponse.code
                     errorMessage = errorResponse.message
                     errorDetails = errorResponse.details
-                    print("Server Error - Code: \(errorCode), Message: \(errorMessage)")
+                    Log.network.error("Server Error - Code: \(errorCode), Message: \(errorMessage)")
                 } catch {
                     errorCode = "HTTP-\(httpResponse.statusCode)"
                     errorMessage = "서버 오류 (상태 코드: \(httpResponse.statusCode))"
                     errorDetails = nil
-                    print("Failed to decode error response, fallback to HTTP status")
+                    Log.network.error("Failed to decode error response, fallback to HTTP status")
                 }
 
                 // AUTH-002: 액세스 토큰 만료 → 재발급 후 1회 retry
                 if errorCode == "AUTH-002", requiresAuth, !isRetry {
-                    print("Access token expired. Attempting token refresh...")
+                    Log.network.debug("Access token expired. Attempting token refresh...")
                     try await TokenRefreshCoordinator.shared.refresh(using: self)
-                    print("Token refreshed. Retrying original request...")
+                    Log.network.debug("Token refreshed. Retrying original request...")
                     return try await self.request(
                         endpoint: endpoint,
                         method: method,
@@ -180,7 +180,7 @@ struct APIClient {
             throw error
         } catch {
             // 네트워크 레이어 에러 (연결 실패, 타임아웃 등)
-            print("Network Error: \(error)")
+            Log.network.error("Network Error: \(error)")
             throw APIError.networkError(error)
         }
     }
@@ -195,7 +195,7 @@ extension APIClient {
     /// 토큰 재발급 (TokenRefreshCoordinator 내부에서만 호출)
     fileprivate func performTokenReissue() async throws {
         guard let refreshToken = KeyChainManager.shared.getRefreshToken() else {
-            print("No refresh token found in KeyChain")
+            Log.network.debug("No refresh token found in KeyChain")
             throw APIError.noRefreshToken
         }
 
@@ -217,7 +217,7 @@ extension APIClient {
 
         KeyChainManager.shared.saveAccessToken(data.accessToken)
         KeyChainManager.shared.saveRefreshToken(data.refreshToken)
-        print("Token reissued and saved successfully")
+        Log.network.debug("Token reissued and saved successfully")
     }
 }
 
@@ -228,30 +228,6 @@ extension DependencyValues {
     }
 }
 
-
-extension APIClient {
-    func fetchCategories() async throws -> [CategoryResponse] {
-        // APIResponse<CategoryData>로 디코딩
-        let response: APIResponse<CategoryData> = try await request(
-            endpoint: "/api/v1/categories",
-            method: .get,
-            requiresAuth: true
-        )
-        
-        // 응답 검증
-        guard response.code == "OK",
-              let categoryData = response.data else {
-            throw APIError.serverError(
-                code: response.code,
-                message: response.message,
-                details: response.details
-            )
-        }
-        
-        print("Categories loaded: \(categoryData.categoryResponses.count) items")
-        return categoryData.categoryResponses
-    }
-}
 
 extension APIClient {
     /// 유저 이름 수정
@@ -272,7 +248,7 @@ extension APIClient {
                 details: response.details
             )
         }
-        print("User name updated successfully: \(name)")
+        Log.network.debug("User name updated successfully: \(name)")
     }
     
     /// 출퇴근 정보 수정
@@ -300,43 +276,11 @@ extension APIClient {
                )
            }
            
-           print("Commute info updated successfully - Start: \(startTime), End: \(endTime), Usage: \(usageTime)분")
+           Log.network.debug("Commute info updated successfully - Start: \(startTime), End: \(endTime), Usage: \(usageTime)분")
        }
 }
 
 extension APIClient {
-    /// 목표 생성
-      func createGoal(
-          type: CreateGoalRequest.GoalType,
-          studyPeriod: String,
-          difficulty: CreateGoalRequest.Difficulty,
-          prompt: String?,
-          categoryId: Int?
-      ) async throws {
-          let response: APIResponse<EmptyData> = try await request(
-              endpoint: "/api/v1/goals",
-              method: .post,
-              body: CreateGoalRequest(
-                  type: type,
-                  studyPeriod: studyPeriod,
-                  difficulty: difficulty,
-                  prompt: prompt,
-                  categoryId: categoryId
-              ),
-              requiresAuth: true
-          )
-          
-          guard response.code == "OK" else {
-              throw APIError.serverError(
-                  code: response.code,
-                  message: response.message,
-                  details: response.details
-              )
-          }
-          
-          print("Goal created successfully - Type: \(type.rawValue), Period: \(studyPeriod)")
-      }
-    
     /// 전체 목표 목록 조회
     func fetchGoals() async throws -> [GoalResponse] {
         let response: APIResponse<GoalListData> = try await request(
@@ -345,8 +289,8 @@ extension APIClient {
             requiresAuth: true
         )
         
-        print("Response code: \(response.code)")
-        print("Response data: \(String(describing: response.data))")
+        Log.network.debug("Response code: \(response.code)")
+        Log.network.debug("Response data: \(String(describing: response.data))")
         
         guard response.code == "OK",
               let data = response.data else {
@@ -357,9 +301,9 @@ extension APIClient {
             )
         }
         
-        print("Goals fetched - Count: \(data.goalResponses.count)")
+        Log.network.debug("Goals fetched - Count: \(data.goalResponses.count)")
         data.goalResponses.forEach { goal in
-            print("[Goal] id:\(goal.goalId) type:\(goal.type) isExpired:\(goal.isExpired) isCompleted:\(goal.isCompleted) period:\(goal.studyPeriod) difficulty:\(goal.difficulty) start:\(goal.startDate) end:\(goal.endDate)")
+            Log.network.debug("[Goal] id:\(goal.goalId) type:\(goal.type) isExpired:\(goal.isExpired) isCompleted:\(goal.isCompleted) period:\(goal.studyPeriod) difficulty:\(goal.difficulty) start:\(goal.startDate) end:\(goal.endDate)")
         }
 
         return data.goalResponses
@@ -373,8 +317,8 @@ extension APIClient {
             requiresAuth: true
         )
         
-        print("fetchCurrentGoal - Response code: \(response.code)")
-        print("fetchCurrentGoal - Response data: \(String(describing: response.data))")
+        Log.network.debug("fetchCurrentGoal - Response code: \(response.code)")
+        Log.network.debug("fetchCurrentGoal - Response data: \(String(describing: response.data))")
         
         guard response.code == "OK",
               let goal = response.data else {
@@ -385,116 +329,12 @@ extension APIClient {
             )
         }
         
-        print("Current Goal - ID: \(goal.goalId), Type: \(goal.type)")
+        Log.network.debug("Current Goal - ID: \(goal.goalId), Type: \(goal.type)")
         if let category = goal.category {
-            print("CategoryId: \(category.categoryId), Name: \(category.name)")
+            Log.network.debug("CategoryId: \(category.categoryId), Name: \(category.name)")
         }
         
         return goal
-    }
-    
-    /// PDF 문서 등록
-    func registerDocument(
-        goalId: Int,
-        fileName: String,
-        fileKey: String
-    ) async throws {
-        let response: APIResponse<EmptyData> = try await request(
-            endpoint: "/api/v1/goals/\(goalId)/documents",
-            method: .post,
-            body: RegisterDocumentRequest(
-                fileName: fileName,
-                fileKey: fileKey
-            ),
-            requiresAuth: true
-        )
-
-        guard response.code == "OK" else {
-            throw APIError.serverError(
-                code: response.code,
-                message: response.message,
-                details: response.details
-            )
-        }
-
-        print("Document registered successfully - GoalId: \(goalId), FileName: \(fileName)")
-    }
-    
-    func getPresignedURL(fileName: String, fileSize: Int64) async throws -> PresignedURLData {
-         let response: APIResponse<PresignedURLData> = try await request(
-             endpoint: "/api/v1/s3/presigned",
-             method: .post,
-             body: PresignedURLRequest(fileName: fileName, fileSize: fileSize),
-             requiresAuth: true
-         )
-         
-         guard response.code == "OK",
-               let data = response.data else {
-             throw APIError.serverError(
-                 code: response.code,
-                 message: response.message,
-                 details: response.details
-             )
-         }
-         
-         print("   PresignedURL received for file: \(fileName)")
-         print("   URL: \(data.presignedUrl)")
-         print("   Key: \(data.key)")
-         
-         return data
-     }
-    
-    /// S3에 PDF 파일 업로드
-    func uploadFileToS3(fileURL: URL, presignedURL: String) async throws {
-        guard let url = URL(string: presignedURL) else {
-            throw APIError.invalidURL
-        }
-        
-        // 파일 데이터 읽기
-        let fileData: Data
-        do {
-            fileData = try Data(contentsOf: fileURL)
-            print("File loaded - Size: \(fileData.count) bytes")
-        } catch {
-            print("Failed to load file: \(error)")
-            throw APIError.networkError(error)
-        }
-        
-        // URLRequest 생성
-        var request = URLRequest(url: url)
-        request.httpMethod = "PUT"
-        request.setValue("application/pdf", forHTTPHeaderField: "Content-Type")
-        request.httpBody = fileData
-        
-        print("Uploading file to S3...")
-        
-        // S3에 업로드
-        do {
-            let (_, response) = try await URLSession.shared.data(for: request)
-            
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw APIError.invalidResponse
-            }
-            
-            print("S3 Upload Status: \(httpResponse.statusCode)")
-            
-            // S3는 보통 200 또는 204 반환
-            guard (200...299).contains(httpResponse.statusCode) else {
-                throw APIError.serverError(
-                    code: "S3-\(httpResponse.statusCode)",
-                    message: "S3 업로드 실패 (상태 코드: \(httpResponse.statusCode))",
-                    details: nil
-                )
-            }
-            
-            print("File uploaded to S3 successfully")
-            
-        } catch let error as APIError {
-            throw error
-        } catch {
-            print("S3 Upload Error: \(error)")
-            throw APIError.networkError(error)
-        }
     }
 }
 
@@ -516,7 +356,7 @@ extension APIClient {
             )
         }
         
-        print("User account info fetched - Provider: \(data.socialProvider), Email: \(data.email)")
+        Log.network.debug("User account info fetched - Provider: \(data.socialProvider), Email: \(data.email)")
         return data
     }
 }
@@ -539,7 +379,7 @@ extension APIClient {
             )
         }
         
-        print("Notification settings fetched - pushEnabled: \(data.pushEnabled)")
+        Log.network.debug("Notification settings fetched - pushEnabled: \(data.pushEnabled)")
         return data
     }
     
@@ -562,7 +402,7 @@ extension APIClient {
             )
         }
         
-        print("Notification setting updated - pushEnabled: \(pushEnabled)")
+        Log.network.debug("Notification setting updated - pushEnabled: \(pushEnabled)")
     }
     
     /// 퀴즈풀이, 요약글 생성 여부 확인
@@ -582,7 +422,7 @@ extension APIClient {
             )
         }
 
-        print("[QuizStatus] hasSolvedToday: \(statusData.hasSolvedToday), hasCreatedToday: \(statusData.hasCreatedToday), availableCount: \(statusData.availableQuizCount)")
+        Log.network.debug("[QuizStatus] hasSolvedToday: \(statusData.hasSolvedToday), hasCreatedToday: \(statusData.hasCreatedToday), availableCount: \(statusData.availableQuizCount)")
         
         return statusData
     }
@@ -604,107 +444,6 @@ extension APIClient {
         return data
     }
 
-    /// 오늘의 카테고리 자료(요약글) 조회 (없으면 생성 후 재조회)
-    func fetchDailyCategoryDocument(categoryId: Int) async throws -> CategoryDocumentData {
-        let dailyEndpoint = "/api/v1/categories/\(categoryId)/documents/daily"
-
-        // Step 1: GET으로 요약글 조회 시도
-        do {
-            let documentData = try await fetchCategoryDocumentGET(endpoint: dailyEndpoint)
-            print("[CategoryDocument] GET 성공 - documentId: \(documentData.documentId), hasSolvedToday: \(documentData.hasSolvedToday)")
-            return documentData
-        } catch let apiError as APIError {
-            if case .serverError(let code, _, _) = apiError, code == "COMMON-005" {
-                // 요약글 아직 없음 → 생성 필요
-                print("[CategoryDocument] COMMON-005 - 요약글 없음, 생성 시작")
-            } else {
-                throw apiError
-            }
-        }
-
-        // Step 2: 문서 없음 → POST로 생성 시도
-        do {
-            let _: APIResponse<EmptyData> = try await request(
-                endpoint: dailyEndpoint,
-                method: .post,
-                requiresAuth: true
-            )
-            print("[CategoryDocument] POST 생성 완료")
-        } catch let apiError as APIError {
-            if case .serverError(let code, _, _) = apiError, code == "QUIZ-003" {
-                // 이미 생성된 문서 있음 → GET으로 조회
-                print("[CategoryDocument] QUIZ-003 - 기존 문서 존재, GET으로 조회")
-            } else {
-                throw apiError
-            }
-        }
-
-        // Step 3: GET으로 최종 조회
-        let response: APIResponse<CategoryDocumentData> = try await request(
-            endpoint: dailyEndpoint,
-            method: .get,
-            requiresAuth: true
-        )
-
-        guard response.code == "OK", let documentData = response.data else {
-            throw APIError.serverError(
-                code: response.code,
-                message: response.message,
-                details: response.details
-            )
-        }
-
-        print("[CategoryDocument] GET 완료 - documentId: \(documentData.documentId), hasSolvedToday: \(documentData.hasSolvedToday)")
-        return documentData
-    }
-
-    private func fetchCategoryDocumentGET(endpoint: String) async throws -> CategoryDocumentData {
-        let response: APIResponse<CategoryDocumentData> = try await request(
-            endpoint: endpoint,
-            method: .get,
-            requiresAuth: true
-        )
-        guard response.code == "OK", let data = response.data else {
-            throw APIError.serverError(
-                code: response.code,
-                message: response.message,
-                details: response.details
-            )
-        }
-        return data
-    }
-    
-    /// PDF 요약글 조회 (없으면 생성 후 재조회)
-    func fetchDailyPDFSummary(goalId: Int, documentId: Int) async throws -> PDFSummaryData {
-        let endpoint = "/api/v1/goals/\(goalId)/documents/\(documentId)/summary"
-
-        // Step 1: GET으로 요약글 조회 시도
-        do {
-            let summaryData = try await fetchPDFSummaryGET(endpoint: endpoint)
-            print("[PDFSummary] GET 성공 - documentId: \(summaryData.documentId)")
-            return summaryData
-        } catch let apiError as APIError {
-            if case .serverError(let code, _, _) = apiError, code == "COMMON-005" {
-                print("[PDFSummary] COMMON-005 - 요약글 없음, 생성 시작")
-            } else {
-                throw apiError
-            }
-        }
-
-        // Step 2: 요약글 없음 → POST로 생성
-        let _: APIResponse<EmptyData> = try await request(
-            endpoint: endpoint,
-            method: .post,
-            requiresAuth: true
-        )
-        print("[PDFSummary] POST 생성 완료")
-
-        // Step 3: 생성 후 GET으로 재조회
-        let summaryData = try await fetchPDFSummaryGET(endpoint: endpoint)
-        print("[PDFSummary] GET 재조회 성공 - documentId: \(summaryData.documentId)")
-        return summaryData
-    }
-
     /// PDF 요약글 GET only (이미 생성된 것만 반환, 없으면 에러)
     func fetchPDFSummaryOnly(goalId: Int, documentId: Int) async throws -> PDFSummaryData {
         return try await fetchPDFSummaryGET(endpoint: "/api/v1/goals/\(goalId)/documents/\(documentId)/summary")
@@ -719,11 +458,11 @@ extension APIClient {
             let _: APIResponse<EmptyData> = try await request(
                 endpoint: endpoint, method: .post, requiresAuth: true
             )
-            print("[PDFQuizzes] POST 성공 - 퀴즈 생성 완료")
+            Log.network.debug("[PDFQuizzes] POST 성공 - 퀴즈 생성 완료")
         } catch let apiError as APIError {
             if case .serverError(let code, _, _) = apiError, code == "QUIZ-003" {
                 // 이미 생성됨
-                print("[PDFQuizzes] QUIZ-003 - 기존 요약/퀴즈 존재")
+                Log.network.debug("[PDFQuizzes] QUIZ-003 - 기존 요약/퀴즈 존재")
             } else {
                 throw apiError
             }
@@ -764,7 +503,7 @@ extension APIClient {
             )
         }
 
-        print("[UserQuizzes] count: \(quizzes.count)")
+        Log.network.debug("[UserQuizzes] count: \(quizzes.count)")
         
         return quizzes
     }
@@ -782,8 +521,8 @@ extension APIClient {
             requiresAuth: true
         )
         
-        print(" submitQuizAnswer - Response code: \(response.code)")
-        print(" submitQuizAnswer - QuizId: \(quizId), Answer: \(userAnswer)")
+        Log.network.debug(" submitQuizAnswer - Response code: \(response.code)")
+        Log.network.debug(" submitQuizAnswer - QuizId: \(quizId), Answer: \(userAnswer)")
         
         guard response.code == "OK",
               let data = response.data else {
@@ -794,9 +533,9 @@ extension APIClient {
             )
         }
         
-        print(" Quiz Answer Submitted - isCorrect: \(data.isCorrect)")
-        print("   Correct Answer: \(data.correctAnswer)")
-        print("   Explanation: \(data.explanation)")
+        Log.network.debug(" Quiz Answer Submitted - isCorrect: \(data.isCorrect)")
+        Log.network.debug("   Correct Answer: \(data.correctAnswer)")
+        Log.network.debug("   Explanation: \(data.explanation)")
         
         return data
     }
@@ -809,7 +548,7 @@ extension APIClient {
             requiresAuth: true
         )
         
-        print("Response code: \(response.code)")
+        Log.network.debug("Response code: \(response.code)")
         
         guard response.code == "OK",
               let data = response.data else {
@@ -820,7 +559,7 @@ extension APIClient {
             )
         }
         
-        print("History topics fetched successfully - Category Count: \(data.count)")
+        Log.network.debug("History topics fetched successfully - Category Count: \(data.count)")
         return data
     }
     
@@ -844,7 +583,7 @@ extension APIClient {
             )
         }
         
-        print(" Calendar history fetched: \(data.stampedDates.count) stamps found.")
+        Log.network.debug(" Calendar history fetched: \(data.stampedDates.count) stamps found.")
         return data
     }
     
@@ -867,7 +606,7 @@ extension APIClient {
             )
         }
         
-        print("History for \(date) fetched: \(data.count) items found.")
+        Log.network.debug("History for \(date) fetched: \(data.count) items found.")
         return data
     }
     
@@ -895,7 +634,7 @@ extension APIClient {
             )
         }
         
-        print("\(typePath) (ID: \(id)) 퀴즈 내역 조회 성공: \(data.quizzes.count)문항")
+        Log.network.debug("\(typePath) (ID: \(id)) 퀴즈 내역 조회 성공: \(data.quizzes.count)문항")
         return data
     }
     
@@ -919,7 +658,7 @@ extension APIClient {
             )
         }
         
-        print("Summary fetched: \(data.title) (Date: \(date))")
+        Log.network.debug("Summary fetched: \(data.title) (Date: \(date))")
         return data
     }
     
@@ -931,7 +670,7 @@ extension APIClient {
                 requiresAuth: true
             )
             
-            print("updateCurrentGoal - Response code: \(response.code)")
+            Log.network.debug("updateCurrentGoal - Response code: \(response.code)")
             
             guard response.code == "OK" else {
                 throw APIError.serverError(
@@ -941,7 +680,7 @@ extension APIClient {
                 )
             }
             
-            print("Current goal updated successfully - goalId: \(goalId)")
+            Log.network.debug("Current goal updated successfully - goalId: \(goalId)")
         }
     
     /// 회원탈퇴
@@ -952,7 +691,7 @@ extension APIClient {
                 requiresAuth: true
             )
             
-            print("withdrawUser - Response code: \(response.code)")
+            Log.network.debug("withdrawUser - Response code: \(response.code)")
             
             guard response.code == "OK" else {
                 throw APIError.serverError(
@@ -962,7 +701,7 @@ extension APIClient {
                 )
             }
             
-            print("User withdrawal successful")
+            Log.network.debug("User withdrawal successful")
         }
     
     
@@ -974,7 +713,7 @@ extension APIClient {
                 requiresAuth: true
             )
             
-            print("fetchUserName - Response code: \(response.code)")
+            Log.network.debug("fetchUserName - Response code: \(response.code)")
             
             guard response.code == "OK",
                   let data = response.data else {
@@ -985,7 +724,7 @@ extension APIClient {
                 )
             }
             
-            print("User name fetched successfully: \(data.name)")
+            Log.network.debug("User name fetched successfully: \(data.name)")
             return data.name
         }
         
@@ -997,7 +736,7 @@ extension APIClient {
                 requiresAuth: true
             )
             
-            print("fetchCommuteInfo - Response code: \(response.code)")
+            Log.network.debug("fetchCommuteInfo - Response code: \(response.code)")
             
             guard response.code == "OK",
                   let data = response.data else {
@@ -1008,8 +747,8 @@ extension APIClient {
                 )
             }
             
-            print("Commute info fetched successfully")
-            print("   Start: \(data.startTime), End: \(data.endTime), Usage: \(data.usageTime)분")
+            Log.network.debug("Commute info fetched successfully")
+            Log.network.debug("   Start: \(data.startTime), End: \(data.endTime), Usage: \(data.usageTime)분")
             return data
         }
     
@@ -1021,7 +760,7 @@ extension APIClient {
                 requiresAuth: true
             )
             
-            print("fetchOnboardingStatus - Response code: \(response.code)")
+            Log.network.debug("fetchOnboardingStatus - Response code: \(response.code)")
             
             guard response.code == "OK",
                   let data = response.data else {
@@ -1032,7 +771,7 @@ extension APIClient {
                 )
             }
             
-            print("Onboarding status fetched: \(data.completed)")
+            Log.network.debug("Onboarding status fetched: \(data.completed)")
             return data.completed
         }
     
@@ -1048,7 +787,7 @@ extension APIClient {
             requiresAuth: true
         )
 
-        print("registerDeviceToken - Response code: \(response.code)")
+        Log.network.debug("registerDeviceToken - Response code: \(response.code)")
 
         guard response.code == "OK" else {
             throw APIError.serverError(
@@ -1058,7 +797,7 @@ extension APIClient {
             )
         }
 
-        print("Device token registered successfully")
+        Log.network.debug("Device token registered successfully")
     }
 
     /// 디바이스 토큰 삭제 (로그아웃 시 호출)
@@ -1073,7 +812,7 @@ extension APIClient {
             requiresAuth: true
         )
 
-        print("deleteDeviceToken - Response code: \(response.code)")
+        Log.network.debug("deleteDeviceToken - Response code: \(response.code)")
 
         guard response.code == "OK" else {
             throw APIError.serverError(
@@ -1083,7 +822,7 @@ extension APIClient {
             )
         }
 
-        print("Device token deleted successfully")
+        Log.network.debug("Device token deleted successfully")
     }
 }
 
@@ -1097,7 +836,7 @@ extension APIClient {
             requiresAuth: true
         )
 
-        print("postAdReward - Response code: \(response.code)")
+        Log.network.debug("postAdReward - Response code: \(response.code)")
 
         guard response.code == "OK" else {
             throw APIError.serverError(
@@ -1107,7 +846,7 @@ extension APIClient {
             )
         }
 
-        print("Ad reward processed successfully")
+        Log.network.debug("Ad reward processed successfully")
     }
 }
 
@@ -1128,7 +867,7 @@ extension APIClient {
             )
         }
 
-        print("[QuizFlow] 퀴즈 세트 차감 완료")
+        Log.network.debug("[QuizFlow] 퀴즈 세트 차감 완료")
     }
 }
 
@@ -1141,7 +880,7 @@ extension APIClient {
             requiresAuth: true
         )
 
-        print("updateQuizGuideSeen - Response code: \(response.code)")
+        Log.network.debug("updateQuizGuideSeen - Response code: \(response.code)")
 
         guard response.code == "OK",
               let data = response.data else {
@@ -1152,148 +891,22 @@ extension APIClient {
             )
         }
 
-        print("Quiz guide seen status updated: \(data.isQuizGuideSeen)")
+        Log.network.debug("Quiz guide seen status updated: \(data.isQuizGuideSeen)")
     }
 }
 
 // MARK: - SSE Helpers (file-private)
-private struct SSEDataPayload: Decodable {
-    let status: String
-    let remain: Int?
-    let reason: String?
-}
-
 private struct SSEErrorResponse: Decodable {
     let code: String
     let message: String
 }
 
 extension APIClient {
-    func connectDocumentSSE(
-        goalId: Int,
-        documentId: Int,
-        lastEventId: String? = nil
-    ) -> AsyncThrowingStream<SSEDocumentStatus, Error> {
-        AsyncThrowingStream { continuation in
-            let task = Task {
-                let endpoint = "/api/v1/goals/\(goalId)/documents/\(documentId)/sse"
-                guard let url = URL(string: Config.baseURL + endpoint) else {
-                    continuation.finish(throwing: APIError.invalidURL)
-                    return
-                }
-
-                var request = URLRequest(url: url)
-                request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
-                request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
-
-                if let token = KeyChainManager.shared.getAccessToken() {
-                    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-                }
-                if let lastEventId = lastEventId {
-                    request.setValue(lastEventId, forHTTPHeaderField: "Last-Event-ID")
-                }
-
-                do {
-                    print("[SSE DEBUG] 요청 시작 - URL: \(url.absoluteString)")
-                    let sseConfig = URLSessionConfiguration.default
-                    sseConfig.timeoutIntervalForRequest = 600
-                    sseConfig.timeoutIntervalForResource = 600
-                    let sseSession = URLSession(configuration: sseConfig)
-                    let (bytes, response) = try await sseSession.bytes(for: request)
-                    print("[SSE DEBUG] 응답 수신 완료")
-
-                    guard let httpResponse = response as? HTTPURLResponse else {
-                        continuation.finish(throwing: APIError.invalidResponse)
-                        return
-                    }
-
-                    print("[SSE DEBUG] HTTP 상태 코드: \(httpResponse.statusCode)")
-
-                    if httpResponse.statusCode != 200 {
-                        var errorData = Data()
-                        for try await byte in bytes {
-                            errorData.append(byte)
-                        }
-                        if let errorResponse = try? JSONDecoder().decode(SSEErrorResponse.self, from: errorData) {
-                            continuation.finish(throwing: APIError.serverError(
-                                code: errorResponse.code,
-                                message: errorResponse.message,
-                                details: nil
-                            ))
-                        } else {
-                            continuation.finish(throwing: APIError.serverError(
-                                code: "SSE-\(httpResponse.statusCode)",
-                                message: "SSE 연결 실패 (상태 코드: \(httpResponse.statusCode))",
-                                details: nil
-                            ))
-                        }
-                        return
-                    }
-
-                    var eventType = ""
-                    var eventData = ""
-                    print("[SSE DEBUG] 이벤트 루프 시작")
-
-                    for try await line in bytes.lines {
-                        print("[SSE RAW] \(line)")
-                        // 빈 줄 또는 새 id: 가 오면 이전 이벤트 dispatch
-                        if line.isEmpty || line.hasPrefix("id:") {
-                            if !eventData.isEmpty,
-                               let event = parseSSEEvent(type: eventType, data: eventData) {
-                                print("[SSE DEBUG] 이벤트 dispatch: \(eventType) / \(eventData.prefix(80))")
-                                continuation.yield(event)
-                                if case .completed = event { continuation.finish(); return }
-                                if case .failed = event { continuation.finish(); return }
-                            }
-                            eventType = ""
-                            eventData = ""
-                        } else if line.hasPrefix("event:") {
-                            eventType = String(line.dropFirst(6)).trimmingCharacters(in: .whitespaces)
-                        } else if line.hasPrefix("data:") {
-                            let value = String(line.dropFirst(5)).trimmingCharacters(in: .whitespaces)
-                            if eventData.isEmpty {
-                                eventData = value
-                            } else {
-                                eventData += "\n" + value
-                            }
-                            // 서버가 COMPLETED/FAILED 후 trailing separator 없이 연결을 유지하는 경우를 대비해
-                            // 데이터가 쌓일 때마다 파싱 시도 → 완성된 JSON이면 즉시 dispatch
-                            if let event = parseSSEEvent(type: eventType, data: eventData) {
-                                if case .completed = event {
-                                    print("[SSE DEBUG] 이벤트 dispatch (즉시): \(eventType) COMPLETED")
-                                    continuation.yield(event)
-                                    continuation.finish()
-                                    return
-                                }
-                                if case .failed = event {
-                                    print("[SSE DEBUG] 이벤트 dispatch (즉시): \(eventType) FAILED")
-                                    continuation.yield(event)
-                                    continuation.finish()
-                                    return
-                                }
-                            }
-                        }
-                    }
-                    // 연결 종료 후 버퍼에 남은 이벤트 dispatch (COMPLETED가 마지막일 때)
-                    if !eventData.isEmpty,
-                       let event = parseSSEEvent(type: eventType, data: eventData) {
-                        print("[SSE DEBUG] 이벤트 dispatch (연결 종료 후): \(eventType) / \(eventData.prefix(80))")
-                        continuation.yield(event)
-                    }
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
-            }
-            continuation.onTermination = { _ in task.cancel() }
-        }
-    }
-
     func streamCategoryDocument(categoryId: Int) -> AsyncThrowingStream<CategoryStreamEvent, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
                 let endpoint = "/api/v1/categories/\(categoryId)/documents/daily/stream"
-                print("[SSE Category] POST 요청 시작: \(Config.baseURL + endpoint)")
+                Log.network.debug("[SSE Category] POST 요청 시작: \(Config.baseURL + endpoint)")
                 guard let url = URL(string: Config.baseURL + endpoint) else {
                     continuation.finish(throwing: APIError.invalidURL); return
                 }
@@ -1316,16 +929,16 @@ extension APIClient {
                         continuation.finish(throwing: APIError.invalidResponse); return
                     }
                     if http.statusCode != 200 {
-                        print("[SSE Category] HTTP 오류: \(http.statusCode)")
+                        Log.network.error("[SSE Category] HTTP 오류: \(http.statusCode)")
                         var data = Data()
                         for try await byte in bytes { data.append(byte) }
                         if let err = try? JSONDecoder().decode(SSEErrorResponse.self, from: data) {
-                            print("[SSE Category] 서버 에러: code=\(err.code) message=\(err.message)")
+                            Log.network.error("[SSE Category] 서버 에러: code=\(err.code) message=\(err.message)")
                             continuation.finish(throwing: APIError.serverError(
                                 code: err.code, message: err.message, details: nil))
                         } else {
                             let rawBody = String(data: data, encoding: .utf8) ?? "(decode fail)"
-                            print("[SSE Category] 에러 바디 파싱 실패, raw=\(rawBody.prefix(200))")
+                            Log.network.error("[SSE Category] 에러 바디 파싱 실패, raw=\(rawBody.prefix(200))")
                             continuation.finish(throwing: APIError.serverError(
                                 code: "SSE-\(http.statusCode)",
                                 message: "카테고리 스트림 연결 실패", details: nil))
@@ -1333,8 +946,8 @@ extension APIClient {
                         return
                     }
 
-                    print("[SSE Category] 연결 성공 (status \(http.statusCode)), 라인 수신 시작")
-                    print("[SSE Category] Response Headers: \(http.allHeaderFields)")
+                    Log.network.debug("[SSE Category] 연결 성공 (status \(http.statusCode)), 라인 수신 시작")
+                    Log.network.debug("[SSE Category] Response Headers: \(http.allHeaderFields)")
                     var eventType = ""
                     var eventData = ""
                     var rawBuffer: [String] = []
@@ -1342,12 +955,12 @@ extension APIClient {
 
                     for try await line in bytes.lines {
                         lineCount += 1
-                        print("[SSE Category RAW #\(lineCount)] repr=\(line.debugDescription) bytes=\(line.utf8.count)")
+                        Log.network.debug("[SSE Category RAW #\(lineCount)] repr=\(line.debugDescription) bytes=\(line.utf8.count)")
                         if line.isEmpty {
                             // 표준 SSE 빈줄 구분자
-                            print("[SSE Category] --- 빈줄(이벤트 구분자) ---")
+                            Log.network.debug("[SSE Category] --- 빈줄(이벤트 구분자) ---")
                             if !eventType.isEmpty {
-                                print("[SSE Category] dispatch event=\(eventType) data=\(eventData.prefix(120))")
+                                Log.network.debug("[SSE Category] dispatch event=\(eventType) data=\(eventData.prefix(120))")
                                 if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
                                     continuation.yield(event)
                                 }
@@ -1357,7 +970,7 @@ extension APIClient {
                             // 새 event: 라인 도착 → 이전 이벤트를 먼저 flush
                             // 서버가 빈줄 없이 event:/data: 를 연속으로 전송하는 경우 대응
                             if !eventType.isEmpty {
-                                print("[SSE Category] flush (no empty line) event=\(eventType) data=\(eventData.prefix(120))")
+                                Log.network.debug("[SSE Category] flush (no empty line) event=\(eventType) data=\(eventData.prefix(120))")
                                 if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
                                     continuation.yield(event)
                                 }
@@ -1370,11 +983,11 @@ extension APIClient {
                             eventData = eventData.isEmpty ? value : eventData + "\n" + value
                         } else {
                             // SSE 형식이 아닌 raw 라인 — JSON 에러 본문일 수 있음
-                            print("[SSE Category] non-SSE line: \(line.prefix(200))")
+                            Log.network.debug("[SSE Category] non-SSE line: \(line.prefix(200))")
                             rawBuffer.append(line)
                         }
                     }
-                    print("[SSE Category] 루프 종료 - 수신된 총 라인 수: \(lineCount)")
+                    Log.network.debug("[SSE Category] 루프 종료 - 수신된 총 라인 수: \(lineCount)")
                     // 마지막 이벤트 처리 (빈줄 없이 스트림이 종료된 경우)
                     if !eventType.isEmpty {
                         if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
@@ -1386,11 +999,11 @@ extension APIClient {
                     if !rawBody.isEmpty,
                        let bodyData = rawBody.data(using: .utf8),
                        let err = try? JSONDecoder().decode(SSEErrorResponse.self, from: bodyData) {
-                        print("[SSE Category] 스트림 내 JSON 에러 감지: code=\(err.code) message=\(err.message)")
+                        Log.network.error("[SSE Category] 스트림 내 JSON 에러 감지: code=\(err.code) message=\(err.message)")
                         continuation.finish(throwing: APIError.serverError(
                             code: err.code, message: err.message, details: nil))
                     } else {
-                        print("[SSE Category] 스트림 EOF → .completed yield")
+                        Log.network.debug("[SSE Category] 스트림 EOF → .completed yield")
                         continuation.yield(.completed)
                         continuation.finish()
                     }
@@ -1406,7 +1019,7 @@ extension APIClient {
         AsyncThrowingStream { continuation in
             let task = Task {
                 let endpoint = "/api/v1/goals/\(goalId)/documents/\(documentId)/summary/stream"
-                print("[SSE PDF] POST 요청 시작: \(Config.baseURL + endpoint)")
+                Log.network.debug("[SSE PDF] POST 요청 시작: \(Config.baseURL + endpoint)")
                 guard let url = URL(string: Config.baseURL + endpoint) else {
                     continuation.finish(throwing: APIError.invalidURL); return
                 }
@@ -1429,16 +1042,16 @@ extension APIClient {
                         continuation.finish(throwing: APIError.invalidResponse); return
                     }
                     if http.statusCode != 200 {
-                        print("[SSE PDF] HTTP 오류: \(http.statusCode)")
+                        Log.network.error("[SSE PDF] HTTP 오류: \(http.statusCode)")
                         var data = Data()
                         for try await byte in bytes { data.append(byte) }
                         if let err = try? JSONDecoder().decode(SSEErrorResponse.self, from: data) {
-                            print("[SSE PDF] 서버 에러: code=\(err.code) message=\(err.message)")
+                            Log.network.error("[SSE PDF] 서버 에러: code=\(err.code) message=\(err.message)")
                             continuation.finish(throwing: APIError.serverError(
                                 code: err.code, message: err.message, details: nil))
                         } else {
                             let rawBody = String(data: data, encoding: .utf8) ?? "(decode fail)"
-                            print("[SSE PDF] 에러 바디 파싱 실패, raw=\(rawBody.prefix(200))")
+                            Log.network.error("[SSE PDF] 에러 바디 파싱 실패, raw=\(rawBody.prefix(200))")
                             continuation.finish(throwing: APIError.serverError(
                                 code: "SSE-\(http.statusCode)",
                                 message: "PDF 스트림 연결 실패", details: nil))
@@ -1446,8 +1059,8 @@ extension APIClient {
                         return
                     }
 
-                    print("[SSE PDF] 연결 성공 (status \(http.statusCode)), 라인 수신 시작")
-                    print("[SSE PDF] Response Headers: \(http.allHeaderFields)")
+                    Log.network.debug("[SSE PDF] 연결 성공 (status \(http.statusCode)), 라인 수신 시작")
+                    Log.network.debug("[SSE PDF] Response Headers: \(http.allHeaderFields)")
                     var eventType = ""
                     var eventData = ""
                     var rawBuffer: [String] = []
@@ -1455,11 +1068,11 @@ extension APIClient {
 
                     for try await line in bytes.lines {
                         lineCount += 1
-                        print("[SSE PDF RAW #\(lineCount)] repr=\(line.debugDescription) bytes=\(line.utf8.count)")
+                        Log.network.debug("[SSE PDF RAW #\(lineCount)] repr=\(line.debugDescription) bytes=\(line.utf8.count)")
                         if line.isEmpty {
-                            print("[SSE PDF] --- 빈줄(이벤트 구분자) ---")
+                            Log.network.debug("[SSE PDF] --- 빈줄(이벤트 구분자) ---")
                             if !eventType.isEmpty {
-                                print("[SSE PDF] dispatch event=\(eventType) data=\(eventData.prefix(120))")
+                                Log.network.debug("[SSE PDF] dispatch event=\(eventType) data=\(eventData.prefix(120))")
                                 if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
                                     continuation.yield(event)
                                 }
@@ -1467,7 +1080,7 @@ extension APIClient {
                             }
                         } else if line.hasPrefix("event:") {
                             if !eventType.isEmpty {
-                                print("[SSE PDF] flush (no empty line) event=\(eventType) data=\(eventData.prefix(120))")
+                                Log.network.debug("[SSE PDF] flush (no empty line) event=\(eventType) data=\(eventData.prefix(120))")
                                 if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
                                     continuation.yield(event)
                                 }
@@ -1478,11 +1091,11 @@ extension APIClient {
                             let value = String(line.dropFirst(5))
                             eventData = eventData.isEmpty ? value : eventData + "\n" + value
                         } else {
-                            print("[SSE PDF] non-SSE line: \(line.prefix(200))")
+                            Log.network.debug("[SSE PDF] non-SSE line: \(line.prefix(200))")
                             rawBuffer.append(line)
                         }
                     }
-                    print("[SSE PDF] 루프 종료 - 수신된 총 라인 수: \(lineCount)")
+                    Log.network.debug("[SSE PDF] 루프 종료 - 수신된 총 라인 수: \(lineCount)")
                     if !eventType.isEmpty {
                         if let event = parseCategorySSEEvent(type: eventType, data: eventData) {
                             continuation.yield(event)
@@ -1492,11 +1105,11 @@ extension APIClient {
                     if !rawBody.isEmpty,
                        let bodyData = rawBody.data(using: .utf8),
                        let err = try? JSONDecoder().decode(SSEErrorResponse.self, from: bodyData) {
-                        print("[SSE PDF] 스트림 내 JSON 에러 감지: code=\(err.code) message=\(err.message)")
+                        Log.network.error("[SSE PDF] 스트림 내 JSON 에러 감지: code=\(err.code) message=\(err.message)")
                         continuation.finish(throwing: APIError.serverError(
                             code: err.code, message: err.message, details: nil))
                     } else {
-                        print("[SSE PDF] 스트림 EOF → .completed yield")
+                        Log.network.debug("[SSE PDF] 스트림 EOF → .completed yield")
                         continuation.yield(.completed)
                         continuation.finish()
                     }
@@ -1514,23 +1127,6 @@ extension APIClient {
         case "message": return .textChunk(data.isEmpty ? "\n" : data)  // 빈 data = 줄바꿈
         case "title":   return data.isEmpty ? nil : .titleChunk(data)
         default:        return nil
-        }
-    }
-
-    private func parseSSEEvent(type: String, data: String) -> SSEDocumentStatus? {
-        guard let jsonData = data.data(using: .utf8),
-              let payload = try? JSONDecoder().decode(SSEDataPayload.self, from: jsonData) else {
-            return nil
-        }
-        switch payload.status {
-        case "CONNECTED": return .connected
-        case "PENDING":   return .pending
-        case "PROCESSING": return .processing(remainMs: payload.remain ?? 0)
-        case "COMPLETED":  return .completed
-        case "FAILED":
-            let reason = SSEFailureReason(rawValue: payload.reason ?? "") ?? .serverError
-            return .failed(reason: reason)
-        default: return nil
         }
     }
 }

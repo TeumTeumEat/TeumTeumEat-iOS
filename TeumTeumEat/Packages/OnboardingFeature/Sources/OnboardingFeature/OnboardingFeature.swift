@@ -189,11 +189,11 @@ public struct OnboardingFeature {
             return .none
             
         case .categorySelection(.delegate(.saveProgress(let root, let main, let sub, let detail))):
-            print("OnboardingFeature - saveProgress")
-            print("Root: \(root ?? "nil")")
-            print("Main: \(main ?? "nil")")
-            print("Sub: \(sub ?? "nil")")
-            print("Detail: \(detail?.name ?? "nil")")
+            Log.onboarding.debug("OnboardingFeature - saveProgress")
+            Log.onboarding.debug("Root: \(root ?? "nil")")
+            Log.onboarding.debug("Main: \(main ?? "nil")")
+            Log.onboarding.debug("Sub: \(sub ?? "nil")")
+            Log.onboarding.debug("Detail: \(detail?.name ?? "nil")")
             
             // String과 CategoryResponse로 저장
             state.onboardingData.selectedRootCategory = root
@@ -204,7 +204,7 @@ public struct OnboardingFeature {
             
             
         case .categorySelection(.delegate(.backToContentSelection)):
-            print("OnboardingFeature - backToContentSelection")
+            Log.onboarding.debug("OnboardingFeature - backToContentSelection")
             state.categorySelection = nil
             
             // ContentSelection State 복원 - 기존 선택 유지
@@ -218,7 +218,7 @@ public struct OnboardingFeature {
             return .none
             
         case .categorySelection(.delegate(.completed(let root, let main, let sub, let detail))):
-            print("OnboardingFeature - category completed")
+            Log.onboarding.debug("OnboardingFeature - category completed")
             
             // String과 CategoryResponse로 저장
             state.onboardingData.selectedRootCategory = root
@@ -372,8 +372,8 @@ public struct OnboardingFeature {
             
         // Complete
         case .complete(.startButtonTapped):
-            print("온보딩 완료!")
-            print("수집된 데이터: \(state.onboardingData)")
+            Log.onboarding.debug("온보딩 완료!")
+            Log.onboarding.debug("수집된 데이터: \(state.onboardingData)")
             // TODO: AppFeature로 완료 알림 → 메인 화면으로 이동
             return .none
             
@@ -432,56 +432,56 @@ public struct OnboardingFeature {
 }
 
 private func printOnboardingData(action: OnboardingFeature.Action, data: OnboardingData) {
-    print("==========================================")
-    print("Action:", action)
-    print("==========================================")
-    print("이름:", data.userName)
+    Log.onboarding.debug("==========================================")
+    Log.onboarding.debug("Action: \(action)")
+    Log.onboarding.debug("==========================================")
+    Log.onboarding.debug("이름: \(data.userName)")
     
     if let leaveTime = data.leaveHomeTime {
-        print("집 나오는 시간:", leaveTime.formatted(date: .omitted, time: .shortened))
+        Log.onboarding.debug("집 나오는 시간: \(leaveTime.formatted(date: .omitted, time: .shortened))")
     } else {
-        print("집 나오는 시간: 미설정")
+        Log.onboarding.debug("집 나오는 시간: 미설정")
     }
     
     if let returnTime = data.returnHomeTime {
-        print("집 돌아오는 시간:", returnTime.formatted(date: .omitted, time: .shortened))
+        Log.onboarding.debug("집 돌아오는 시간: \(returnTime.formatted(date: .omitted, time: .shortened))")
     } else {
-        print("집 돌아오는 시간: 미설정")
+        Log.onboarding.debug("집 돌아오는 시간: 미설정")
     }
     
-    print("목표 시간:", data.dailyUsageMinutes, "분")
-    print("컨텐츠 타입:", data.contentType)
+    Log.onboarding.debug("목표 시간: \(data.dailyUsageMinutes) 분")
+    Log.onboarding.debug("컨텐츠 타입: \(data.contentType)")
     
     if let url = data.uploadedFileURL {
-        print("파일:", url.lastPathComponent)
+        Log.onboarding.debug("파일: \(url.lastPathComponent)")
     } else {
-        print("파일: 없음")
+        Log.onboarding.debug("파일: 없음")
     }
     
     if let main = data.selectedMainCategory {
-        print("선택 카테고리 - 직군:", main)
+        Log.onboarding.debug("선택 카테고리 - 직군: \(main)")
     } else {
-        print("선택 카테고리 - 직군: 미설정")
+        Log.onboarding.debug("선택 카테고리 - 직군: 미설정")
     }
     
     if let sub = data.selectedSubCategory {
-        print("선택 카테고리 - 분야:", sub)
+        Log.onboarding.debug("선택 카테고리 - 분야: \(sub)")
     } else {
-        print("선택 카테고리 - 분야: 미설정")
+        Log.onboarding.debug("선택 카테고리 - 분야: 미설정")
     }
     
     if let detail = data.selectedDetailCategory {
-        print("선택 카테고리 - 세부:", detail.name)
-        print("카테고리 ID:", detail.categoryId)
-        print("카테고리 Path:", detail.path)
+        Log.onboarding.debug("선택 카테고리 - 세부: \(detail.name)")
+        Log.onboarding.debug("카테고리 ID: \(detail.categoryId)")
+        Log.onboarding.debug("카테고리 Path: \(detail.path)")
     } else {
-        print("선택 카테고리 - 세부: 미설정")
+        Log.onboarding.debug("선택 카테고리 - 세부: 미설정")
     }
 
-    print("난이도:", data.difficulty ?? "미설정")
-    print("프롬프트:", data.customPrompt.isEmpty ? "없음" : data.customPrompt)
-    print("기간:", data.programWeeks, "주")
-    print("==========================================")
+    Log.onboarding.debug("난이도: \(data.difficulty ?? "미설정")")
+    Log.onboarding.debug("프롬프트: \(data.customPrompt.isEmpty ? "없음" : data.customPrompt)")
+    Log.onboarding.debug("기간: \(data.programWeeks) 주")
+    Log.onboarding.debug("==========================================")
 }
 
 extension String {

@@ -23,10 +23,10 @@ extension CategoryAPIClient: DependencyKey {
                 let baseURL = Config.baseURL
                 let endPoint = "/api/v1/categories"
                 let fullPath = baseURL + endPoint
-                print("Fetching categories from: \(fullPath)")
+                Log.network.debug("Fetching categories from: \(fullPath)")
                 
                 guard let url = URL(string: fullPath) else {
-                    print("Invalid URL: \(fullPath)")
+                    Log.network.debug("Invalid URL: \(fullPath)")
                     throw CategoryAPIError.invalidResponse(
                         message: "잘못된 URL입니다.",
                         details: nil
@@ -40,9 +40,9 @@ extension CategoryAPIClient: DependencyKey {
                 //  KeyChain에서 토큰 가져오기
                 if let token = KeyChainManager.shared.getAccessToken() {
                     request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-                    print("Access Token added to request")
+                    Log.network.debug("Access Token added to request")
                 } else {
-                    print("No access token found in KeyChain")
+                    Log.network.debug("No access token found in KeyChain")
                     throw CategoryAPIError.invalidResponse(
                         message: "인증 토큰이 없습니다.",
                         details: "다시 로그인해주세요."
@@ -53,7 +53,7 @@ extension CategoryAPIClient: DependencyKey {
                 
                 // HTTP 응답 확인
                 if let httpResponse = response as? HTTPURLResponse {
-                    print("HTTP Status: \(httpResponse.statusCode)")
+                    Log.network.debug("HTTP Status: \(httpResponse.statusCode)")
                     
                     guard (200...299).contains(httpResponse.statusCode) else {
                         // 401 에러 처리
@@ -72,8 +72,8 @@ extension CategoryAPIClient: DependencyKey {
                 
                 // 응답 데이터 확인
                 if let jsonString = String(data: data, encoding: .utf8) {
-                    print("Response JSON:")
-                    print(jsonString)
+                    Log.network.debug("Response JSON:")
+                    Log.network.debug(jsonString)
                 }
                 
                 // Base Response로 디코딩
@@ -82,33 +82,33 @@ extension CategoryAPIClient: DependencyKey {
                     from: data
                 )
                 
-                print("API Response Code: \(apiResponse.code)")
-                print("API Response Message: \(apiResponse.message)")
+                Log.network.debug("API Response Code: \(apiResponse.code)")
+                Log.network.debug("API Response Message: \(apiResponse.message)")
                 
                 // 에러 처리
                 guard apiResponse.code == "OK",
                       let categoryData = apiResponse.data else {
-                    print("Invalid API Response")
+                    Log.network.debug("Invalid API Response")
                     throw CategoryAPIError.invalidResponse(
                         message: apiResponse.message,
                         details: apiResponse.details
                     )
                 }
                 
-                print("Categories loaded: \(categoryData.categoryResponses.count) items")
+                Log.network.debug("Categories loaded: \(categoryData.categoryResponses.count) items")
                 return categoryData.categoryResponses
                 
             } catch let decodingError as DecodingError {
-                print("Decoding Error: \(decodingError)")
+                Log.network.error("Decoding Error: \(decodingError)")
                 throw CategoryAPIError.invalidResponse(
                     message: "데이터 파싱 오류",
                     details: decodingError.localizedDescription
                 )
             } catch let error as CategoryAPIError {
-                print("Category API Error: \(error)")
+                Log.network.error("Category API Error: \(error)")
                 throw error
             } catch {
-                print("Network Error: \(error)")
+                Log.network.error("Network Error: \(error)")
                 throw CategoryAPIError.networkError(error)
             }
         }

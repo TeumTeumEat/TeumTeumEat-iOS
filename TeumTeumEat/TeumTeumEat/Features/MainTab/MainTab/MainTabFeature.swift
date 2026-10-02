@@ -18,7 +18,6 @@ struct MainTabFeature {
         // 각 탭의 Feature State
         var home: HomeFeature.State = .init()
         var quiz: HistoryFeature.State = .init()
-        var register: RegisterFeature.State = .init()
 
         var newGoalFlow: NewGoalFlowFeature.State?
         var addSubject: AddSubjectFeature.State?
@@ -28,7 +27,6 @@ struct MainTabFeature {
         enum Tab {
             case home
             case quiz
-            case register
         }
     }
     
@@ -38,7 +36,6 @@ struct MainTabFeature {
         case registerMenuItemTapped(RegisterMenuItem)
         case home(HomeFeature.Action)
         case quiz(HistoryFeature.Action)
-        case register(RegisterFeature.Action)
         case newGoalFlow(NewGoalFlowFeature.Action)
         case addSubject(AddSubjectFeature.Action)
         case addSubjectFile(AddSubjectFileFeature.Action)
@@ -64,9 +61,6 @@ struct MainTabFeature {
         Scope(state: \.quiz, action: \.quiz) {
             HistoryFeature()
         }
-        Scope(state: \.register, action: \.register) {
-            RegisterFeature()
-        }
         
             Reduce { state, action in
                 switch action {
@@ -75,9 +69,7 @@ struct MainTabFeature {
                     let previousTab = state.selectedTab
                     state.selectedTab = tab
 
-                    if tab != .register {
-                        state.isRegisterMenuExpanded = false
-                    }
+                    state.isRegisterMenuExpanded = false
 
                     // 홈 탭 새로고침은 HomeView.onAppear가 담당 (여기서도 보내면 API가 중복 호출됨)
 
@@ -95,7 +87,7 @@ struct MainTabFeature {
 
                 case .registerMenuItemTapped(let item):
                     guard !state.home.isGoalCompleted else { return .none }
-                    print("메뉴 아이템 선택: \(item)")
+                    Log.app.debug("메뉴 아이템 선택: \(item)")
                     state.isRegisterMenuExpanded = false
                     if item == .category {
                         state.addSubject = AddSubjectFeature.State()
@@ -121,7 +113,7 @@ struct MainTabFeature {
 
                 case .home(.delegate(.openMyPageRequested)):
                     state.myPage = MyPageFeature.State()
-                    print("Home에서 MyPage 열기")
+                    Log.app.debug("Home에서 MyPage 열기")
                     return .none
 
                 // Home에서 QuizFlow 시작 (summaryData 포함)
@@ -131,12 +123,12 @@ struct MainTabFeature {
                         summaryData: summaryData,
                         isQuizGuideSeen: isQuizGuideSeen
                     )
-                    print("퀴즈 플로우 시작 - 요약부터 표시")
+                    Log.app.debug("퀴즈 플로우 시작 - 요약부터 표시")
                     return .none
                     
                 case .quiz(.delegate(.openMyPageRequested)):
                     state.myPage = MyPageFeature.State()
-                    print("History에서 MyPage 열기")
+                    Log.app.debug("History에서 MyPage 열기")
                     return .none
                     
                 case .myPage(.delegate(.dismissed)):
@@ -144,16 +136,16 @@ struct MainTabFeature {
                     if state.home.isGoalCompleted {
                         state.home.showGoalCompletedAlert = true
                     }
-                    print("MyPage 닫힘")
+                    Log.app.debug("MyPage 닫힘")
                     return .none
                     
                 case .myPage(.delegate(.logout)):
-                    print("MainTab: MyPage에서 로그아웃 요청 받음")
+                    Log.app.debug("MainTab: MyPage에서 로그아웃 요청 받음")
                     return .send(.delegate(.logout))
                     
                 case .quizFlow(.delegate(.completed(let destination))):
                     state.quizFlow = nil
-                    print("퀴즈 플로우 완료 - 이동: \(destination)")
+                    Log.app.debug("퀴즈 플로우 완료 - 이동: \(destination)")
 
                     switch destination {
                     case .home:
@@ -167,36 +159,36 @@ struct MainTabFeature {
                     
                 case .quizFlow(.delegate(.cancelled)):
                     state.quizFlow = nil
-                    print("퀴즈 플로우 취소")
+                    Log.app.debug("퀴즈 플로우 취소")
                     return .send(.home(.onAppear))
                     
                 case .addSubject(.delegate(.completed)):
                     state.addSubject = nil
-                    print("주제 추가 완료 - 홈 새로고침")
+                    Log.app.debug("주제 추가 완료 - 홈 새로고침")
                     state.selectedTab = .home
                     return .send(.home(.onAppear))
 
                 case .addSubject(.delegate(.cancelled)):
                     state.addSubject = nil
-                    print("주제 추가 취소 - Sheet 닫힘")
+                    Log.app.debug("주제 추가 취소 - Sheet 닫힘")
                     return .none
 
                 case .addSubjectFile(.delegate(.completed)):
                     state.addSubjectFile = nil
-                    print("파일 주제 추가 완료 - 홈 새로고침")
+                    Log.app.debug("파일 주제 추가 완료 - 홈 새로고침")
                     state.selectedTab = .home
                     return .send(.home(.onAppear))
 
                 case .addSubjectFile(.delegate(.cancelled)):
-                    print("파일 주제 추가 취소 - Sheet 닫힘")
+                    Log.app.debug("파일 주제 추가 취소 - Sheet 닫힘")
                     state.addSubjectFile = nil
                     return .none
                     
                 case .myPage(.delegate(.withdrawal)):
-                    print("MainTabFeature: 회원탈퇴 요청 받음")
+                    Log.app.debug("MainTabFeature: 회원탈퇴 요청 받음")
                     return .send(.delegate(.withdrawal))
 
-                case .home, .quiz, .register, .newGoalFlow, .addSubject, .addSubjectFile, .quizFlow, .myPage, .delegate:
+                case .home, .quiz, .newGoalFlow, .addSubject, .addSubjectFile, .quizFlow, .myPage, .delegate:
                     return .none
                 }
             }

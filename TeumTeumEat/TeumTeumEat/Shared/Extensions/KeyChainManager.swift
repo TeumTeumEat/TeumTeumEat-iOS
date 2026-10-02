@@ -34,9 +34,9 @@ final class KeyChainManager {
         let status = SecItemAdd(query as CFDictionary, nil)
         
         if status == errSecSuccess {
-            print("KeyChain Save Success: \(key.rawValue)")
+            Log.auth.debug("KeyChain Save Success: \(key.rawValue)")
         } else {
-            print("KeyChain Save Failed: \(status)")
+            Log.auth.error("KeyChain Save Failed: \(status)")
         }
     }
     
@@ -55,10 +55,10 @@ final class KeyChainManager {
         if status == errSecSuccess,
            let data = dataTypeRef as? Data,
            let value = String(data: data, encoding: .utf8) {
-            print("KeyChain Get Success: \(key.rawValue)")
+            Log.auth.debug("KeyChain Get Success: \(key.rawValue)")
             return value
         } else {
-            print("KeyChain Get Failed: \(status)")
+            Log.auth.error("KeyChain Get Failed: \(status)")
             return nil
         }
     }
@@ -73,16 +73,16 @@ final class KeyChainManager {
         let status = SecItemDelete(query as CFDictionary)
         
         if status == errSecSuccess {
-            print("KeyChain Delete Success: \(key.rawValue)")
+            Log.auth.debug("KeyChain Delete Success: \(key.rawValue)")
         } else {
-            print("KeyChain Delete Failed: \(status)")
+            Log.auth.error("KeyChain Delete Failed: \(status)")
         }
     }
     
     func deleteAll() {
         delete(for: .accessToken)
         delete(for: .refreshToken)
-        print("KeyChain All Deleted")
+        Log.auth.debug("KeyChain All Deleted")
     }
 }
 

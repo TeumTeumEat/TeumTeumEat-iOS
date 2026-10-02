@@ -100,14 +100,14 @@ struct QuizFlowFeature {
                 if !state.isQuizGuideSeen {
                     state.currentStep = .quizGuide
                     state.quizGuide = QuizGuideFeature.State()
-                    print("QuizFlow: 퀴즈 가이드로 이동 (isQuizGuideSeen=false)")
+                    Log.quiz.debug("QuizFlow: 퀴즈 가이드로 이동 (isQuizGuideSeen=false)")
                     return .none
                 } else {
                     state.currentStep = .quiz
                     let convertedQuizzes = quizzes.map { Quiz(from: $0) }
                     state.quiz = QuizFeature.State(quizzes: convertedQuizzes)
                     AnalyticsManager.logQuizStart(quizCount: quizzes.count)
-                    print("QuizFlow: 퀴즈로 바로 이동 - complete-set 호출")
+                    Log.quiz.debug("QuizFlow: 퀴즈로 바로 이동 - complete-set 호출")
                     return .run { send in
                         do {
                             try await apiClient.completeQuizSet()
@@ -119,19 +119,19 @@ struct QuizFlowFeature {
                 }
 
             case .contentSummary(.delegate(.cancelled)):
-                print("QuizFlow: ContentSummary에서 취소")
+                Log.quiz.debug("QuizFlow: ContentSummary에서 취소")
                 return .send(.delegate(.cancelled))
 
             case .quizGuide(.delegate(.startQuiz)):
                 guard !state.quizzes.isEmpty else {
-                    print("[QuizFlow] 퀴즈가 없어 시작 불가 - completeQuizSet 호출 건너뜀")
+                    Log.quiz.debug("[QuizFlow] 퀴즈가 없어 시작 불가 - completeQuizSet 호출 건너뜀")
                     return .none
                 }
                 state.currentStep = .quiz
                 let convertedQuizzes = state.quizzes.map { Quiz(from: $0) }
                 state.quiz = QuizFeature.State(quizzes: convertedQuizzes)
                 AnalyticsManager.logQuizStart(quizCount: state.quizzes.count)
-                print("QuizFlow: 안내 완료, 퀴즈 시작 - complete-set 호출")
+                Log.quiz.debug("QuizFlow: 안내 완료, 퀴즈 시작 - complete-set 호출")
                 return .run { send in
                     do {
                         try await apiClient.completeQuizSet()
@@ -142,15 +142,15 @@ struct QuizFlowFeature {
                 }
 
             case .completeSetResponse(.success):
-                print("[QuizFlow] complete-set 성공")
+                Log.quiz.debug("[QuizFlow] complete-set 성공")
                 return .none
 
             case .completeSetResponse(.failure(let error)):
-                print("[QuizFlow] complete-set 실패: \(error)")
+                Log.quiz.error("[QuizFlow] complete-set 실패: \(error)")
                 return .none
                 
             case .quiz(.delegate(.dismissed)):
-                print("QuizFlow: 퀴즈 뒤로가기 → 취소")
+                Log.quiz.debug("QuizFlow: 퀴즈 뒤로가기 → 취소")
                 return .send(.delegate(.cancelled))
 
             case .quiz(.delegate(.completed)):
@@ -165,7 +165,7 @@ struct QuizFlowFeature {
                     submitResults: submitResults,
                     totalQuizCount: state.quizzes.count
                 )
-                print("QuizFlow: 결과 화면으로 이동")
+                Log.quiz.debug("QuizFlow: 결과 화면으로 이동")
                 return .none
                 
             case .result(.delegate(.showDetailResults)):
@@ -177,15 +177,15 @@ struct QuizFlowFeature {
                     submitResults: resultState?.submitResults ?? [:],
                     totalQuizCount: state.quizzes.count
                 )
-                print("QuizFlow: 상세 결과로 이동")
+                Log.quiz.debug("QuizFlow: 상세 결과로 이동")
                 return .none
                 
             case .result(.delegate(.navigateToHome)):
-                print("QuizFlow: 홈으로 이동")
+                Log.quiz.debug("QuizFlow: 홈으로 이동")
                 return .send(.delegate(.completed(destination: .home)))
                 
             case .result(.delegate(.navigateToHistory)):
-                print("QuizFlow: 히스토리로 이동")
+                Log.quiz.debug("QuizFlow: 히스토리로 이동")
                 return .send(.delegate(.completed(destination: .history)))
                 
             // DetailResult → ReviewSummary (글 보기)
@@ -194,7 +194,7 @@ struct QuizFlowFeature {
                 state.reviewSummary = QuizReviewSummaryFeature.State(
                     summaryText: state.contentSummary.summaryText
                 )
-                print("QuizFlow: 요약본 다시 보기로 이동")
+                Log.quiz.debug("QuizFlow: 요약본 다시 보기로 이동")
                 return .none
                 
             // DetailResult → Complete or SubjectComplete (다음으로)
@@ -208,16 +208,16 @@ struct QuizFlowFeature {
                 if status.isCompleted {
                     state.currentStep = .subjectComplete
                     state.subjectComplete = QuizSubjectCompleteFeature.State()
-                    print("QuizFlow: 주제 완료 화면으로 이동")
+                    Log.quiz.debug("QuizFlow: 주제 완료 화면으로 이동")
                 } else {
                     state.currentStep = .complete
                     state.complete = QuizCompleteFeature.State()
-                    print("QuizFlow: 일반 완료 화면으로 이동")
+                    Log.quiz.debug("QuizFlow: 일반 완료 화면으로 이동")
                 }
                 return .none
 
             case .fetchStatusForCompletionResponse(.failure(let error)):
-                print("QuizFlow: status 조회 실패, 일반 완료 화면으로 fallback: \(error)")
+                Log.quiz.error("QuizFlow: status 조회 실패, 일반 완료 화면으로 fallback: \(error)")
                 state.currentStep = .complete
                 state.complete = QuizCompleteFeature.State()
                 return .none
@@ -225,22 +225,22 @@ struct QuizFlowFeature {
             // ReviewSummary → 뒤로가기 (DetailResult로)
             case .reviewSummary(.delegate(.back)):
                 state.currentStep = .detailResult
-                print("QuizFlow: 상세 결과로 복귀")
+                Log.quiz.debug("QuizFlow: 상세 결과로 복귀")
                 return .none
                 
             // Complete → 홈으로
             case .complete(.delegate(.navigateToHome)):
-                print("QuizFlow: 홈으로 이동")
+                Log.quiz.debug("QuizFlow: 홈으로 이동")
                 return .send(.delegate(.completed(destination: .home)))
                 
             // Complete → 히스토리로
             case .complete(.delegate(.navigateToHistory)):
-                print("QuizFlow: 히스토리로 이동")
+                Log.quiz.debug("QuizFlow: 히스토리로 이동")
                 return .send(.delegate(.completed(destination: .history)))
                 
             // SubjectComplete → 홈으로
             case .subjectComplete(.delegate(.navigateToHome)):
-                print("QuizFlow: 홈으로 이동")
+                Log.quiz.debug("QuizFlow: 홈으로 이동")
                 return .send(.delegate(.completed(destination: .home)))
 
             // SubjectComplete → 파일 업로드 (QuizFlow 내부에서 띄움)
@@ -466,7 +466,7 @@ struct QuizFeature {
                 state.isSubmitting = false
                 // 결과 저장
                 state.submitResults[state.currentIndex] = result
-                print("답안 제출 성공 - 정답: \(result.isCorrect)")
+                Log.quiz.debug("답안 제출 성공 - 정답: \(result.isCorrect)")
                 
                 // 애니메이션 시작
                 return .run { send in
@@ -476,7 +476,7 @@ struct QuizFeature {
                 
             case .submitAnswerResponse(.failure(let error)):
                 state.isSubmitting = false
-                print("답안 제출 실패: \(error)")
+                Log.quiz.error("답안 제출 실패: \(error)")
                 
                 // 일단 애니메이션은 계속 진행
                 return .run { send in
@@ -939,11 +939,11 @@ struct QuizDetailResultFeature {
         Reduce { state, action in
             switch action {
             case .reviewSummaryButtonTapped:
-                print("QuizDetailResult: 글 보기 → 요약본으로")
+                Log.quiz.debug("QuizDetailResult: 글 보기 → 요약본으로")
                 return .send(.delegate(.showReviewSummary))
                 
             case .nextButtonTapped:
-                print("QuizDetailResult: 다음으로 → 완료 화면으로")
+                Log.quiz.debug("QuizDetailResult: 다음으로 → 완료 화면으로")
                 return .send(.delegate(.showComplete))
                 
             case .delegate:

@@ -203,7 +203,7 @@ struct ContentSummaryFeature {
                 return .none
 
             case .streamFailed(let error):
-                print("[ContentSummary] streamFailed: \(error)")
+                Log.quiz.error("[ContentSummary] streamFailed: \(error)")
                 // QUIZ-002: 퀴즈 횟수 소진
                 if let api = error as? APIError,
                    case .serverError(let code, let message, _) = api, code == "QUIZ-002" {
@@ -307,18 +307,18 @@ struct ContentSummaryFeature {
                 }
 
             case .fetchDocumentMetaCompleted(.failure(let error)):
-                print("[ContentSummary] 문서 메타 조회 실패: \(error)")
+                Log.quiz.error("[ContentSummary] 문서 메타 조회 실패: \(error)")
                 state.isQuizLoading = false
                 return .none
 
             case .fetchQuizzesCompleted(.success(let quizzes)):
                 state.quizzes = quizzes
                 state.isQuizLoading = false
-                print("[ContentSummary] 퀴즈 로딩 완료: \(quizzes.count)개")
+                Log.quiz.debug("[ContentSummary] 퀴즈 로딩 완료: \(quizzes.count)개")
                 return .none
 
             case .fetchQuizzesCompleted(.failure(let error)):
-                print("[ContentSummary] 퀴즈 로딩 실패: \(error)")
+                Log.quiz.error("[ContentSummary] 퀴즈 로딩 실패: \(error)")
                 state.isQuizLoading = false
                 return .none
 

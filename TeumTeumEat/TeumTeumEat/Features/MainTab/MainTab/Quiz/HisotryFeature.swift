@@ -134,7 +134,7 @@ struct HistoryFeature {
                  // stampCount를 totalStamps로 업데이트
                  state.fireCount = data.currentStreak
                  state.stampCount = data.totalStamps
-                 print("Calendar data loaded: \(data.currentStreak) stamped dates, total: \(data.totalStamps)")
+                 Log.history.debug("Calendar data loaded: \(data.currentStreak) stamped dates, total: \(data.totalStamps)")
 
                  // App Group에 위젯 데이터 저장
                  if let userDefaults = UserDefaults(suiteName: "group.com.TeumTeumEat") {
@@ -153,16 +153,16 @@ struct HistoryFeature {
              case .calendarDataLoaded(.failure(let error)):
                  let msg = (error as? APIError)?.overlayMessage ?? "에러가 발생했습니다."
                  state.calendarError = msg
-                 print("Failed to load calendar data: \(error)")
+                 Log.history.error("Failed to load calendar data: \(error)")
                  return .none
                  
              case .historyItemsLoaded(.success(let items)):
                   state.selectedDateHistoryItems = items
-                  print("History items loaded: \(items.count) items")
+                  Log.history.debug("History items loaded: \(items.count) items")
                   return .none
                   
               case .historyItemsLoaded(.failure(let error)):
-                  print("Failed to load history items: \(error)")
+                  Log.history.error("Failed to load history items: \(error)")
                   state.selectedDateHistoryItems = []
                   return .none
                  
@@ -210,14 +210,14 @@ struct HistoryFeature {
                  state.isLoadingTopics = false
                  state.topicError = nil
                  state.topicCategories = categories
-                 print("Topic histories loaded: \(categories.count) categories")
+                 Log.history.debug("Topic histories loaded: \(categories.count) categories")
                  return .none
 
              case .topicHistoriesLoaded(.failure(let error)):
                  state.isLoadingTopics = false
                  let msg = (error as? APIError)?.overlayMessage ?? "에러가 발생했습니다."
                  state.topicError = msg
-                 print("Failed to load topic histories: \(error)")
+                 Log.history.error("Failed to load topic histories: \(error)")
                  return .none
                  
              case .historyItemTapped(let id, let typeString, let date):
@@ -229,12 +229,12 @@ struct HistoryFeature {
                     documentType: documentType,
                     date: date
                  )
-                 print("History item tapped - ID: \(id), Type: \(documentType), Date: \(date)")
+                 Log.history.debug("History item tapped - ID: \(id), Type: \(documentType), Date: \(date)")
                  return .none
                   
               case .historyDetailSummary(.delegate(.dismissed)):
                   state.historyDetailSummary = nil
-                  print("History detail dismissed")
+                  Log.history.debug("History detail dismissed")
                   return .none
                   
               case .historyDetailSummary:

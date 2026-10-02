@@ -171,7 +171,7 @@ public struct OnboardingLoadingFeature {
                                 returnTime.toString(format: "HH:mm:ss"),
                                 data.dailyUsageMinutes
                             )
-                            print("User info updated - Onboarding")
+                            Log.onboarding.debug("User info updated - Onboarding")
                         }
 
                         if data.contentType == .fileUpload {
@@ -186,20 +186,20 @@ public struct OnboardingLoadingFeature {
                             let fileSize = (try? fileURL.fileSize()) ?? 0
 
                             // Step 1: Presigned URL + S3 업로드
-                            print("[UPLOAD] Step1: presigned URL 요청")
+                            Log.onboarding.debug("[UPLOAD] Step1: presigned URL 요청")
                             let presignedData = try await apiClient.getPresignedURL(fileName, fileSize)
-                            print("[UPLOAD] Step1: S3 업로드 시작")
+                            Log.onboarding.debug("[UPLOAD] Step1: S3 업로드 시작")
                             try await apiClient.uploadFileToS3(
                                 fileURL,
                                 presignedData.presignedUrl
                             )
-                            print("[UPLOAD] Step1: S3 업로드 완료")
+                            Log.onboarding.debug("[UPLOAD] Step1: S3 업로드 완료")
                             await send(.uploadStepCompleted)
 
                             // Step 2: 목표 생성 + 문서 등록
                             let difficulty = mapDifficulty(data.difficulty)
                             let prompt = data.customPrompt.isEmpty ? nil : data.customPrompt
-                            print("[UPLOAD] Step2: 목표 생성")
+                            Log.onboarding.debug("[UPLOAD] Step2: 목표 생성")
                             try await apiClient.createGoal(
                                 .document,
                                 "\(data.programWeeks)주",
@@ -208,7 +208,7 @@ public struct OnboardingLoadingFeature {
                                 nil
                             )
 
-                            print("[UPLOAD] Step2: 목표 조회")
+                            Log.onboarding.debug("[UPLOAD] Step2: 목표 조회")
                             let goals = try await apiClient.fetchGoals()
                             guard let latestGoal = goals
                                 .filter({ $0.type == "DOCUMENT" })
@@ -219,15 +219,15 @@ public struct OnboardingLoadingFeature {
                                     details: nil
                                 )
                             }
-                            print("[UPLOAD] Step2: latestGoal.goalId=\(latestGoal.goalId)")
+                            Log.onboarding.debug("[UPLOAD] Step2: latestGoal.goalId=\(latestGoal.goalId)")
 
-                            print("[UPLOAD] Step3: 문서 등록")
+                            Log.onboarding.debug("[UPLOAD] Step3: 문서 등록")
                             try await apiClient.registerDocument(
                                 latestGoal.goalId,
                                 fileName,
                                 presignedData.key
                             )
-                            print("[UPLOAD] Step3: 현재 목표 조회")
+                            Log.onboarding.debug("[UPLOAD] Step3: 현재 목표 조회")
                             let currentGoal = try await apiClient.fetchCurrentGoal()
                             guard let documentId = currentGoal.documentId else {
                                 throw APIError.serverError(
@@ -236,7 +236,7 @@ public struct OnboardingLoadingFeature {
                                     details: nil
                                 )
                             }
-                            print("[UPLOAD] Step3: documentId=\(documentId), SSE 시작")
+                            Log.onboarding.debug("[UPLOAD] Step3: documentId=\(documentId), SSE 시작")
                             await send(.sseStartRequested(goalId: latestGoal.goalId, documentId: documentId))
 
                         } else {
@@ -260,7 +260,7 @@ public struct OnboardingLoadingFeature {
                 state.sseGoalId = goalId
                 state.sseDocumentId = documentId
                 state.loadingSteps[1].isCompleted = true
-                print("[SSE] 연결 시작 - goalId: \(goalId), documentId: \(documentId)")
+                Log.onboarding.debug("[SSE] 연결 시작 - goalId: \(goalId), documentId: \(documentId)")
 
                 let sseEffect = Effect<Action>.run { send in
                     do {
@@ -290,14 +290,14 @@ public struct OnboardingLoadingFeature {
             case .sseEventReceived(let event):
                 switch event {
                 case .connected:
-                    print("[SSE] 연결됨")
+                    Log.onboarding.debug("[SSE] 연결됨")
 
                 case .pending:
-                    print("[SSE] 처리 대기 중")
+                    Log.onboarding.debug("[SSE] 처리 대기 중")
                     state.sseProgress = 0.05
 
                 case .processing(let remainMs):
-                    print("[SSE] 처리 중 - 남은 시간: \(remainMs)ms")
+                    Log.onboarding.debug("[SSE] 처리 중 - 남은 시간: \(remainMs)ms")
 
                     // remain_ms = 0 → 서버가 예상 시간을 모름, 99%에서 대기
                     guard remainMs > 0 else {
@@ -325,7 +325,7 @@ public struct OnboardingLoadingFeature {
                     .cancellable(id: CancelID.timer, cancelInFlight: true)
 
                 case .completed:
-                    print("[SSE] 완료")
+                    Log.onboarding.debug("[SSE] 완료")
                     state.sseProgress = 1.0
                     state.remainingSeconds = 0
                     state.isOverdue = false
@@ -338,7 +338,7 @@ public struct OnboardingLoadingFeature {
                     )
 
                 case .failed(let reason):
-                    print("[SSE] 실패 - \(reason.userMessage)")
+                    Log.onboarding.error("[SSE] 실패 - \(reason.userMessage)")
                     return .merge(
                         .cancel(id: CancelID.timer),
                         .cancel(id: CancelID.sseStream),
@@ -353,7 +353,7 @@ public struct OnboardingLoadingFeature {
                 return .none
 
             case .sseConnectionFailed(let message):
-                print("[SSE] 연결 실패: \(message)")
+                Log.onboarding.error("[SSE] 연결 실패: \(message)")
                 return .merge(
                     .cancel(id: CancelID.sseTimeout),
                     .send(.apiFailure(.serverError(
@@ -364,7 +364,7 @@ public struct OnboardingLoadingFeature {
                 )
 
             case .sseTimeoutTriggered:
-                print("[SSE] 클라이언트 타임아웃 (\(OnboardingLoadingFeature.clientTimeoutSeconds)초)")
+                Log.onboarding.debug("[SSE] 클라이언트 타임아웃 (\(OnboardingLoadingFeature.clientTimeoutSeconds)초)")
                 return .merge(
                     .cancel(id: CancelID.sseStream),
                     .cancel(id: CancelID.timer),
@@ -393,7 +393,7 @@ public struct OnboardingLoadingFeature {
             case .apiFailure(let error):
                 state.apiCompleted = false
                 state.apiError = error
-                print("API Error: \(error.localizedDescription)")
+                Log.onboarding.error("API Error: \(error.localizedDescription)")
 
                 if error.isNonRetryable {
                     state.errorAlert = AlertState {
@@ -496,7 +496,7 @@ public struct OnboardingLoadingFeature {
                 return .none
 
             case .loadingCompleted:
-                print("로딩 완료 - Complete 화면으로 이동")
+                Log.onboarding.debug("로딩 완료 - Complete 화면으로 이동")
                 if UserDefaults.standard.bool(forKey: "shouldRegisterDeviceToken") {
                     return .run { _ in
                         await MainActor.run {

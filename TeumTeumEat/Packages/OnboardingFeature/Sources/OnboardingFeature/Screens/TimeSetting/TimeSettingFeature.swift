@@ -175,7 +175,7 @@ public struct TimeSettingFeature {
                 if granted {
                     // 디바이스 토큰 전송 대기 플래그 저장
                     UserDefaults.standard.set(true, forKey: "shouldRegisterDeviceToken")
-                    print("알림 권한 허용 - 온보딩 완료 시 토큰 전송 예정")
+                    Log.onboarding.debug("알림 권한 허용 - 온보딩 완료 시 토큰 전송 예정")
                 }
                 return .none
 
@@ -212,7 +212,7 @@ extension TimeSettingFeature {
                 .requestAuthorization(options: [.alert, .sound, .badge])
             return granted
         } catch {
-            print("알림 권한 요청 실패: \(error)")
+            Log.onboarding.error("알림 권한 요청 실패: \(error)")
             return false
         }
     }

@@ -70,12 +70,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
     // FCM 토큰 갱신 시
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-        print("FCM Token: \(fcmToken ?? "nil")")
+        Log.app.debug("FCM Token: \(fcmToken ?? "nil")")
 
         // 로그인된 상태일 때만 서버로 FCM 토큰 전송 (미로그인 시 등록 스킵)
         guard let token = fcmToken,
               KeyChainManager.shared.getAccessToken() != nil else {
-            print("FCM 토큰 서버 전송 스킵 - 로그인 상태 아님")
+            Log.app.debug("FCM 토큰 서버 전송 스킵 - 로그인 상태 아님")
             return
         }
 
@@ -88,10 +88,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                     deviceType: "IOS"
                 )
 
-                print("FCM 토큰 서버 전송 완료")
+                Log.app.debug("FCM 토큰 서버 전송 완료")
 
             } catch {
-                print("FCM 토큰 서버 전송 실패: \(error)")
+                Log.app.error("FCM 토큰 서버 전송 실패: \(error)")
             }
         }
     }
@@ -100,7 +100,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     func application(_ application: UIApplication,
                      didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         let token = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
-        print("APNs Token: \(token)")
+        Log.app.debug("APNs Token: \(token)")
         
         // APNs 토큰을 Messaging에 전달
         Messaging.messaging().apnsToken = deviceToken
@@ -109,20 +109,20 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     // MARK: - Remote Notification 등록 실패
     func application(_ application: UIApplication,
                      didFailToRegisterForRemoteNotificationsWithError error: Error) {
-        print("APNs 등록 실패: \(error.localizedDescription)")
+        Log.app.error("APNs 등록 실패: \(error.localizedDescription)")
     }
     
     // MARK: - 포그라운드에서 알림 받을 때 (앱 실행 중)
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        print("포그라운드 알림 수신: \(notification.request.content.body)")
+        Log.app.debug("포그라운드 알림 수신: \(notification.request.content.body)")
         
         let userInfo = notification.request.content.userInfo
         
         // FCM 데이터 출력
         if let messageID = userInfo["gcm.message_id"] {
-            print("FCM Message ID: \(messageID)")
+            Log.app.debug("FCM Message ID: \(messageID)")
         }
         
         // 앱 실행 중에도 알림 표시
@@ -133,13 +133,13 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
-        print("알림 탭: \(response.notification.request.content.body)")
+        Log.app.debug("알림 탭: \(response.notification.request.content.body)")
         
         let userInfo = response.notification.request.content.userInfo
         
         // FCM 데이터 처리
         if let messageID = userInfo["gcm.message_id"] {
-            print("FCM Message ID: \(messageID)")
+            Log.app.debug("FCM Message ID: \(messageID)")
         }
         
         // TODO: 딥링크 처리 등

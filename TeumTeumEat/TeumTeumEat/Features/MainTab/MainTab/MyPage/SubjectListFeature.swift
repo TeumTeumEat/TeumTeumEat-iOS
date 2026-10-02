@@ -53,9 +53,9 @@ struct SubjectListFeature {
                 
             case .goalsResponse(.success(let goals)):
                 state.isLoading = false
-                print("API Response - Goals count: \(goals.count)")
+                Log.myPage.debug("API Response - Goals count: \(goals.count)")
                 state.subjects = goals.filter { !$0.isExpired && !$0.isCompleted }.map { Subject(from: $0) }
-                print("Final subjects count: \(state.subjects.count)")
+                Log.myPage.debug("Final subjects count: \(state.subjects.count)")
                 return .none
                 
             case .goalsResponse(.failure(let error)):
@@ -65,11 +65,11 @@ struct SubjectListFeature {
                 } else {
                     state.errorMessage = "목록을 불러오는데 실패했습니다."
                 }
-                print("Failed to load goals: \(error)")
+                Log.myPage.error("Failed to load goals: \(error)")
                 return .none
                 
             case .subjectTapped(let subject):
-                print("Subject tapped - goalId: \(subject.goalId)")
+                Log.myPage.debug("Subject tapped - goalId: \(subject.goalId)")
                 state.isUpdating = true
                 
                 return .run { send in
@@ -83,7 +83,7 @@ struct SubjectListFeature {
                 
             case .updateGoalResponse(.success):
                 state.isUpdating = false
-                print("Goal updated successfully")
+                Log.myPage.debug("Goal updated successfully")
                 // 성공 시 delegate로 선택된 subject 전달하고 화면 닫기
                 return .run { [subjects = state.subjects] send in
                     // 업데이트된 목표 찾기
@@ -94,7 +94,7 @@ struct SubjectListFeature {
                 
             case .updateGoalResponse(.failure(let error)):
                 state.isUpdating = false
-                print("Failed to update goal: \(error)")
+                Log.myPage.error("Failed to update goal: \(error)")
                 if let apiError = error as? APIError {
                     state.errorMessage = apiError.localizedDescription
                 } else {
