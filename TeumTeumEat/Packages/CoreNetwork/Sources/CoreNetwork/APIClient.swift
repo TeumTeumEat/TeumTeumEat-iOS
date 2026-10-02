@@ -187,6 +187,12 @@ extension APIClient: DependencyKey {
 
 // MARK: - Token Reissue
 extension APIClient {
+    /// 액세스 토큰 재발급 (SSE처럼 request(...)를 거치지 않는 요청에서 AUTH-002 발생 시 사용)
+    /// 일반 요청과 같은 TokenRefreshCoordinator를 거치므로 동시 재발급이 중복되지 않음
+    public func refreshAccessToken() async throws {
+        try await TokenRefreshCoordinator.shared.refresh(using: self)
+    }
+
     fileprivate func performTokenReissue() async throws {
         guard let refreshToken = KeyChainManager.shared.getRefreshToken() else {
             Log.network.debug("No refresh token found in KeyChain")

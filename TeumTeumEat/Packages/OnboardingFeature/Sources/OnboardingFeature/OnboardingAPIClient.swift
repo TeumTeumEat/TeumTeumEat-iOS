@@ -155,26 +155,45 @@ extension OnboardingAPIClient: DependencyKey {
                         var request = URLRequest(url: url)
                         request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
                         request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
-                        if let token = KeyChainManager.shared.getAccessToken() {
-                            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-                        }
                         if let lastEventId {
                             request.setValue(lastEventId, forHTTPHeaderField: "Last-Event-ID")
                         }
                         do {
-                            let (bytes, response) = try await documentSSESession.bytes(for: request)
-                            guard let http = response as? HTTPURLResponse else {
-                                continuation.finish(throwing: APIError.invalidResponse)
-                                return
-                            }
-                            if http.statusCode != 200 {
+                            // 연결 (액세스 토큰 만료(AUTH-002) 시 재발급 후 1회 재연결)
+                            var didRefreshToken = false
+                            var connection: URLSession.AsyncBytes?
+                            while connection == nil {
+                                if let token = KeyChainManager.shared.getAccessToken() {
+                                    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                                }
+                                let (bytes, response) = try await documentSSESession.bytes(for: request)
+                                guard let http = response as? HTTPURLResponse else {
+                                    continuation.finish(throwing: APIError.invalidResponse)
+                                    return
+                                }
+                                if http.statusCode == 200 {
+                                    connection = bytes
+                                    break
+                                }
+
+                                var data = Data()
+                                for try await byte in bytes { data.append(byte) }
+                                let err = try? JSONDecoder().decode(APIErrorResponse.self, from: data)
+                                if err?.code == "AUTH-002", !didRefreshToken {
+                                    Log.onboarding.debug("[SSE Document] 액세스 토큰 만료 → 재발급 후 재연결")
+                                    didRefreshToken = true
+                                    try await APIClient.liveValue.refreshAccessToken()
+                                    continue
+                                }
+
                                 continuation.finish(throwing: APIError.serverError(
-                                    code: "SSE-\(http.statusCode)",
-                                    message: "SSE 연결 실패",
+                                    code: err?.code ?? "SSE-\(http.statusCode)",
+                                    message: err?.message ?? "SSE 연결 실패",
                                     details: nil
                                 ))
                                 return
                             }
+                            guard let bytes = connection else { return }
                             var eventType = ""
                             var eventData = ""
                             for try await line in bytes.lines {
