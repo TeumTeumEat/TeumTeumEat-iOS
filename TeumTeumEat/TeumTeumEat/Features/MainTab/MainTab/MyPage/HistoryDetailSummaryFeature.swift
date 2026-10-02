@@ -20,7 +20,7 @@ struct HistoryDetailSummaryFeature {
         var title: String = ""
         var isLoading: Bool = true
         var errorMessage: String?
-        var detailAnswer: HistoryDetailAnswerFeature.State?
+        @Presents var detailAnswer: HistoryDetailAnswerFeature.State?
         
         init(historyId: Int, documentType: DocumentType, date: String) {
              self.historyId = historyId
@@ -34,7 +34,7 @@ struct HistoryDetailSummaryFeature {
         case fetchDetailResponse(Result<HistorySummaryDetailData, Error>)
         case closeButtonTapped
         case checkQuizButtonTapped
-        case detailAnswer(HistoryDetailAnswerFeature.Action)
+        case detailAnswer(PresentationAction<HistoryDetailAnswerFeature.Action>)
         case delegate(Delegate)
     }
     
@@ -90,7 +90,7 @@ struct HistoryDetailSummaryFeature {
                 Log.myPage.debug(" 퀴즈 확인 버튼 클릭 - ID: \(state.historyId), Type: \(state.documentType), Date: \(state.date)")
                 return .none
                 
-            case .detailAnswer(.delegate(.dismissed)):
+            case .detailAnswer(.presented(.delegate(.dismissed))):
                 state.detailAnswer = nil
                 Log.myPage.debug("Quiz detail dismissed")
                 return .none
@@ -102,14 +102,14 @@ struct HistoryDetailSummaryFeature {
                 return .none
             }
         }
-        .ifLet(\.detailAnswer, action: \.detailAnswer) {
+        .ifLet(\.$detailAnswer, action: \.detailAnswer) {
             HistoryDetailAnswerFeature()
         }
     }
 }
 
 struct HistoryDetailSummaryView: View {
-    let store: StoreOf<HistoryDetailSummaryFeature>
+    @Bindable var store: StoreOf<HistoryDetailSummaryFeature>
     
     var body: some View {
         GeometryReader { geometry in
@@ -246,14 +246,9 @@ struct HistoryDetailSummaryView: View {
         .background(.white)
         .navigationBarHidden(true)
         .navigationDestination(
-            isPresented: Binding(
-                get: { store.detailAnswer != nil },
-                set: { if !$0 { store.send(.detailAnswer(.delegate(.dismissed))) } }
-            )
-        ) {
-            if let answerStore = store.scope(state: \.detailAnswer, action: \.detailAnswer) {
-                HistoryDetailAnswerView(store: answerStore)
-            }
+            item: $store.scope(state: \.detailAnswer, action: \.detailAnswer)
+        ) { answerStore in
+            HistoryDetailAnswerView(store: answerStore)
         }
         .onAppear {
             store.send(.onAppear)

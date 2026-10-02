@@ -46,7 +46,7 @@ struct HistoryFeature {
             return topicCategories.filter { activeNames.contains($0.categoryName) }
         }
 
-        var historyDetailSummary: HistoryDetailSummaryFeature.State?
+        @Presents var historyDetailSummary: HistoryDetailSummaryFeature.State?
     }
     
     enum Action {
@@ -64,7 +64,7 @@ struct HistoryFeature {
         case retryTopicHistories
         case filterToggled
         case historyItemTapped(id: Int, type: String, date: String)
-        case historyDetailSummary(HistoryDetailSummaryFeature.Action)
+        case historyDetailSummary(PresentationAction<HistoryDetailSummaryFeature.Action>)
         case delegate(Delegate)
     }
     
@@ -232,7 +232,7 @@ struct HistoryFeature {
                  Log.history.debug("History item tapped - ID: \(id), Type: \(documentType), Date: \(date)")
                  return .none
                   
-              case .historyDetailSummary(.delegate(.dismissed)):
+              case .historyDetailSummary(.presented(.delegate(.dismissed))):
                   state.historyDetailSummary = nil
                   Log.history.debug("History detail dismissed")
                   return .none
@@ -245,14 +245,14 @@ struct HistoryFeature {
                  return .none
              }
          }
-         .ifLet(\.historyDetailSummary, action: \.historyDetailSummary) {
+         .ifLet(\.$historyDetailSummary, action: \.historyDetailSummary) {
              HistoryDetailSummaryFeature()
          }
      }
  }
 
 struct HistoryView: View {
-    let store: StoreOf<HistoryFeature>
+    @Bindable var store: StoreOf<HistoryFeature>
     
     var body: some View {
         VStack(spacing: 0) {
@@ -307,14 +307,9 @@ struct HistoryView: View {
             .background(Color.white)
             .navigationBarHidden(true)
             .navigationDestination(
-                isPresented: Binding(
-                    get: { store.historyDetailSummary != nil },
-                    set: { if !$0 { store.send(.historyDetailSummary(.delegate(.dismissed))) } }
-                )
-            ) {
-                if let detailStore = store.scope(state: \.historyDetailSummary, action: \.historyDetailSummary) {
-                    HistoryDetailSummaryView(store: detailStore)
-                }
+                item: $store.scope(state: \.historyDetailSummary, action: \.historyDetailSummary)
+            ) { detailStore in
+                HistoryDetailSummaryView(store: detailStore)
             }
     }
 

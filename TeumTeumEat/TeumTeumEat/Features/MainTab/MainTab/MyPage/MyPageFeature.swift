@@ -15,12 +15,18 @@ import Foundation
 import UIKit
 @Reducer
 struct MyPageFeature {
+    /// MyPage에서 push하는 화면 (한 번에 하나만 표시)
+    @Reducer
+    enum Destination {
+        case subjectList(SubjectListFeature)
+        case appSettings(AppSettingsFeature)
+    }
+
     @ObservableState
     struct State: Equatable {
         var selectedSubject: Subject?
-        var subjectList: SubjectListFeature.State?
         var isNotificationEnabled: Bool = false
-        var appSettings: AppSettingsFeature.State?
+        @Presents var destination: Destination.State?
         var isLoadingSubject: Bool = false
         var isLoadingAccountInfo: Bool = false
         var isLoadingNotificationSetting: Bool = false
@@ -48,8 +54,7 @@ struct MyPageFeature {
         case systemNotificationStatusChecked(UNAuthorizationStatus)
         case openNotificationSettings
         case dismissNotificationAlert
-        case subjectList(SubjectListFeature.Action)
-        case appSettings(AppSettingsFeature.Action)
+        case destination(PresentationAction<Destination.Action>)
         case logoutButtonTapped
         case confirmLogout
         case cancelLogout
@@ -263,35 +268,29 @@ struct MyPageFeature {
                 return .none
                 
             case .viewAllSubjectsTapped:
-                state.subjectList = SubjectListFeature.State(
+                state.destination = .subjectList(SubjectListFeature.State(
                     currentGoalId: state.selectedSubject?.goalId ?? -1
-                )
+                ))
                 return .none
                 
             case .viewAppSettingsTapped:
-                state.appSettings = AppSettingsFeature.State()
+                state.destination = .appSettings(AppSettingsFeature.State())
                 return .none
                 
-            case .subjectList(.delegate(.subjectSelected(let subject))):
+            case .destination(.presented(.subjectList(.delegate(.subjectSelected(let subject))))):
                 state.selectedSubject = subject
-                state.subjectList = nil
+                state.destination = nil
                 return .none
                 
-            case .subjectList(.delegate(.dismissed)):
-                state.subjectList = nil
-                return .none
-                
-            case .appSettings(.delegate(.dismissed)):
-                state.appSettings = nil
+            case .destination(.presented(.subjectList(.delegate(.dismissed)))),
+                 .destination(.presented(.appSettings(.delegate(.dismissed)))):
+                state.destination = nil
                 return .none
                 
             case .closeTapped:
                 return .send(.delegate(.dismissed))
                 
-            case .subjectList:
-                return .none
-                
-            case .appSettings:
+            case .destination:
                 return .none
                 
             case .logoutButtonTapped:
@@ -344,14 +343,11 @@ struct MyPageFeature {
                 return .none
             }
         }
-        .ifLet(\.subjectList, action: \.subjectList) {
-            SubjectListFeature()
-        }
-        .ifLet(\.appSettings, action: \.appSettings) {
-            AppSettingsFeature()
-        }
+        .ifLet(\.$destination, action: \.destination)
     }
 }
+
+extension MyPageFeature.Destination.State: Equatable {}
 
 // MARK: - Helper Functions
 extension MyPageFeature {
