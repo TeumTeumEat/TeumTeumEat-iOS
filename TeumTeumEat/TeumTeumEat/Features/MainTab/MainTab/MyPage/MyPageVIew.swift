@@ -9,7 +9,7 @@ import SwiftUI
 import ComposableArchitecture
 
 struct MyPageView: View {
-    let store: StoreOf<MyPageFeature>
+    @Bindable var store: StoreOf<MyPageFeature>
     @Environment(\.scenePhase) private var scenePhase
     
     var body: some View {
@@ -321,24 +321,14 @@ struct MyPageView: View {
             Text("탈퇴 시 모든 학습 데이터가 삭제되며 복구할 수 없습니다. 정말 탈퇴하시겠습니까?")
         }
         .navigationDestination(
-            isPresented: Binding(
-                get: { store.subjectList != nil },
-                set: { if !$0 { store.send(.subjectList(.delegate(.dismissed))) } }
-            )
-        ) {
-            if let subjectListStore = store.scope(state: \.subjectList, action: \.subjectList) {
-                SubjectListView(store: subjectListStore)
-            }
+            item: $store.scope(state: \.destination?.subjectList, action: \.destination.subjectList)
+        ) { subjectListStore in
+            SubjectListView(store: subjectListStore)
         }
         .navigationDestination(
-            isPresented: Binding(
-                get: { store.appSettings != nil },
-                set: { if !$0 { store.send(.appSettings(.delegate(.dismissed))) } }
-            )
-        ) {
-            if let appSettingsStore = store.scope(state: \.appSettings, action: \.appSettings) {
-                AppSettingsView(store: appSettingsStore)
-            }
+            item: $store.scope(state: \.destination?.appSettings, action: \.destination.appSettings)
+        ) { appSettingsStore in
+            AppSettingsView(store: appSettingsStore)
         }
     }
 }

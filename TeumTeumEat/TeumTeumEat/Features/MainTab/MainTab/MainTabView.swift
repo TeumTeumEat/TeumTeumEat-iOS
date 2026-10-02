@@ -9,7 +9,7 @@ import SwiftUI
 import ComposableArchitecture
 
 struct MainTabView: View {
-    let store: StoreOf<MainTabFeature>
+    @Bindable var store: StoreOf<MainTabFeature>
 
     var body: some View {
         NavigationStack {
@@ -32,7 +32,7 @@ struct MainTabView: View {
                         .transition(.opacity)
                 }
 
-                if store.myPage == nil {
+                if !store.isMyPagePresented {
                     CustomTabBar(
                         selectedTab: store.selectedTab,
                         isRegisterMenuExpanded: store.isRegisterMenuExpanded,
@@ -56,56 +56,31 @@ struct MainTabView: View {
             .ignoresSafeArea(.keyboard)
             .animation(.spring(response: 0.3, dampingFraction: 0.8), value: store.isRegisterMenuExpanded)
             .navigationDestination(
-                isPresented: Binding(
-                    get: { store.myPage != nil },
-                    set: { if !$0 { store.send(.myPage(.delegate(.dismissed))) } }
-                )
-            ) {
-                if let myPageStore = store.scope(state: \.myPage, action: \.myPage) {
-                    MyPageView(store: myPageStore)
-                }
+                item: $store.scope(state: \.destination?.myPage, action: \.destination.myPage)
+            ) { myPageStore in
+                MyPageView(store: myPageStore)
             }
             .navigationBarHidden(true)
         }
         .fullScreenCover(
-            isPresented: Binding(
-                get: { store.newGoalFlow != nil },
-                set: { _ in }
-            )
-        ) {
-            if let newGoalFlowStore = store.scope(state: \.newGoalFlow, action: \.newGoalFlow) {
-                NewGoalFlowView(store: newGoalFlowStore)
-            }
+            item: $store.scope(state: \.destination?.newGoalFlow, action: \.destination.newGoalFlow)
+        ) { newGoalFlowStore in
+            NewGoalFlowView(store: newGoalFlowStore)
         }
         .fullScreenCover(
-            isPresented: Binding(
-                get: { store.addSubject != nil },
-                set: { _ in }
-            )
-        ) {
-            if let addSubjectStore = store.scope(state: \.addSubject, action: \.addSubject) {
-                AddSubjectView(store: addSubjectStore)
-            }
+            item: $store.scope(state: \.destination?.addSubject, action: \.destination.addSubject)
+        ) { addSubjectStore in
+            AddSubjectView(store: addSubjectStore)
         }
         .fullScreenCover(
-            isPresented: Binding(
-                get: { store.addSubjectFile != nil },
-                set: { _ in }
-            )
-        ) {
-            if let addSubjectFileStore = store.scope(state: \.addSubjectFile, action: \.addSubjectFile) {
-                AddSubjectFileView(store: addSubjectFileStore)
-            }
+            item: $store.scope(state: \.destination?.addSubjectFile, action: \.destination.addSubjectFile)
+        ) { addSubjectFileStore in
+            AddSubjectFileView(store: addSubjectFileStore)
         }
         .fullScreenCover(
-            isPresented: Binding(
-                get: { store.quizFlow != nil },
-                set: { _ in }
-            )
-        ) {
-            if let quizFlowStore = store.scope(state: \.quizFlow, action: \.quizFlow) {
-                QuizFlowView(store: quizFlowStore)
-            }
+            item: $store.scope(state: \.destination?.quizFlow, action: \.destination.quizFlow)
+        ) { quizFlowStore in
+            QuizFlowView(store: quizFlowStore)
         }
     }
 }
