@@ -148,23 +148,12 @@ struct ContentSummaryFeature {
                         guard let id = state.categoryId else {
                             state.isStreaming = false; return .none
                         }
-                        return .run { send in
-                            let result = await Result {
-                                try await quizClient.fetchCategoryDocumentIfExists(categoryId: id)
-                            }
-                            await send(.fallbackResponse(result))
-                        }
+                        return fetchCategoryFallback(categoryId: id)
                     } else if state.documentType == .document {
                         guard let goalId = state.goalId else {
                             state.isStreaming = false; return .none
                         }
-                        let docId = state.documentId
-                        return .run { send in
-                            let result = await Result {
-                                try await quizClient.fetchPDFSummaryOnly(goalId: goalId, documentId: docId)
-                            }
-                            await send(.pdfFallbackResponse(result))
-                        }
+                        return fetchPDFFallback(goalId: goalId, documentId: state.documentId)
                     }
                     state.isStreaming = false
                     return .none
@@ -216,21 +205,10 @@ struct ContentSummaryFeature {
                     if state.documentType == .category {
                         guard let id = state.categoryId else { return .none }
                         // isStreaming = true 유지 — fallback GET 동안 로딩 표시
-                        return .run { send in
-                            let result = await Result {
-                                try await quizClient.fetchCategoryDocumentIfExists(categoryId: id)
-                            }
-                            await send(.fallbackResponse(result))
-                        }
+                        return fetchCategoryFallback(categoryId: id)
                     } else if state.documentType == .document {
                         guard let goalId = state.goalId else { return .none }
-                        let docId = state.documentId
-                        return .run { send in
-                            let result = await Result {
-                                try await quizClient.fetchPDFSummaryOnly(goalId: goalId, documentId: docId)
-                            }
-                            await send(.pdfFallbackResponse(result))
-                        }
+                        return fetchPDFFallback(goalId: goalId, documentId: state.documentId)
                     }
                 }
                 // 일반 에러 → 오버레이 표시
@@ -255,12 +233,7 @@ struct ContentSummaryFeature {
                 if needsQuizzesC { state.isQuizLoading = true }
                 let docIdC = doc.documentId
                 guard needsQuizzesC else { return .none }
-                return .run { send in
-                    let quizResult = await Result {
-                        try await quizClient.fetchUserQuizzes(documentId: docIdC, documentType: .category)
-                    }
-                    await send(.fetchQuizzesCompleted(quizResult))
-                }
+                return fetchQuizzes(documentId: docIdC, documentType: .category)
 
             case .fallbackResponse(.failure):
                 state.isStreaming = false
@@ -280,12 +253,7 @@ struct ContentSummaryFeature {
                 if needsQuizzesP { state.isQuizLoading = true }
                 let docIdP = summary.documentId
                 guard needsQuizzesP else { return .none }
-                return .run { send in
-                    let quizResult = await Result {
-                        try await quizClient.fetchUserQuizzes(documentId: docIdP, documentType: .document)
-                    }
-                    await send(.fetchQuizzesCompleted(quizResult))
-                }
+                return fetchQuizzes(documentId: docIdP, documentType: .document)
 
             case .pdfFallbackResponse(.failure):
                 state.isStreaming = false
@@ -298,12 +266,7 @@ struct ContentSummaryFeature {
                 state.title = doc.title
                 state.createdAt = doc.createdAt
                 // summaryText는 SSE로 이미 완성된 상태 — 서버 저장본으로 덮어쓰지 않음
-                return .run { [docId = doc.documentId] send in
-                    let result = await Result {
-                        try await quizClient.fetchUserQuizzes(documentId: docId, documentType: .category)
-                    }
-                    await send(.fetchQuizzesCompleted(result))
-                }
+                return fetchQuizzes(documentId: doc.documentId, documentType: .category)
 
             case .fetchDocumentMetaCompleted(.failure(let error)):
                 Log.quiz.error("[ContentSummary] 문서 메타 조회 실패: \(error)")
@@ -353,6 +316,33 @@ struct ContentSummaryFeature {
             case .delegate:
                 return .none
             }
+        }
+    }
+
+    private func fetchCategoryFallback(categoryId: Int) -> Effect<Action> {
+        .run { send in
+            let result = await Result {
+                try await quizClient.fetchCategoryDocumentIfExists(categoryId: categoryId)
+            }
+            await send(.fallbackResponse(result))
+        }
+    }
+
+    private func fetchPDFFallback(goalId: Int, documentId: Int) -> Effect<Action> {
+        .run { send in
+            let result = await Result {
+                try await quizClient.fetchPDFSummaryOnly(goalId: goalId, documentId: documentId)
+            }
+            await send(.pdfFallbackResponse(result))
+        }
+    }
+
+    private func fetchQuizzes(documentId: Int, documentType: DocumentType) -> Effect<Action> {
+        .run { send in
+            let result = await Result {
+                try await quizClient.fetchUserQuizzes(documentId: documentId, documentType: documentType)
+            }
+            await send(.fetchQuizzesCompleted(result))
         }
     }
 }

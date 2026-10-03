@@ -460,43 +460,9 @@ struct HomeView: View {
                 )
                 
                 Spacer()
-                    .frame(height: (store.isTodayQuizCompleted || store.isGoalCompleted) ? 5 : 11)
+                    .frame(height: topSpacing)
                 
-                if store.isLoading {
-                    
-                    ZStack(alignment: .center) {
-                        // Lottie 배경
-                        LottieView(animation: .named("home_dummy"))
-                            .playing(loopMode: .loop)
-                            .frame(height: 548)
-                            .offset(x: -10)
-                        
-                        VStack(spacing: 16) {
-                            ProgressView()
-                                .scaleEffect(1.2)
-                            
-                            Text(store.isPreparingSnack ? "간식을 준비 중이에요..." : "퀴즈를 불러오는 중입니다...")
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(.gray600)
-                        }
-                        .padding(.bottom, 40)
-                    }
-                    .frame(height: 548)
-                    .padding(.leading, 30)
-                    .padding(.trailing, 3)
-                } else {
-                    CharacterImageView(
-                        isTodayQuizCompleted: store.isTodayQuizCompleted,
-                        isGoalCompleted: store.isGoalCompleted,
-                        currentSnackImage: store.currentSnackImage,
-                        onCharacterTapped: {
-                            store.send(.characterEatTapped)
-                        },
-                        onSpeechBubbleTapped: {
-                            store.send(.speechBubbleTapped)
-                        }
-                    )
-                }
+                characterSection
                                 
                 ScrollView {
                     VStack {
@@ -579,6 +545,49 @@ struct HomeView: View {
                 ),
                 message: "광고를 끝까지 시청해야 쿠폰이 지급돼요."
             )
+    }
+
+    private var topSpacing: CGFloat {
+        (store.isTodayQuizCompleted || store.isGoalCompleted) ? 5 : 11
+    }
+
+    @ViewBuilder
+    private var characterSection: some View {
+        if store.isLoading {
+            
+            ZStack(alignment: .center) {
+                // Lottie 배경
+                LottieView(animation: .named("home_dummy"))
+                    .playing(loopMode: .loop)
+                    .frame(height: 548)
+                    .offset(x: -10)
+                
+                VStack(spacing: 16) {
+                    ProgressView()
+                        .scaleEffect(1.2)
+                    
+                    Text(store.isPreparingSnack ? "간식을 준비 중이에요..." : "퀴즈를 불러오는 중입니다...")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.gray600)
+                }
+                .padding(.bottom, 40)
+            }
+            .frame(height: 548)
+            .padding(.leading, 30)
+            .padding(.trailing, 3)
+        } else {
+            CharacterImageView(
+                isTodayQuizCompleted: store.isTodayQuizCompleted,
+                isGoalCompleted: store.isGoalCompleted,
+                currentSnackImage: store.currentSnackImage,
+                onCharacterTapped: {
+                    store.send(.characterEatTapped)
+                },
+                onSpeechBubbleTapped: {
+                    store.send(.speechBubbleTapped)
+                }
+            )
+        }
     }
 }
 

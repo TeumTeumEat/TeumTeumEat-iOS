@@ -29,18 +29,63 @@ struct MainTabFeatureTests {
         }
     }
 
-    @Test("주제 완료 상태에서 마이페이지를 스와이프로 닫으면 주제 완료 알럿을 다시 띄운다")
-    func swipeDismissMyPage_whenGoalCompleted_showsAlert() async {
+    @Test("주제 완료 상태에서 마이페이지를 스와이프로 닫으면 홈을 재조회하고, 여전히 완료면 알럿을 다시 띄운다")
+    func swipeDismissMyPage_whenGoalStillCompleted_showsAlert() async {
         var state = MainTabFeature.State()
         state.home.isGoalCompleted = true
         state.destination = .myPage(MyPageFeature.State())
         let store = TestStore(initialState: state) {
             MainTabFeature()
+        } withDependencies: {
+            $0.historyClient.fetchCalendarHistory = { _, _ in Fixture.calendar }
+            $0.goalClient.fetchCurrentGoal = { Fixture.goal() }
+            $0.quizClient.fetchUserQuizStatus = {
+                throw APIError.serverError(code: "GOAL-002", message: "목표 완료", details: nil)
+            }
+            $0.goalClient.fetchGoals = { [] }
         }
+        store.exhaustivity = .off
 
         await store.send(.destination(.dismiss)) {
-            $0.home.showGoalCompletedAlert = true
             $0.destination = nil
+        }
+        await store.receive(\.home.goalMayHaveChanged) {
+            $0.home.isLoading = true
+            $0.home.isPreparingSnack = true
+        }
+        await store.finish()
+        await store.skipReceivedActions()
+
+        store.assert {
+            $0.home.isGoalCompleted = true
+            $0.home.showGoalCompletedAlert = true
+            $0.home.isLoading = false
+        }
+    }
+
+    @Test("마이페이지에서 다른 목표로 전환 후 닫으면 주제 완료 상태가 해제된다")
+    func swipeDismissMyPage_afterGoalSwitch_clearsCompletedState() async {
+        var state = MainTabFeature.State()
+        state.home.isGoalCompleted = true
+        state.destination = .myPage(MyPageFeature.State())
+        let store = TestStore(initialState: state) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.historyClient.fetchCalendarHistory = { _, _ in Fixture.calendar }
+            $0.goalClient.fetchCurrentGoal = { Fixture.goal(id: 2, categoryId: 20) }
+            $0.quizClient.fetchUserQuizStatus = { Fixture.quizStatus() }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.destination(.dismiss))
+        await store.finish()
+        await store.skipReceivedActions()
+
+        store.assert {
+            $0.destination = nil
+            $0.home.isGoalCompleted = false
+            $0.home.showGoalCompletedAlert = false
+            $0.home.isLoading = false
         }
     }
 

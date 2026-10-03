@@ -238,8 +238,6 @@ struct MyPageFeature {
                 return .none
                 
             case .checkSystemNotificationStatus:
-                let currentToggleState = state.isNotificationEnabled
-                
                 return .run { send in
                     let status = await checkNotificationPermission()
                     await send(.systemNotificationStatusChecked(status))
