@@ -25,7 +25,7 @@ struct SubjectListFeature {
         case goalsResponse(Result<[GoalResponse], Error>)
         case backTapped
         case subjectTapped(Subject)
-        case updateGoalResponse(Result<Void, Error>) 
+        case updateGoalResponse(Result<Int, Error>) 
         case delegate(Delegate)
         
         enum Delegate {
@@ -74,19 +74,19 @@ struct SubjectListFeature {
                 return .run { send in
                     do {
                         try await goalClient.updateCurrentGoal(goalId: subject.goalId)
-                        await send(.updateGoalResponse(.success(())))
+                        await send(.updateGoalResponse(.success(subject.goalId)))
                     } catch {
                         await send(.updateGoalResponse(.failure(error)))
                     }
                 }
                 
-            case .updateGoalResponse(.success):
+            case .updateGoalResponse(.success(let goalId)):
                 state.isUpdating = false
                 Log.myPage.debug("Goal updated successfully")
                 // 성공 시 delegate로 선택된 subject 전달하고 화면 닫기
                 return .run { [subjects = state.subjects] send in
                     // 업데이트된 목표 찾기
-                    if let updatedSubject = subjects.first(where: { $0.goalId == $0.goalId }) {
+                    if let updatedSubject = subjects.first(where: { $0.goalId == goalId }) {
                         await send(.delegate(.subjectSelected(updatedSubject)))
                     }
                 }
