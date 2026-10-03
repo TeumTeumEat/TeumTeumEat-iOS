@@ -87,7 +87,7 @@ struct AppFeature {
                 return .none
                 
             // Login Delegate
-            case .login(.delegate(.loginSuccess(let accessToken, let refreshToken, let isOnboardingCompleted))):
+            case .login(.delegate(.loginSuccess(_, _, let isOnboardingCompleted))):
                 state.login = nil
                 UserDefaultsManager.isOnboardingCompleted = isOnboardingCompleted
 

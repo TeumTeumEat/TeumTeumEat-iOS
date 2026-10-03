@@ -54,7 +54,7 @@ struct SplashFeature {
                     let status = try? await remoteConfig.fetchAndActivate()
                     Log.auth.debug("[RemoteConfig] fetchAndActivate status: \(String(describing: status))")
 
-                    let minVersion = remoteConfig["minimum_required_version"].stringValue ?? "1.0.0"
+                    let minVersion = remoteConfig["minimum_required_version"].stringValue
                     let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
 
                     Log.auth.debug("[RemoteConfig] minVersion: \(minVersion), currentVersion: \(currentVersion)")

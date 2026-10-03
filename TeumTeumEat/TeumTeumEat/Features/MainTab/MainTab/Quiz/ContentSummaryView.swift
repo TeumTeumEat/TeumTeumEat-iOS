@@ -81,7 +81,7 @@ struct ContentSummaryView: View {
                                 .frame(height: 1)
                                 .id("streamingBottom")
                         }
-                        .onChange(of: store.streamingText) { _ in
+                        .onChange(of: store.streamingText) {
                             proxy.scrollTo("streamingBottom", anchor: .bottom)
                         }
                         .scrollDismissesKeyboard(.interactively)
