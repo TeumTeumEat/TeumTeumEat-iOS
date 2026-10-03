@@ -316,7 +316,7 @@ struct MyPageView: View {
                     
                     Spacer()
                     
-                    Text("v 1.0.8")
+                    Text("v \(appVersion)")
                         .bodyRegular14()
                         .foregroundColor(.gray)
                 }
@@ -325,6 +325,10 @@ struct MyPageView: View {
             .padding(.top, 20)
             .padding(.bottom, 20)
         }
+    }
+
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
     }
 
     // 하단 구분선 + 로그아웃/탈퇴하기 영역
