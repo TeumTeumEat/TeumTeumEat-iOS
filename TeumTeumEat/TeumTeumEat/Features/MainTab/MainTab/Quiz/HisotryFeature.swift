@@ -243,61 +243,65 @@ struct HistoryView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-                // 네비게이션 바 - 최상단 고정
-                HomeNavigationBar(
-                    fireCount: store.fireCount,
-                    stampCount: store.stampCount,
-                    onSettingTapped: {
-                        store.send(.settingTapped)
+            // 네비게이션 바 - 최상단 고정
+            HomeNavigationBar(
+                fireCount: store.fireCount,
+                stampCount: store.stampCount,
+                onSettingTapped: {
+                    store.send(.settingTapped)
+                }
+            )
+
+            // 나머지 전체 스크롤
+            scrollContent
+        }
+        .background(Color.white)
+        .navigationBarHidden(true)
+        .navigationDestination(
+            item: $store.scope(state: \.historyDetailSummary, action: \.historyDetailSummary)
+        ) { detailStore in
+            HistoryDetailSummaryView(store: detailStore)
+        }
+    }
+
+    private var scrollContent: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(spacing: 0) {
+                    // 탭 헤더
+                    TTETabHeader(
+                        selectedTab: Binding(
+                            get: { store.selectedTab },
+                            set: { store.send(.tabSelected($0)) }
+                        ),
+                        tabs: store.tabs
+                    )
+                    .padding(.top, 1)
+                    
+                    VStack(spacing: 16) {
+                        switch store.selectedTab {
+                        case 0:
+                            dateTabView
+                        case 1:
+                            topicTabView
+                        default:
+                            EmptyView()
+                        }
                     }
-                )
-                
-                // 나머지 전체 스크롤
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            // 탭 헤더
-                            TTETabHeader(
-                                selectedTab: Binding(
-                                    get: { store.selectedTab },
-                                    set: { store.send(.tabSelected($0)) }
-                                ),
-                                tabs: store.tabs
-                            )
-                            .padding(.top, 1)
-                            
-                            VStack(spacing: 16) {
-                                switch store.selectedTab {
-                                case 0:
-                                    dateTabView
-                                case 1:
-                                    topicTabView
-                                default:
-                                    EmptyView()
-                                }
+                }
+                .onChange(of: store.selectedDateString) { oldValue, newValue in
+                    if newValue != nil {
+                        // Cell이 렌더링될 시간을 주고 스크롤
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                proxy.scrollTo("calendar", anchor: .center)
                             }
                         }
-                        .onChange(of: store.selectedDateString) { oldValue, newValue in
-                            if newValue != nil {
-                                // Cell이 렌더링될 시간을 주고 스크롤
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        proxy.scrollTo("calendar", anchor: .center)
-                                    }
-                                }
-                            }
-                        }
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .background(Color.white)
-            .navigationBarHidden(true)
-            .navigationDestination(
-                item: $store.scope(state: \.historyDetailSummary, action: \.historyDetailSummary)
-            ) { detailStore in
-                HistoryDetailSummaryView(store: detailStore)
-            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
 
     private var dateTabView: some View {
@@ -441,6 +445,10 @@ struct HistoryDateCard: View {
         }
     }
     
+    private var fireColor: Color {
+        fireCount == 0 ? .gray900 : .red400
+    }
+    
     private var streakImage: String {
         switch fireCount {
         case 0:
@@ -456,33 +464,37 @@ struct HistoryDateCard: View {
         }
     }
     
+    private var streakInfo: some View {
+        VStack(alignment: .trailing, spacing: 12) {
+            HStack(spacing: 8) {
+                Image("fire")
+                    .resizable()
+                    .renderingMode(.template)
+                    .foregroundStyle(fireColor)
+                    .frame(width: 50, height: 50)
+                
+                Text("\(fireCount)")
+                    .font(.system(size: 40, weight: .bold))
+                    .foregroundColor(fireColor)
+            }
+            .frame(height: 66)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            
+            Text(streakText)
+                .stSemibold16()
+                .foregroundColor(.gray900)
+                .frame(height: 42)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.trailing, 24)
+        .background(Color(hex: "EAF4FF"))
+    }
+    
     var body: some View {
         GeometryReader { geometry in
             HStack(spacing: 8) {
-                VStack(alignment: .trailing, spacing: 12) {
-                    HStack(spacing: 8) {
-                        Image("fire")
-                            .resizable()
-                            .renderingMode(.template)
-                            .foregroundStyle(fireCount == 0 ? .gray900 : .red400)
-                            .frame(width: 50, height: 50)
-                        
-                        Text("\(fireCount)")
-                            .font(.system(size: 40, weight: .bold))
-                            .foregroundColor(fireCount == 0 ? .gray900 : .red400)
-                    }
-                    .frame(height: 66)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    
-                    Text(streakText)
-                        .stSemibold16()
-                        .foregroundColor(.gray900)
-                        .frame(height: 42)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.trailing, 24)
-                .background(Color(hex: "EAF4FF"))
+                streakInfo
                 
                 Image(streakImage)
                     .resizable()
@@ -632,32 +644,36 @@ struct HistoryCalendarView: View {
         return LazyVGrid(columns: columns, spacing: 0) {
             ForEach(Array(days.enumerated()), id: \.offset) { index, date in
                 if let date = date {
-                    let dateString = dateToString(date)
-                    let hasQuiz = stampedDates.contains(dateString)
-                    
-                    DayCell(
-                        date: date,
-                        isSelected: selectedDateString == dateString,
-                        hasQuiz: hasQuiz,
-                        isStreak: false // TODO: 연속 달성 로직 추가 필요 시
-                    )
-                    .onTapGesture {
-                        if hasQuiz {
-                            // 토글 방식
-                            if selectedDateString == dateString {
-                                onDateSelected(nil) // 선택 해제
-                            } else {
-                                onDateSelected(dateString) // 선택
-                            }
-                        }
-                    }
-                    .disabled(!hasQuiz)
+                    dayCell(for: date)
                 } else {
                     Color.clear
                         .frame(height: 40)
                 }
             }
         }
+    }
+    
+    private func dayCell(for date: Date) -> some View {
+        let dateString = dateToString(date)
+        let hasQuiz = stampedDates.contains(dateString)
+        
+        return DayCell(
+            date: date,
+            isSelected: selectedDateString == dateString,
+            hasQuiz: hasQuiz,
+            isStreak: false // TODO: 연속 달성 로직 추가 필요 시
+        )
+        .onTapGesture {
+            if hasQuiz {
+                // 토글 방식
+                if selectedDateString == dateString {
+                    onDateSelected(nil) // 선택 해제
+                } else {
+                    onDateSelected(dateString) // 선택
+                }
+            }
+        }
+        .disabled(!hasQuiz)
     }
     
     // MARK: - 선택된 날짜 정보

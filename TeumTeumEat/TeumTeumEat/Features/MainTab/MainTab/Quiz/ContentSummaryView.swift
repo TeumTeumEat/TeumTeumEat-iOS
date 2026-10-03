@@ -16,132 +16,12 @@ struct ContentSummaryView: View {
         GeometryReader { geometry in
             ZStack(alignment: .bottom) {
                 VStack(spacing: 0) {
-                    // Custom Navigation Bar
-                    VStack(spacing: 0) {
-                        HStack {
-                            Button {
-                                store.send(.closeButtonTapped)
-                            } label: {
-                                Image(systemName: "chevron.left")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.black)
-                            }
-                            
-                            Spacer()
-                            
-                            Text("오늘의 냠냠지식")
-                                .titleSemibold20()
-                                .foregroundStyle(.black)
-                            
-                            Spacer()
-                            
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 20))
-                                .opacity(0)
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 16)
-                        
-                        Divider()
-                    }
-                    .background(Color.white)
-                    
-                    // Markdown 콘텐츠
-                    ScrollViewReader { proxy in
-                        ScrollView {
-                            if store.isStreaming && store.streamingText.isEmpty {
-                                // 연결/로딩 중
-                                VStack {
-                                    ProgressView()
-                                        .scaleEffect(1.2)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.top, 80)
-                            } else if store.isStreaming {
-                                // 스트리밍 텍스트 수신 중 — Markdown 실시간 렌더링
-                                titleHeader
-                                Markdown(store.streamingText)
-                                    .markdownTheme(.gitHub)
-                                    .colorScheme(.light)
-                                    .padding(.horizontal, 20)
-                                    .padding(.top, 8)
-                                    .padding(.bottom, 180)
-                            } else {
-                                // 완료 — Markdown 렌더링
-                                titleHeader
-                                Markdown(store.summaryText)
-                                    .markdownTheme(.gitHub)
-                                    .colorScheme(.light)
-                                    .padding(.horizontal, 20)
-                                    .padding(.top, 8)
-                                    .padding(.bottom, 180)
-                            }
-
-                            Color.clear
-                                .frame(height: 1)
-                                .id("streamingBottom")
-                        }
-                        .onChange(of: store.streamingText) {
-                            proxy.scrollTo("streamingBottom", anchor: .bottom)
-                        }
-                        .scrollDismissesKeyboard(.interactively)
-                        .background(Color.white)
-                    }
+                    navigationBar
+                    markdownContent
                 }
                 .background(Color.white)
-                
-                // 그라디언트 + 버튼 영역
-                VStack(spacing: 0) {
-                    // 그라디언트
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.white.opacity(0),
-                            Color.white.opacity(0.8),
-                            Color.white
-                        ]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 40)
-                    
-                    // 버튼 영역
-                    VStack(spacing: 0) {
-                        if !store.isStreaming && store.isQuizLoading {
-                            // SSE 완료 후 퀴즈 로딩 중
-                            HStack(spacing: 10) {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                    .scaleEffect(0.9)
-                                Text("문제 불러오는 중")
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(.white)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(Color.blue500.opacity(0.6))
-                            .cornerRadius(12)
-                            .padding(.horizontal, 20)
-                        } else {
-                            Button(action: {
-                                store.send(.startQuizButtonTapped)
-                            }) {
-                                Text("퀴즈 풀기")
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 56)
-                                    .background(Color.blue500)
-                                    .cornerRadius(12)
-                            }
-                            // 퀴즈 로딩 실패로 목록이 비어 있으면 시작 불가
-                            .disabled(store.isStreaming || store.quizzes.isEmpty)
-                            .opacity(store.isStreaming || store.quizzes.isEmpty ? 0.5 : 1.0)
-                            .padding(.horizontal, 20)
-                        }
-                    }
-                    .padding(.bottom, 34)
-                    .background(Color.white)
-                }
+
+                bottomButtonArea
             }
             .background(Color.white)
         }
@@ -175,6 +55,139 @@ struct ContentSummaryView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: store.showErrorOverlay)
+    }
+
+    // MARK: - Sections
+
+    // Custom Navigation Bar
+    private var navigationBar: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button {
+                    store.send(.closeButtonTapped)
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 20))
+                        .foregroundColor(.black)
+                }
+                
+                Spacer()
+                
+                Text("오늘의 냠냠지식")
+                    .titleSemibold20()
+                    .foregroundStyle(.black)
+                
+                Spacer()
+                
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 20))
+                    .opacity(0)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            
+            Divider()
+        }
+        .background(Color.white)
+    }
+
+    // Markdown 콘텐츠
+    private var markdownContent: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                if store.isStreaming && store.streamingText.isEmpty {
+                    // 연결/로딩 중
+                    VStack {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 80)
+                } else if store.isStreaming {
+                    // 스트리밍 텍스트 수신 중 — Markdown 실시간 렌더링
+                    titleHeader
+                    Markdown(store.streamingText)
+                        .markdownTheme(.gitHub)
+                        .colorScheme(.light)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 8)
+                        .padding(.bottom, 180)
+                } else {
+                    // 완료 — Markdown 렌더링
+                    titleHeader
+                    Markdown(store.summaryText)
+                        .markdownTheme(.gitHub)
+                        .colorScheme(.light)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 8)
+                        .padding(.bottom, 180)
+                }
+
+                Color.clear
+                    .frame(height: 1)
+                    .id("streamingBottom")
+            }
+            .onChange(of: store.streamingText) {
+                proxy.scrollTo("streamingBottom", anchor: .bottom)
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .background(Color.white)
+        }
+    }
+
+    // 그라디언트 + 버튼 영역
+    private var bottomButtonArea: some View {
+        VStack(spacing: 0) {
+            // 그라디언트
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color.white.opacity(0),
+                    Color.white.opacity(0.8),
+                    Color.white
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 40)
+            
+            // 버튼 영역
+            VStack(spacing: 0) {
+                if !store.isStreaming && store.isQuizLoading {
+                    // SSE 완료 후 퀴즈 로딩 중
+                    HStack(spacing: 10) {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(0.9)
+                        Text("문제 불러오는 중")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(Color.blue500.opacity(0.6))
+                    .cornerRadius(12)
+                    .padding(.horizontal, 20)
+                } else {
+                    Button(action: {
+                        store.send(.startQuizButtonTapped)
+                    }) {
+                        Text("퀴즈 풀기")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(Color.blue500)
+                            .cornerRadius(12)
+                    }
+                    // 퀴즈 로딩 실패로 목록이 비어 있으면 시작 불가
+                    .disabled(store.isStreaming || store.quizzes.isEmpty)
+                    .opacity(store.isStreaming || store.quizzes.isEmpty ? 0.5 : 1.0)
+                    .padding(.horizontal, 20)
+                }
+            }
+            .padding(.bottom, 34)
+            .background(Color.white)
+        }
     }
 }
 

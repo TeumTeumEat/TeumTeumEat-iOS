@@ -114,132 +114,11 @@ struct HistoryDetailSummaryView: View {
         GeometryReader { geometry in
             ZStack(alignment: .bottom) {
                 VStack(spacing: 0) {
-                    // Custom Navigation Bar
-                    VStack(spacing: 0) {
-                        HStack {
-                            Button {
-                                store.send(.closeButtonTapped)
-                            } label: {
-                                Image(systemName: "chevron.left")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.black)
-                            }
-                            
-                            Spacer()
-                            
-                            Text("오늘의 냠냠지식")
-                                .titleSemibold20()
-                                .foregroundStyle(.black)
-                            
-                            Spacer()
-                            
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 20))
-                                .opacity(0)
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 16)
-                        
-                        Divider()
-                    }
-                    .background(Color.white)
-                    
-                    // 로딩 또는 에러 상태
-                    if store.isLoading {
-                        VStack {
-                            ProgressView()
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color.white)
-                    } else if let errorMessage = store.errorMessage {
-                        VStack(spacing: 16) {
-                            Text(errorMessage)
-                                .foregroundColor(.red)
-                            Button("다시 시도") {
-                                store.send(.onAppear)
-                            }
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color.white)
-                    } else {
-                        // Markdown 콘텐츠
-                        ScrollView {
-                            VStack(alignment: .leading, spacing: 0) {
-                                if !store.title.isEmpty {
-                                    let outputFormatter: DateFormatter = {
-                                        let f = DateFormatter()
-                                        f.dateFormat = "M월 d일"
-                                        f.locale = Locale(identifier: "ko_KR")
-                                        return f
-                                    }()
-                                    let inputFormatter: DateFormatter = {
-                                        let f = DateFormatter()
-                                        f.dateFormat = "yyyy-MM-dd"
-                                        f.locale = Locale(identifier: "ko_KR")
-                                        return f
-                                    }()
-                                    let displayDate = inputFormatter.date(from: store.date).map { outputFormatter.string(from: $0) } ?? store.date
-                                    VStack(alignment: .leading, spacing: 12) {
-                                        Text(store.title)
-                                            .font(.title3)
-                                            .fontWeight(.bold)
-                                            .foregroundColor(.black)
-                                        Text(displayDate)
-                                            .font(.subheadline)
-                                            .foregroundColor(.gray)
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.horizontal, 20)
-                                    .padding(.top, 24)
-                                    .padding(.bottom, 24)
-                                }
+                    navigationBar
+                    summaryContent
+                }
 
-                                Markdown(store.summaryText)
-                                    .markdownTheme(.gitHub)
-                                    .foregroundStyle(.black)
-                                    .padding(.horizontal, 20)
-                                    .padding(.bottom, 180)
-                            }
-                        }
-                        .scrollDismissesKeyboard(.interactively)
-                        .background(Color.white)
-                    }
-                }
-                
-                // 그라디언트 + 버튼 영역 (로딩 중이 아닐 때만)
-                if !store.isLoading && store.errorMessage == nil {
-                    VStack(spacing: 0) {
-                        // 그라디언트
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color.white.opacity(0),
-                                Color.white.opacity(0.8),
-                                Color.white
-                            ]),
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                        .frame(height: 40)
-                        
-                        // 버튼 영역
-                        VStack(spacing: 0) {
-                            Button(action: {
-                                store.send(.checkQuizButtonTapped)
-                            }) {
-                                Text("퀴즈 확인")  
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 56)
-                                    .background(Color.blue)
-                                    .cornerRadius(12)
-                            }
-                            .padding(.horizontal, 20)
-                        }
-                        .padding(.bottom, 34)
-                        .background(Color.white)
-                    }
-                }
+                bottomButtonArea
             }
         }
         .background(.white)
@@ -253,5 +132,141 @@ struct HistoryDetailSummaryView: View {
             store.send(.onAppear)
         }
         .preferredColorScheme(.light)
+    }
+
+    // MARK: - Sections
+
+    // Custom Navigation Bar
+    private var navigationBar: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button {
+                    store.send(.closeButtonTapped)
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 20))
+                        .foregroundColor(.black)
+                }
+                
+                Spacer()
+                
+                Text("오늘의 냠냠지식")
+                    .titleSemibold20()
+                    .foregroundStyle(.black)
+                
+                Spacer()
+                
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 20))
+                    .opacity(0)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            
+            Divider()
+        }
+        .background(Color.white)
+    }
+
+    // 로딩 또는 에러 상태
+    @ViewBuilder
+    private var summaryContent: some View {
+        if store.isLoading {
+            VStack {
+                ProgressView()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.white)
+        } else if let errorMessage = store.errorMessage {
+            VStack(spacing: 16) {
+                Text(errorMessage)
+                    .foregroundColor(.red)
+                Button("다시 시도") {
+                    store.send(.onAppear)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.white)
+        } else {
+            // Markdown 콘텐츠
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    if !store.title.isEmpty {
+                        let outputFormatter: DateFormatter = {
+                            let f = DateFormatter()
+                            f.dateFormat = "M월 d일"
+                            f.locale = Locale(identifier: "ko_KR")
+                            return f
+                        }()
+                        let inputFormatter: DateFormatter = {
+                            let f = DateFormatter()
+                            f.dateFormat = "yyyy-MM-dd"
+                            f.locale = Locale(identifier: "ko_KR")
+                            return f
+                        }()
+                        let displayDate = inputFormatter.date(from: store.date).map { outputFormatter.string(from: $0) } ?? store.date
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(store.title)
+                                .font(.title3)
+                                .fontWeight(.bold)
+                                .foregroundColor(.black)
+                            Text(displayDate)
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 24)
+                        .padding(.bottom, 24)
+                    }
+
+                    Markdown(store.summaryText)
+                        .markdownTheme(.gitHub)
+                        .foregroundStyle(.black)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 180)
+                }
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .background(Color.white)
+        }
+    }
+
+    // 그라디언트 + 버튼 영역 (로딩 중이 아닐 때만)
+    @ViewBuilder
+    private var bottomButtonArea: some View {
+        if !store.isLoading && store.errorMessage == nil {
+            VStack(spacing: 0) {
+                // 그라디언트
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.white.opacity(0),
+                        Color.white.opacity(0.8),
+                        Color.white
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 40)
+                
+                // 버튼 영역
+                VStack(spacing: 0) {
+                    Button(action: {
+                        store.send(.checkQuizButtonTapped)
+                    }) {
+                        Text("퀴즈 확인")  
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(Color.blue)
+                            .cornerRadius(12)
+                    }
+                    .padding(.horizontal, 20)
+                }
+                .padding(.bottom, 34)
+                .background(Color.white)
+            }
+        }
     }
 }
