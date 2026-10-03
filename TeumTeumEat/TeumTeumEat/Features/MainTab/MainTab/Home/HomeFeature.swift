@@ -28,6 +28,8 @@ struct HomeFeature {
         var calendarData: CalendarHistoryData?
         
         var isLoading: Bool = false
+        /// 목표 전환 가능성이 있을 때의 재조회 중 여부 (로딩 문구를 "간식 준비 중"으로 표시)
+        var isPreparingSnack: Bool = false
 
         var showErrorOverlay: Bool = false
         var errorOverlayMessage: String = ""
@@ -72,6 +74,7 @@ struct HomeFeature {
     
     enum Action {
         case onAppear
+        case goalMayHaveChanged
         
         case fetchCalendarHistoryResponse(Result<CalendarHistoryData, Error>)
         
@@ -129,6 +132,15 @@ struct HomeFeature {
                 state.showRetryToast = false
 
                 return loadHomeData()
+
+            // MyPage 등에서 목표가 바뀌었을 수 있음 → 이전 화면 대신 준비 중 로딩을 보여주고 재조회
+            case .goalMayHaveChanged:
+                state.isLoading = true
+                state.isPreparingSnack = true
+                state.showErrorOverlay = false
+                state.retryCount = 0
+                state.showRetryToast = false
+                return loadHomeData()
                 
             // 캘린더 조회 완료 (독립적 처리)
             case .fetchCalendarHistoryResponse(.success(let calendarData)):
@@ -164,6 +176,7 @@ struct HomeFeature {
                 
             case .fetchCurrentGoalResponse(.failure(let error)):
                 state.isLoading = false
+                state.isPreparingSnack = false
                 let overlayMsg = (error as? APIError)?.overlayMessage ?? "에러가 발생했습니다."
                 state.errorOverlayMessage = overlayMsg
                 state.showErrorOverlay = true
@@ -174,6 +187,7 @@ struct HomeFeature {
             // Step 2 완료 (요약글/퀴즈는 ContentSummaryFeature가 SSE로 직접 처리)
             case .fetchQuizStatusResponse(.success(let status)):
                 state.quizStatus = status
+                state.isPreparingSnack = false
                 if !state.isUsingCoupon {
                     // complete-set이 퀴즈 시작 시 차감되므로,
                     // hasSolvedToday=false여도 availableQuizCount=0이면 더 이상 퀴즈 불가 → 부스러기 화면
@@ -189,8 +203,10 @@ struct HomeFeature {
 
                 Log.home.debug("[Home] Step2 완료 - hasSolvedToday: \(status.hasSolvedToday)")
 
+                // 목표 전환 후 이전 목표의 완료 상태가 남지 않도록 서버 값으로 갱신
+                state.isGoalCompleted = status.isCompleted
+
                 if status.isCompleted {
-                    state.isGoalCompleted = true
                     state.showGoalCompletedAlert = true
                     state.isLoading = false
                     Log.home.debug("[Home] Goal 완료 - 모든 퀴즈 세트 완료")
@@ -205,6 +221,7 @@ struct HomeFeature {
                 return .none
                 
             case .fetchQuizStatusResponse(.failure(let error)):
+                state.isPreparingSnack = false
                 if let apiError = error as? APIError,
                    case .serverError(let code, _, _) = apiError, code == "GOAL-002" {
                     state.isGoalCompleted = true
@@ -458,7 +475,7 @@ struct HomeView: View {
                             ProgressView()
                                 .scaleEffect(1.2)
                             
-                            Text("퀴즈를 불러오는 중입니다...")
+                            Text(store.isPreparingSnack ? "간식을 준비 중이에요..." : "퀴즈를 불러오는 중입니다...")
                                 .font(.system(size: 18, weight: .medium))
                                 .foregroundColor(.gray600)
                         }

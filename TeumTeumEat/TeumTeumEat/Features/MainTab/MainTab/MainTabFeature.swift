@@ -143,15 +143,14 @@ struct MainTabFeature {
             // MARK: - MyPage
             case .destination(.presented(.myPage(.delegate(.dismissed)))):
                 state.destination = nil
-                showGoalCompletedAlertIfNeeded(&state)
                 Log.app.debug("MyPage 닫힘")
-                return .none
+                return refreshHomeIfGoalCompleted(state)
 
             // 스와이프 뒤로가기로 MyPage가 닫힌 경우 (dismiss 처리 전이라 destination은 아직 myPage)
             case .destination(.dismiss):
                 if state.isMyPagePresented {
-                    showGoalCompletedAlertIfNeeded(&state)
                     Log.app.debug("MyPage 닫힘 (스와이프)")
+                    return refreshHomeIfGoalCompleted(state)
                 }
                 return .none
 
@@ -206,6 +205,13 @@ struct MainTabFeature {
         if state.home.isGoalCompleted {
             state.home.showGoalCompletedAlert = true
         }
+    }
+
+    /// MyPage에서 다른 목표로 전환했을 수 있으므로 알럿을 바로 띄우지 않고 서버 상태를 다시 조회
+    /// 여전히 완료된 목표라면 fetchQuizStatusResponse에서 알럿이 다시 표시됨
+    private func refreshHomeIfGoalCompleted(_ state: State) -> Effect<Action> {
+        guard state.home.isGoalCompleted else { return .none }
+        return .send(.home(.goalMayHaveChanged))
     }
 }
 
