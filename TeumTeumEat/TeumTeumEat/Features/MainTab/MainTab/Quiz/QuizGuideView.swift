@@ -15,35 +15,7 @@ struct QuizGuideView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Custom Navigation Bar
-            VStack(spacing: 0) {
-                HStack {
-                    Button {
-                        // 뒤로가기 필요하면 추가
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 20))
-                            .foregroundColor(.black)
-                    }
-                    .opacity(0)  // 숨김 (균형용)
-                    
-                    Spacer()
-                    
-                    Text("퀴즈 안내")
-                        .titleSemibold20()
-                        .foregroundStyle(.black)
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 20))
-                        .opacity(0)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
-                
-                Divider()
-            }
-            .background(Color.white)
+            navigationBar
             
             // Lottie + 텍스트 오버레이
             ZStack(alignment: .top) {
@@ -77,38 +49,9 @@ struct QuizGuideView: View {
                     VStack(spacing: 16) {
                         // 안내 리스트
                         VStack(alignment: .leading, spacing: 10) {
-                            HStack(alignment: .top, spacing: 10) {
-                                Image("number1")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 24, height: 24)
-                                
-                                Text("총 \(store.quizCount)문제가 등장해요")
-                                    .font(.system(size: 15))
-                                    .foregroundColor(.black)
-                            }
-                            
-                            HStack(alignment: .top, spacing: 10) {
-                                Image("number2")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 24, height: 24)
-                                
-                                Text("문제가 끝나면 정답 확인이 가능해요")
-                                    .font(.system(size: 15))
-                                    .foregroundColor(.black)
-                            }
-                            
-                            HStack(alignment: .top, spacing: 10) {
-                                Image("number3")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 24, height: 24)
-                                
-                                Text("지난 문제는 히스토리에서 확인해봐요")
-                                    .font(.system(size: 15))
-                                    .foregroundColor(.black)
-                            }
+                            guideRow(imageName: "number1", text: "총 \(store.quizCount)문제가 등장해요")
+                            guideRow(imageName: "number2", text: "문제가 끝나면 정답 확인이 가능해요")
+                            guideRow(imageName: "number3", text: "지난 문제는 히스토리에서 확인해봐요")
                         }
                         
                         // 체크박스
@@ -170,5 +113,50 @@ struct QuizGuideView: View {
         .background(.white)
         .navigationBarHidden(true)
         .onAppear { store.send(.onAppear) }
+    }
+
+    private var navigationBar: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button {
+                    // 뒤로가기 필요하면 추가
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 20))
+                        .foregroundColor(.black)
+                }
+                .opacity(0)  // 숨김 (균형용)
+                
+                Spacer()
+                
+                Text("퀴즈 안내")
+                    .titleSemibold20()
+                    .foregroundStyle(.black)
+                
+                Spacer()
+                
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 20))
+                    .opacity(0)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            
+            Divider()
+        }
+        .background(Color.white)
+    }
+
+    private func guideRow(imageName: String, text: LocalizedStringKey) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(imageName)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 24, height: 24)
+            
+            Text(text)
+                .font(.system(size: 15))
+                .foregroundColor(.black)
+        }
     }
 }

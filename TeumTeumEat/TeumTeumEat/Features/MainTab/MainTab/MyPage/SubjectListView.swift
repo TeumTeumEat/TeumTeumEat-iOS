@@ -105,7 +105,7 @@ struct SelectSubjectCard: View {
                
                Text(subject.name)
                    .titleSemibold16()
-                   .foregroundColor(isSelected ? .blue500 : .black)
+                   .foregroundColor(titleColor)
                    .lineLimit(nil)
                    .fixedSize(horizontal: false, vertical: true)
                
@@ -123,12 +123,28 @@ struct SelectSubjectCard: View {
            }
            .padding(20)
            .frame(maxWidth: .infinity, alignment: .leading)
-           .background(isSelected ? Color.blue500.opacity(0.05) : Color.white)
+           .background(backgroundColor)
            .overlay(
                RoundedRectangle(cornerRadius: 8)
-                   .stroke(isSelected ? Color.blue500 : Color.gray.opacity(0.3), lineWidth: isSelected ? 2 : 1)
+                   .stroke(borderColor, lineWidth: borderWidth)
            )
        }
+    
+    private var titleColor: Color {
+        isSelected ? .blue500 : .black
+    }
+    
+    private var backgroundColor: Color {
+        isSelected ? Color.blue500.opacity(0.05) : Color.white
+    }
+    
+    private var borderColor: Color {
+        isSelected ? Color.blue500 : Color.gray.opacity(0.3)
+    }
+    
+    private var borderWidth: CGFloat {
+        isSelected ? 2 : 1
+    }
     
     private var tagSection: some View {
         HStack(spacing: 6) {
