@@ -74,6 +74,7 @@ struct MyPageFeature {
     @Dependency(\.goalClient) var goalClient
     
     @Dependency(\.userClient) var userClient
+    @Dependency(\.analyticsClient) var analyticsClient
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -160,6 +161,7 @@ struct MyPageFeature {
                 return .none
                 
             case .notificationToggled(let shouldEnable):
+                analyticsClient.log(.notificationToggle(enabled: shouldEnable))
                 if shouldEnable {
                     // ON으로 켜려고 할 때
                     return .run { send in
@@ -299,6 +301,7 @@ struct MyPageFeature {
                 
             case .confirmLogout:
                 Log.myPage.debug("로그아웃 확인됨")
+                analyticsClient.log(.logout)
                 state.showLogoutAlert = false
                 return .send(.delegate(.logout))
                 
@@ -331,6 +334,7 @@ struct MyPageFeature {
                 
             case .withdrawalResponse(.success):
                 Log.myPage.debug("회원탈퇴 성공")
+                analyticsClient.log(.accountDelete)
                 return .send(.delegate(.withdrawal))
                 
             case .withdrawalResponse(.failure(let error)):

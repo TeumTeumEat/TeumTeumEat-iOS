@@ -74,6 +74,7 @@ struct HistoryFeature {
     @Dependency(\.goalClient) var goalClient
     
     @Dependency(\.historyClient) var historyClient
+    @Dependency(\.analyticsClient) var analyticsClient
     var body: some ReducerOf<Self> {
          Reduce { state, action in
              switch action {
@@ -88,6 +89,7 @@ struct HistoryFeature {
                  
              case .tabSelected(let index):
                  state.selectedTab = index
+                 analyticsClient.log(.historyTabSelect(tab: index == 0 ? "date" : "topic"))
                  
                  // 주제별 탭으로 전환 시 데이터 로드
                  if index == 1 && state.topicCategories.isEmpty {
@@ -257,6 +259,7 @@ struct HistoryView: View {
         }
         .background(Color.white)
         .navigationBarHidden(true)
+        .trackScreen(.history)
         .navigationDestination(
             item: $store.scope(state: \.historyDetailSummary, action: \.historyDetailSummary)
         ) { detailStore in

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import OnboardingFeature
 
 @Reducer
 struct MainTabFeature {
@@ -98,12 +99,9 @@ struct MainTabFeature {
                 guard !state.home.isGoalCompleted else { return .none }
                 Log.app.debug("메뉴 아이템 선택: \(item)")
                 state.isRegisterMenuExpanded = false
-                switch item {
-                case .category:
-                    state.destination = .addSubject(AddSubjectFlowFeature.State(contentType: .category))
-                case .fileUpload:
-                    state.destination = .addSubject(AddSubjectFlowFeature.State(contentType: .fileUpload))
-                }
+                let contentType: OnboardingData.ContentType = item == .category ? .category : .fileUpload
+                state.destination = .addSubject(AddSubjectFlowFeature.State(contentType: contentType))
+                analyticsClient.log(.subjectAddStart(contentType: contentType.analyticsValue, source: "home_menu"))
                 return .none
 
             // MARK: - Home / History → 화면 표시

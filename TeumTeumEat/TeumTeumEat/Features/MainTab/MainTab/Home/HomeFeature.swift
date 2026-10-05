@@ -162,6 +162,7 @@ struct HomeFeature {
                 state.retryCount = 0
 
                 state.currentGoal = goal
+                setGoalUserProperties(goal)
 
                 Log.home.debug("[Home] Step1 완료 - type: \(goal.type)")
                 
@@ -341,10 +342,12 @@ struct HomeFeature {
 
             case .fetchActiveGoalsResponse(.success(let goals)):
                 state.hasActiveSubjects = goals.contains { !$0.isExpired && !$0.isCompleted }
+                logGoalCompleteViewIfNeeded(state)
                 return .none
 
             case .fetchActiveGoalsResponse(.failure):
                 state.hasActiveSubjects = false
+                logGoalCompleteViewIfNeeded(state)
                 return .none
 
             case .goalCompletedAlertDismissed:
@@ -352,10 +355,12 @@ struct HomeFeature {
                 return .none
 
             case .goalCompletedNewGoalTapped:
+                analyticsClient.log(.goalCompleteAction(action: "new_goal"))
                 state.showGoalCompletedAlert = false
                 return .send(.delegate(.startNewGoalTapped))
 
             case .goalCompletedSelectExistingTapped:
+                analyticsClient.log(.goalCompleteAction(action: "select_existing"))
                 state.showGoalCompletedAlert = false
                 return .send(.delegate(.openMyPageRequested))
 
@@ -456,6 +461,19 @@ struct HomeFeature {
             .cancellable(id: CancelID.currentGoal, cancelInFlight: true)
         )
     }
+
+    /// 주제 완료 알럿은 진행 중인 주제 조회 후 버튼 구성이 정해지므로 그 시점에 기록
+    private func logGoalCompleteViewIfNeeded(_ state: State) {
+        guard state.showGoalCompletedAlert else { return }
+        analyticsClient.log(.goalCompleteView(hasActiveSubjects: state.hasActiveSubjects))
+    }
+
+    private func setGoalUserProperties(_ goal: GoalResponse) {
+        if let documentType = DocumentType(rawValue: goal.type) {
+            analyticsClient.setUserProperty(.contentType(documentType.analyticsValue))
+        }
+        analyticsClient.setUserProperty(.difficulty(AnalyticsValue.difficulty(goal.difficulty)))
+    }
 }
 
 struct HomeView: View {
@@ -483,6 +501,7 @@ struct HomeView: View {
             }
             .background(Color.white)
             .navigationBarHidden(true)
+            .trackScreen(.home)
             .onAppear {
                 store.send(.onAppear)
                 RewardedAdManager.shared.loadAd()

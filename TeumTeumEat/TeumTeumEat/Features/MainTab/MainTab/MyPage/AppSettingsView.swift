@@ -70,6 +70,7 @@ struct AppSettingsView: View {
             }
         }
         .navigationBarHidden(true)
+        .trackScreen(.appSettings)
         .toolbar(.hidden, for: .tabBar)
         .onAppear {
             store.send(.onAppear)
