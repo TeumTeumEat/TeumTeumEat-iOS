@@ -374,49 +374,16 @@ struct HomeFeature {
                     return .none
                 }
                 
-                if let goal = state.currentGoal,
-                   goal.type == "CATEGORY",
-                   let categoryId = goal.category?.categoryId {
-                    // SSE 스트리밍은 ContentSummaryFeature가 전담
-                    let summaryData = ContentSummaryFeature.State(
-                        documentId: 0,
-                        summaryText: "",
-                        hasSolvedToday: state.quizStatus?.hasSolvedToday ?? false,
-                        isFirstTime: true,
-                        documentType: .category,
-                        quizzes: [],
-                        categoryId: categoryId
-                    )
-                    return .send(.delegate(.startQuizFlow(
-                        quizzes: [],
-                        summaryData: summaryData,
-                        isQuizGuideSeen: state.quizStatus?.isQuizGuideSeen ?? false
-                    )))
-
-                } else if let goal = state.currentGoal,
-                          goal.type == "DOCUMENT",
-                          let documentId = goal.documentId {
-                    // SSE 스트리밍은 ContentSummaryFeature가 전담
-                    let summaryData = ContentSummaryFeature.State(
-                        documentId: documentId,
-                        summaryText: "",
-                        hasSolvedToday: state.quizStatus?.hasSolvedToday ?? false,
-                        isFirstTime: true,
-                        documentType: .document,
-                        quizzes: [],
-                        goalId: goal.goalId
-                    )
-                    return .send(.delegate(.startQuizFlow(
-                        quizzes: [],
-                        summaryData: summaryData,
-                        isQuizGuideSeen: state.quizStatus?.isQuizGuideSeen ?? false
-                    )))
-
-                } else {
+                guard let summaryData = makeSummaryState(state) else {
                     Log.home.debug("요약 데이터가 아직 없습니다")
                     return .none
                 }
-                
+                return .send(.delegate(.startQuizFlow(
+                    quizzes: [],
+                    summaryData: summaryData,
+                    isQuizGuideSeen: state.quizStatus?.isQuizGuideSeen ?? false
+                )))
+
             case .delegate:
                 return .none
             }
@@ -459,6 +426,39 @@ struct HomeFeature {
             }
             .cancellable(id: CancelID.currentGoal, cancelInFlight: true)
         )
+    }
+
+    /// 현재 목표로 요약 화면 상태를 만든다. 요약할 대상(카테고리 / 문서 ID)이 없으면 nil
+    /// SSE 스트리밍은 ContentSummaryFeature가 전담하므로 빈 요약으로 시작
+    private func makeSummaryState(_ state: State) -> ContentSummaryFeature.State? {
+        guard let goal = state.currentGoal else { return nil }
+        let hasSolvedToday = state.quizStatus?.hasSolvedToday ?? false
+
+        if goal.type == "CATEGORY", let categoryId = goal.category?.categoryId {
+            return ContentSummaryFeature.State(
+                documentId: 0,
+                summaryText: "",
+                hasSolvedToday: hasSolvedToday,
+                isFirstTime: true,
+                documentType: .category,
+                quizzes: [],
+                categoryId: categoryId
+            )
+        }
+
+        if goal.type == "DOCUMENT", let documentId = goal.documentId {
+            return ContentSummaryFeature.State(
+                documentId: documentId,
+                summaryText: "",
+                hasSolvedToday: hasSolvedToday,
+                isFirstTime: true,
+                documentType: .document,
+                quizzes: [],
+                goalId: goal.goalId
+            )
+        }
+
+        return nil
     }
 
     /// 주제 완료 알럿은 진행 중인 주제 조회 후 버튼 구성이 정해지므로 그 시점에 기록
