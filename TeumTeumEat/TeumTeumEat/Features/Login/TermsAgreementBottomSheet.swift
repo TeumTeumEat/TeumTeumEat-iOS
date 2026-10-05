@@ -24,79 +24,12 @@ struct TermsAgreementBottomSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // 헤더
-            HStack {
-                Text("이용 약관")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Color.black)
-
-                Spacer()
-
-                Button {
-                    if canProceed {
-                        onAgree()
-                    }
-                } label: {
-                    Text("완료")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(Color.white)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 8)
-                        .background(canProceed ? linkBlue : Color(UIColor.systemGray3))
-                        .clipShape(Capsule())
-                }
-                .disabled(!canProceed)
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
+            header
 
             ScrollView {
                 VStack(spacing: 20) {
-                    // 개별 약관 (순서 변경)
-                    VStack(spacing: 16) {
-                        TermRow(
-                            isAgreed: $ageConfirmationAgreed,
-                            title: "만 14세 이상 가입 동의 (필수)",
-                            link: nil
-                        )
-
-                        TermRow(
-                            isAgreed: $serviceTermsAgreed,
-                            title: "이용약관 (필수)",
-                            link: "https://resolute-flier-02d.notion.site/2d8151abb62e80cbaefde6ddcef603cc"
-                        )
-
-                        TermRow(
-                            isAgreed: $privacyPolicyAgreed,
-                            title: "개인정보처리방침 (필수)",
-                            link: "https://resolute-flier-02d.notion.site/2d8151abb62e8099bfd6d881256a6b4a"
-                        )
-                    }
-                    .onChange(of: ageConfirmationAgreed) { _, _ in updateAllAgreed() }
-                    .onChange(of: serviceTermsAgreed) { _, _ in updateAllAgreed() }
-                    .onChange(of: privacyPolicyAgreed) { _, _ in updateAllAgreed() }
-
-                    HStack(spacing: 12) {
-                        Button {
-                            allAgreed.toggle()
-                            serviceTermsAgreed = allAgreed
-                            privacyPolicyAgreed = allAgreed
-                            ageConfirmationAgreed = allAgreed
-                        } label: {
-                            HStack(spacing: 12) {
-                                Image(systemName: allAgreed ? "checkmark.circle.fill" : "circle")
-                                    .font(.title2)
-                                    .foregroundStyle(allAgreed ? linkBlue : Color(UIColor.systemGray))
-
-                                Text("전체 동의")
-                                    .font(.headline)
-                                    .foregroundStyle(Color.black)
-                            }
-                        }
-                        Spacer()
-                    }
-                    .padding(.leading, 4)
-                    .padding(.top, 24)
+                    termRows
+                    agreeAllButton
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 16)
@@ -106,7 +39,86 @@ struct TermsAgreementBottomSheet: View {
         .background(Color.white)
         .colorScheme(.light)
     }
-    
+
+    // MARK: - 헤더
+    private var header: some View {
+        HStack {
+            Text("이용 약관")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(Color.black)
+
+            Spacer()
+
+            Button {
+                if canProceed {
+                    onAgree()
+                }
+            } label: {
+                Text("완료")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
+                    .background(canProceed ? linkBlue : Color(UIColor.systemGray3))
+                    .clipShape(Capsule())
+            }
+            .disabled(!canProceed)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
+    }
+
+    // MARK: - 개별 약관 (순서 변경)
+    private var termRows: some View {
+        VStack(spacing: 16) {
+            TermRow(
+                isAgreed: $ageConfirmationAgreed,
+                title: "만 14세 이상 가입 동의 (필수)",
+                link: nil
+            )
+
+            TermRow(
+                isAgreed: $serviceTermsAgreed,
+                title: "이용약관 (필수)",
+                link: "https://resolute-flier-02d.notion.site/2d8151abb62e80cbaefde6ddcef603cc"
+            )
+
+            TermRow(
+                isAgreed: $privacyPolicyAgreed,
+                title: "개인정보처리방침 (필수)",
+                link: "https://resolute-flier-02d.notion.site/2d8151abb62e8099bfd6d881256a6b4a"
+            )
+        }
+        .onChange(of: ageConfirmationAgreed) { _, _ in updateAllAgreed() }
+        .onChange(of: serviceTermsAgreed) { _, _ in updateAllAgreed() }
+        .onChange(of: privacyPolicyAgreed) { _, _ in updateAllAgreed() }
+    }
+
+    // MARK: - 전체 동의
+    private var agreeAllButton: some View {
+        HStack(spacing: 12) {
+            Button {
+                allAgreed.toggle()
+                serviceTermsAgreed = allAgreed
+                privacyPolicyAgreed = allAgreed
+                ageConfirmationAgreed = allAgreed
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: allAgreed ? "checkmark.circle.fill" : "circle")
+                        .font(.title2)
+                        .foregroundStyle(allAgreed ? linkBlue : Color(UIColor.systemGray))
+
+                    Text("전체 동의")
+                        .font(.headline)
+                        .foregroundStyle(Color.black)
+                }
+            }
+            Spacer()
+        }
+        .padding(.leading, 4)
+        .padding(.top, 24)
+    }
+
     private func updateAllAgreed() {
         allAgreed = ageConfirmationAgreed && serviceTermsAgreed && privacyPolicyAgreed
     }
