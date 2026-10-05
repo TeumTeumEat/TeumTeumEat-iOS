@@ -120,6 +120,7 @@ struct HomeFeature {
     
     @Dependency(\.historyClient) var historyClient
     @Dependency(\.analyticsClient) var analyticsClient
+    @Dependency(\.rewardedAdClient) var rewardedAdClient
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -132,7 +133,10 @@ struct HomeFeature {
                 state.retryCount = 0
                 state.showRetryToast = false
 
-                return loadHomeData()
+                return .merge(
+                    loadHomeData(),
+                    .run { _ in await rewardedAdClient.load() }
+                )
 
             // MyPage 등에서 목표가 바뀌었을 수 있음 → 이전 화면 대신 준비 중 로딩을 보여주고 재조회
             case .goalMayHaveChanged:
@@ -275,10 +279,18 @@ struct HomeFeature {
                 return .none
 
             case .couponChargeTapped:
-                // 광고 표시는 View에서 RewardedAdManager가 처리
                 analyticsClient.log(.adRewardRequest)
                 state.showCouponModal = false
-                return .none
+                return .run { send in
+                    for await event in rewardedAdClient.show() {
+                        switch event {
+                        case .rewarded:
+                            await send(.adRewardEarned)
+                        case .interrupted:
+                            await send(.adInterrupted)
+                        }
+                    }
+                }
 
             case .couponUseTapped:
                 guard state.availableQuizCount > 0 else { return .none }

@@ -39,10 +39,6 @@ struct HomeView: View {
             .trackScreen(.home)
             .onAppear {
                 store.send(.onAppear)
-                RewardedAdManager.shared.loadAd()
-                RewardedAdManager.shared.onAdInterrupted = {
-                    store.send(.adInterrupted)
-                }
             }
             // 쿠폰 모달
             .overlay {
@@ -55,12 +51,7 @@ struct HomeView: View {
                         couponCount: store.availableQuizCount,
                         canIssueCoupon: store.canIssueCoupon,
                         onUse: { store.send(.couponUseTapped) },
-                        onCharge: {
-                            store.send(.couponChargeTapped)
-                            RewardedAdManager.shared.showAd {
-                                store.send(.adRewardEarned)
-                            }
-                        }
+                        onCharge: { store.send(.couponChargeTapped) }
                     )
                     .transition(.scale(scale: 0.95).combined(with: .opacity))
                 }

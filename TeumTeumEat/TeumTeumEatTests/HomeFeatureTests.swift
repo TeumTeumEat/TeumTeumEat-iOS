@@ -173,6 +173,61 @@ struct HomeFeatureTests {
         }
     }
 
+    @Test("광고 시청을 완료하면 보상을 요청하고 갱신된 쿠폰 수로 쿠폰 모달을 다시 띄운다")
+    func couponCharge_adRewarded_refreshesCoupons() async {
+        let events = LockIsolated<[AnalyticsEvent]>([])
+        let rewardPosted = LockIsolated(false)
+        var state = HomeFeature.State()
+        state.showCouponModal = true
+        let store = TestStore(initialState: state) {
+            HomeFeature()
+        } withDependencies: {
+            $0.rewardedAdClient.show = { AsyncStream { $0.yield(.rewarded); $0.finish() } }
+            $0.quizClient.postAdReward = { rewardPosted.setValue(true) }
+            $0.quizClient.fetchUserQuizStatus = { Fixture.quizStatus(availableQuizCount: 2) }
+            $0.analyticsClient.log = { event in events.withValue { $0.append(event) } }
+        }
+
+        await store.send(.couponChargeTapped) {
+            $0.showCouponModal = false
+        }
+        await store.receive(\.adRewardEarned)
+        // Result<Void, Error>의 case key path는 컴파일러 크래시(Swift 6.2 IRGen)를 일으켜 패턴 매칭으로 확인
+        await store.receive({ action in
+            if case .postAdRewardResponse(.success) = action { return true }
+            return false
+        })
+        await store.receive(\.refreshQuizStatusResponse.success) {
+            $0.quizStatus = Fixture.quizStatus(availableQuizCount: 2)
+            $0.showCouponModal = true
+        }
+
+        #expect(rewardPosted.value)
+        #expect(events.value == [.adRewardRequest, .adRewardEarned])
+    }
+
+    @Test("광고를 끝까지 보지 않고 닫으면 보상 없이 안내 토스트를 띄운다")
+    func couponCharge_adInterrupted_showsToast() async {
+        let events = LockIsolated<[AnalyticsEvent]>([])
+        var state = HomeFeature.State()
+        state.showCouponModal = true
+        let store = TestStore(initialState: state) {
+            HomeFeature()
+        } withDependencies: {
+            $0.rewardedAdClient.show = { AsyncStream { $0.yield(.interrupted); $0.finish() } }
+            $0.analyticsClient.log = { event in events.withValue { $0.append(event) } }
+        }
+
+        await store.send(.couponChargeTapped) {
+            $0.showCouponModal = false
+        }
+        await store.receive(\.adInterrupted) {
+            $0.showAdInterruptedToast = true
+        }
+
+        #expect(events.value == [.adRewardRequest, .adInterrupted])
+    }
+
     @Test("오늘 퀴즈를 이미 풀었거나 목표가 없으면 캐릭터를 눌러도 아무 일도 없다")
     func characterEatTapped_completedTodayOrNoGoal_doesNothing() async {
         var state = HomeFeature.State()
