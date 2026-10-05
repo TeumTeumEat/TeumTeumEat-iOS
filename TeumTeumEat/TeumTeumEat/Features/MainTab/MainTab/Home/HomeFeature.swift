@@ -53,9 +53,7 @@ struct HomeFeature {
             guard !isTodayQuizCompleted else { return "done" }
             guard let goal = currentGoal else { return "burger" }
 
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
-            let today = formatter.string(from: Date())
+            let today = DateFormatters.yearMonthDay.string(from: Date())
 
             if goal.type == "CATEGORY" {
                 let id = goal.category?.categoryId ?? goal.goalId

@@ -193,19 +193,8 @@ struct HistoryDetailSummaryView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     if !store.title.isEmpty {
-                        let outputFormatter: DateFormatter = {
-                            let f = DateFormatter()
-                            f.dateFormat = "M월 d일"
-                            f.locale = Locale(identifier: "ko_KR")
-                            return f
-                        }()
-                        let inputFormatter: DateFormatter = {
-                            let f = DateFormatter()
-                            f.dateFormat = "yyyy-MM-dd"
-                            f.locale = Locale(identifier: "ko_KR")
-                            return f
-                        }()
-                        let displayDate = inputFormatter.date(from: store.date).map { outputFormatter.string(from: $0) } ?? store.date
+                        let displayDate = DateFormatters.yearMonthDay.date(from: store.date)
+                            .map { DateFormatters.koreanMonthDay.string(from: $0) } ?? store.date
                         VStack(alignment: .leading, spacing: 12) {
                             Text(store.title)
                                 .font(.title3)

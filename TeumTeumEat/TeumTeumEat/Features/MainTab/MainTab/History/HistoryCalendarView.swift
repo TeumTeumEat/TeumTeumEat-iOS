@@ -23,9 +23,7 @@ struct HistoryCalendarView: View {
     
     // stampedDates를 Date 배열로 변환
     private var quizDates: [Date] {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return stampedDates.compactMap { formatter.date(from: $0) }
+        stampedDates.compactMap { DateFormatters.yearMonthDay.date(from: $0) }
     }
     
     private var currentMonthDate: Date {
@@ -179,37 +177,23 @@ struct HistoryCalendarView: View {
     
     // MARK: - Helper Methods
     private var monthYearString: String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ko_KR")
-        formatter.dateFormat = "M월"
-        return formatter.string(from: currentMonthDate)
+        DateFormatters.koreanMonth.string(from: currentMonthDate)
     }
     
     private func dateToString(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: date)
+        DateFormatters.yearMonthDay.string(from: date)
     }
     
     private func formatDate(_ dateString: String) -> String {
-        let inputFormatter = DateFormatter()
-        inputFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS" 
-        
-        let outputFormatter = DateFormatter()
-        outputFormatter.locale = Locale(identifier: "ko_KR")
-        outputFormatter.dateFormat = "M월 d일"
-        
-        if let date = inputFormatter.date(from: dateString) {
-            return outputFormatter.string(from: date)
+        if let date = DateFormatters.serverDateTime.date(from: dateString) {
+            return DateFormatters.koreanMonthDay.string(from: date)
         }
         
         // 파싱 실패 시 앞부분만 잘라서 표시
         if dateString.count >= 10 {
             let dateOnly = String(dateString.prefix(10)) // "2026-01-04"
-            let fallbackFormatter = DateFormatter()
-            fallbackFormatter.dateFormat = "yyyy-MM-dd"
-            if let date = fallbackFormatter.date(from: dateOnly) {
-                return outputFormatter.string(from: date)
+            if let date = DateFormatters.yearMonthDay.date(from: dateOnly) {
+                return DateFormatters.koreanMonthDay.string(from: date)
             }
         }
         

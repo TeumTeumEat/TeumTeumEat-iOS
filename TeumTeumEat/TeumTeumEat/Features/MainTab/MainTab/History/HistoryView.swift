@@ -184,17 +184,10 @@ struct HistoryView: View {
     }
 
     private func formatDate(_ isoString: String) -> String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        
-        guard let date = formatter.date(from: isoString) else {
+        guard let date = DateFormatters.iso8601WithFractionalSeconds.date(from: isoString) else {
             return isoString
         }
-        
-        let displayFormatter = DateFormatter()
-        displayFormatter.dateFormat = "MM.dd"
-        
-        return displayFormatter.string(from: date)
+        return DateFormatters.monthDotDay.string(from: date)
     }
 }
 
