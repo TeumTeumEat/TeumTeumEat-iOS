@@ -96,6 +96,7 @@ struct HomeFeature {
         case speechBubbleTapped
         case dismissCouponModal
         case couponUseTapped
+        case couponChargeTapped
         case adRewardEarned
         case adInterrupted
         case adInterruptedToastDismissed
@@ -119,6 +120,7 @@ struct HomeFeature {
     @Dependency(\.quizClient) var quizClient
     
     @Dependency(\.historyClient) var historyClient
+    @Dependency(\.analyticsClient) var analyticsClient
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -265,15 +267,22 @@ struct HomeFeature {
 
             case .speechBubbleTapped:
                 state.showCouponModal = true
+                analyticsClient.log(.couponModalView(couponCount: state.availableQuizCount))
                 return .none
 
             case .dismissCouponModal:
                 state.showCouponModal = false
                 return .none
 
+            case .couponChargeTapped:
+                // 광고 표시는 View에서 RewardedAdManager가 처리
+                analyticsClient.log(.adRewardRequest)
+                state.showCouponModal = false
+                return .none
+
             case .couponUseTapped:
                 guard state.availableQuizCount > 0 else { return .none }
-                AnalyticsManager.logCouponUsed()
+                analyticsClient.log(.couponUsed(couponCount: state.availableQuizCount))
                 state.isTodayQuizCompleted = false
                 state.isUsingCoupon = true
                 state.showCouponModal = false
@@ -288,6 +297,7 @@ struct HomeFeature {
                 }
 
             case .adRewardEarned:
+                analyticsClient.log(.adRewardEarned)
                 return .run { send in
                     do {
                         try await quizClient.postAdReward()
@@ -298,6 +308,7 @@ struct HomeFeature {
                 }
 
             case .adInterrupted:
+                analyticsClient.log(.adInterrupted)
                 state.showAdInterruptedToast = true
                 return .none
 
@@ -491,7 +502,7 @@ struct HomeView: View {
                         canIssueCoupon: store.canIssueCoupon,
                         onUse: { store.send(.couponUseTapped) },
                         onCharge: {
-                            store.send(.dismissCouponModal)
+                            store.send(.couponChargeTapped)
                             RewardedAdManager.shared.showAd {
                                 store.send(.adRewardEarned)
                             }

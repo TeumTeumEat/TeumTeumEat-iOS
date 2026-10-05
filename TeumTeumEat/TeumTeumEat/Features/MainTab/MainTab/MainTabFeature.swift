@@ -62,6 +62,7 @@ struct MainTabFeature {
         case category
     }
 
+    @Dependency(\.analyticsClient) var analyticsClient
     var body: some ReducerOf<Self> {
         Scope(state: \.home, action: \.home) {
             HomeFeature()
@@ -121,6 +122,10 @@ struct MainTabFeature {
                     quizzes: quizzes,
                     summaryData: summaryData,
                     isQuizGuideSeen: isQuizGuideSeen
+                ))
+                analyticsClient.log(.summaryView(
+                    contentType: summaryData.documentType.analyticsValue,
+                    isFirstTime: summaryData.isFirstTime
                 ))
                 Log.app.debug("퀴즈 플로우 시작 - 요약부터 표시")
                 return .none

@@ -12,6 +12,7 @@ import FirebaseMessaging
 @Reducer
 struct AppFeature {
     @Dependency(\.userClient) var userClient
+    @Dependency(\.analyticsClient) var analyticsClient
     @ObservableState
     struct State: Equatable {
         var splash: SplashFeature.State = .init()
@@ -36,114 +37,7 @@ struct AppFeature {
             SplashFeature()
         }
         
-        Reduce { state, action in
-            switch action {
-                
-            case .mainTab(.delegate(.logout)):
-                Log.app.debug("AppFeature: 로그아웃 요청 받음")
-                return .send(.logout)
-                
-            case .logout:
-                // 디바이스 토큰 삭제 후 KeyChain 삭제 (순서 중요: 인증 토큰이 있어야 API 호출 가능)
-                return .run { [userClient] send in
-                    await deleteCurrentDeviceToken(userClient: userClient)
-                    await send(.logoutFinalize)
-                }
-
-            case .logoutFinalize:
-                KeyChainManager.shared.deleteAll()
-
-                state.login = nil
-                state.onboarding = nil
-                state.mainTab = nil
-
-                // 로그인 화면으로
-                state.login = LoginFeature.State()
-
-                Log.app.debug("로그아웃 완료 - 로그인 화면으로 이동")
-
-                return .none
-            // Splash
-            case .splash(.authenticationChecked(let authState)):
-                state.isShowingSplash = false
-                
-                switch authState {
-                case .authenticated(let isOnboardingCompleted):
-                    if isOnboardingCompleted {
-                        // 온보딩 완료 → 메인 화면
-                        Log.app.debug("토큰 있음 & 온보딩 완료 → 메인")
-                        state.mainTab = MainTabFeature.State()
-                    } else {
-                        // 온보딩 미완료 → 온보딩 화면
-                        Log.app.debug("토큰 있음 & 온보딩 미완료 → 온보딩")
-                        state.onboarding = OnboardingFeature.State()
-                    }
-                    
-                case .unauthenticated:
-                    // 토큰 없음 → 로그인 화면
-                    Log.app.debug("토큰 없음 → 로그인")
-                    state.login = LoginFeature.State()
-                }
-                return .none
-                
-            // Login Delegate
-            case .login(.delegate(.loginSuccess(_, _, let isOnboardingCompleted))):
-                state.login = nil
-                UserDefaultsManager.isOnboardingCompleted = isOnboardingCompleted
-
-                if isOnboardingCompleted {
-                    // 온보딩 완료 → 메인 화면
-                    Log.app.debug("로그인 성공 & 온보딩 완료 - 메인 화면으로 이동")
-                    state.mainTab = MainTabFeature.State()
-                } else {
-                    // 온보딩 미완료 → 온보딩 화면
-                    state.onboarding = OnboardingFeature.State()
-                }
-
-                // 로그인 성공 직후 디바이스 토큰 등록 (로그아웃 후 재로그인 포함)
-                return .run { [userClient] _ in
-                    await registerCurrentFCMToken(userClient: userClient)
-                }
-                
-            // Onboarding Delegate
-            case .onboarding(.complete(.startButtonTapped)):
-                state.onboarding = nil
-                Log.app.debug("온보딩 완료 - 메인 화면으로 이동 예정")
-                UserDefaultsManager.isOnboardingCompleted = true
-                AnalyticsManager.logOnboardingComplete()
-                state.mainTab = MainTabFeature.State()
-
-                // 온보딩 완료 직후 디바이스 토큰 등록 (신규 유저 푸시 알림 누락 방지)
-                return .run { [userClient] _ in
-                    await registerCurrentFCMToken(userClient: userClient)
-                }
-                
-            case .mainTab(.delegate(.withdrawal)):
-                Log.app.debug("AppFeature: 회원탈퇴 요청 받음")
-                return .send(.withdrawal)
-                
-            case .withdrawal:
-                Log.app.debug("회원탈퇴 처리 시작")
-                
-                // 토큰 삭제
-                KeyChainManager.shared.deleteAll()
-                
-                // 모든 상태 초기화
-                state.login = nil
-                state.onboarding = nil
-                state.mainTab = nil
-                
-                // 로그인 화면으로
-                state.login = LoginFeature.State()
-                
-                Log.app.debug("회원탈퇴 완료 - 로그인 화면으로 이동")
-                
-                return .none
-                
-            case .splash, .login, .onboarding, .mainTab:
-                return .none
-            }
-        }
+        Reduce(self.core)
         .ifLet(\.login, action: \.login) {
             LoginFeature()
         }
@@ -152,6 +46,143 @@ struct AppFeature {
         }
         .ifLet(\.mainTab, action: \.mainTab) {
             MainTabFeature()
+        }
+        // 온보딩 단계별 진입 (어느 단계에서 이탈하는지 측정)
+        .onChange(of: \.onboarding?.analyticsStep) { (_: String?, step: String?) in
+            logOnboardingStep(step)
+        }
+    }
+
+    private func core(into state: inout State, action: Action) -> Effect<Action> {
+        switch action {
+            
+        case .mainTab(.delegate(.logout)):
+            Log.app.debug("AppFeature: 로그아웃 요청 받음")
+            return .send(.logout)
+            
+        case .logout:
+            // 디바이스 토큰 삭제 후 KeyChain 삭제 (순서 중요: 인증 토큰이 있어야 API 호출 가능)
+            return .run { [userClient] send in
+                await deleteCurrentDeviceToken(userClient: userClient)
+                await send(.logoutFinalize)
+            }
+
+        case .logoutFinalize:
+            KeyChainManager.shared.deleteAll()
+
+            state.login = nil
+            state.onboarding = nil
+            state.mainTab = nil
+
+            // 로그인 화면으로
+            state.login = LoginFeature.State()
+
+            Log.app.debug("로그아웃 완료 - 로그인 화면으로 이동")
+
+            return .none
+        // Splash
+        case .splash(.authenticationChecked(let authState)):
+            state.isShowingSplash = false
+            
+            switch authState {
+            case .authenticated(let isOnboardingCompleted):
+                if isOnboardingCompleted {
+                    // 온보딩 완료 → 메인 화면
+                    Log.app.debug("토큰 있음 & 온보딩 완료 → 메인")
+                    state.mainTab = MainTabFeature.State()
+                } else {
+                    // 온보딩 미완료 → 온보딩 화면
+                    Log.app.debug("토큰 있음 & 온보딩 미완료 → 온보딩")
+                    state.onboarding = OnboardingFeature.State()
+                }
+                
+            case .unauthenticated:
+                // 토큰 없음 → 로그인 화면
+                Log.app.debug("토큰 없음 → 로그인")
+                state.login = LoginFeature.State()
+            }
+            return .none
+            
+        // Login Delegate
+        case .login(.delegate(.loginSuccess(_, _, let isOnboardingCompleted))):
+            state.login = nil
+            UserDefaultsManager.isOnboardingCompleted = isOnboardingCompleted
+
+            if isOnboardingCompleted {
+                // 온보딩 완료 → 메인 화면
+                Log.app.debug("로그인 성공 & 온보딩 완료 - 메인 화면으로 이동")
+                state.mainTab = MainTabFeature.State()
+            } else {
+                // 온보딩 미완료 → 온보딩 화면
+                state.onboarding = OnboardingFeature.State()
+            }
+
+            // 로그인 성공 직후 디바이스 토큰 등록 (로그아웃 후 재로그인 포함)
+            return .run { [userClient] _ in
+                await registerCurrentFCMToken(userClient: userClient)
+            }
+            
+        // Onboarding Delegate
+        case .onboarding(.contentSelection(.nextTapped)):
+            // 하위 reducer가 먼저 실행되므로, 선택이 반영됐으면 contentSelection은 nil
+            if let onboarding = state.onboarding, onboarding.contentSelection == nil {
+                analyticsClient.log(.onboardingContentSelect(
+                    contentType: onboarding.onboardingData.analyticsContentType
+                ))
+            }
+            return .none
+
+        case .onboarding(.complete(.startButtonTapped)):
+            if let data = state.onboarding?.onboardingData {
+                analyticsClient.log(.onboardingComplete(
+                    contentType: data.analyticsContentType,
+                    difficulty: data.analyticsDifficulty,
+                    durationWeeks: data.programWeeks
+                ))
+            }
+            state.onboarding = nil
+            Log.app.debug("온보딩 완료 - 메인 화면으로 이동 예정")
+            UserDefaultsManager.isOnboardingCompleted = true
+            state.mainTab = MainTabFeature.State()
+
+            // 온보딩 완료 직후 디바이스 토큰 등록 (신규 유저 푸시 알림 누락 방지)
+            return .run { [userClient] _ in
+                await registerCurrentFCMToken(userClient: userClient)
+            }
+            
+        case .mainTab(.delegate(.withdrawal)):
+            Log.app.debug("AppFeature: 회원탈퇴 요청 받음")
+            return .send(.withdrawal)
+            
+        case .withdrawal:
+            Log.app.debug("회원탈퇴 처리 시작")
+            
+            // 토큰 삭제
+            KeyChainManager.shared.deleteAll()
+            
+            // 모든 상태 초기화
+            state.login = nil
+            state.onboarding = nil
+            state.mainTab = nil
+            
+            // 로그인 화면으로
+            state.login = LoginFeature.State()
+            
+            Log.app.debug("회원탈퇴 완료 - 로그인 화면으로 이동")
+            
+            return .none
+            
+        case .splash, .login, .onboarding, .mainTab:
+            return .none
+        }
+    }
+
+    private func logOnboardingStep(_ step: String?) -> Reduce<State, Action> {
+        Reduce { _, _ in
+            if let step {
+                analyticsClient.log(.onboardingStepView(step: step))
+            }
+            return .none
         }
     }
 }

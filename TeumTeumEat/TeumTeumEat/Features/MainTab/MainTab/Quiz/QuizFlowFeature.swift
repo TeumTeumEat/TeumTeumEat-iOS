@@ -37,6 +37,7 @@ struct QuizFlowFeature {
         // 단계 사이에 공유하는 값
         var quizzes: [UserQuiz]
         var isQuizGuideSeen: Bool
+        var documentType: DocumentType
         var summaryText: String = ""
         var submitResults: [Int: SubmitQuizAnswerData] = [:]
 
@@ -49,6 +50,7 @@ struct QuizFlowFeature {
         ) {
             self.quizzes = quizzes
             self.isQuizGuideSeen = isQuizGuideSeen
+            self.documentType = summaryData.documentType
             self.step = .summary(summaryData)
         }
     }
@@ -72,6 +74,7 @@ struct QuizFlowFeature {
     }
 
     @Dependency(\.quizClient) var quizClient
+    @Dependency(\.analyticsClient) var analyticsClient
     var body: some ReducerOf<Self> {
         Scope(state: \.step, action: \.step) {
             Step.body
@@ -94,6 +97,7 @@ struct QuizFlowFeature {
 
             case .step(.summary(.delegate(.cancelled))):
                 Log.quiz.debug("QuizFlow: ContentSummary에서 취소")
+                analyticsClient.log(.summaryAbandon(contentType: state.documentType.analyticsValue))
                 return .send(.delegate(.cancelled))
 
             case .step(.quizGuide(.delegate(.startQuiz))):
@@ -110,6 +114,12 @@ struct QuizFlowFeature {
             // MARK: - Quiz → Result
             case .step(.quiz(.delegate(.dismissed))):
                 Log.quiz.debug("QuizFlow: 퀴즈 뒤로가기 → 취소")
+                if case let .quiz(quizState) = state.step {
+                    analyticsClient.log(.quizAbandon(
+                        questionIndex: quizState.currentIndex + 1,
+                        quizCount: state.quizzes.count
+                    ))
+                }
                 return .send(.delegate(.cancelled))
 
             case .step(.quiz(.delegate(.completed))):
@@ -117,7 +127,7 @@ struct QuizFlowFeature {
                     state.submitResults = quizState.submitResults
                 }
                 let correctCount = state.submitResults.values.filter { $0.isCorrect }.count
-                AnalyticsManager.logQuizComplete(quizCount: state.quizzes.count, correctCount: correctCount)
+                analyticsClient.log(.quizComplete(quizCount: state.quizzes.count, correctCount: correctCount))
 
                 state.step = .result(QuizResultFeature.State(
                     submitResults: state.submitResults,
@@ -128,16 +138,19 @@ struct QuizFlowFeature {
 
             // MARK: - Result
             case .step(.result(.delegate(.showDetailResults))):
+                analyticsClient.log(.quizResultAction(action: "detail"))
                 state.step = .detailResult(makeDetailResultState(state))
                 Log.quiz.debug("QuizFlow: 상세 결과로 이동")
                 return .none
 
             case .step(.result(.delegate(.navigateToHome))):
                 Log.quiz.debug("QuizFlow: 홈으로 이동")
+                analyticsClient.log(.quizResultAction(action: "home"))
                 return .send(.delegate(.completed(destination: .home)))
 
             case .step(.result(.delegate(.navigateToHistory))):
                 Log.quiz.debug("QuizFlow: 히스토리로 이동")
+                analyticsClient.log(.quizResultAction(action: "history"))
                 return .send(.delegate(.completed(destination: .history)))
 
             // MARK: - DetailResult → ReviewSummary (글 보기)
@@ -218,7 +231,10 @@ struct QuizFlowFeature {
             return .none
         }
         state.step = .quiz(QuizFeature.State(quizzes: state.quizzes.map { Quiz(from: $0) }))
-        AnalyticsManager.logQuizStart(quizCount: state.quizzes.count)
+        analyticsClient.log(.quizStart(
+            quizCount: state.quizzes.count,
+            contentType: state.documentType.analyticsValue
+        ))
         Log.quiz.debug("QuizFlow: 퀴즈 시작 - complete-set 호출")
         return .run { send in
             await send(.completeSetResponse(Result { try await quizClient.completeQuizSet() }))
