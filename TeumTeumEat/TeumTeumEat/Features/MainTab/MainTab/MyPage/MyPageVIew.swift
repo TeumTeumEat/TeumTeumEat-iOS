@@ -13,7 +13,7 @@ struct MyPageView: View {
     @Environment(\.scenePhase) private var scenePhase
     
     var body: some View {
-        contentWithAlerts
+        contentWithWithdrawalState
             .navigationDestination(
                 item: $store.scope(state: \.destination?.subjectList, action: \.destination.subjectList)
             ) { subjectListStore in
@@ -56,6 +56,34 @@ struct MyPageView: View {
         .onChange(of: scenePhase) { _, newPhase in
             store.send(.scenePhaseChanged(newPhase))
         }
+    }
+
+    /// 회원탈퇴 진행 중 로딩 / 실패 알럿
+    private var contentWithWithdrawalState: some View {
+        contentWithAlerts
+            .overlay {
+                if store.isWithdrawing {
+                    ZStack {
+                        Color.black.opacity(0.3)
+                            .ignoresSafeArea()
+                        ProgressView()
+                            .scaleEffect(1.2)
+                    }
+                }
+            }
+            .alert("회원탈퇴 실패", isPresented: Binding(
+                get: { store.withdrawalErrorMessage != nil },
+                set: { if !$0 { store.send(.withdrawalErrorDismissed) } }
+            )) {
+                Button("취소", role: .cancel) {
+                    store.send(.withdrawalErrorDismissed)
+                }
+                Button("다시 시도") {
+                    store.send(.withdrawalRetryTapped)
+                }
+            } message: {
+                Text(store.withdrawalErrorMessage ?? "")
+            }
     }
 
     private var contentWithAlerts: some View {
