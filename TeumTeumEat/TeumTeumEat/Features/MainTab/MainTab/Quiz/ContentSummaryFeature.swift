@@ -99,33 +99,7 @@ struct ContentSummaryFeature {
                 return .none
 
             case .startStreaming:
-                state.isStreaming = true
-                state.streamingText = ""
-                if state.documentType == .category {
-                    guard let id = state.categoryId else { return .none }
-                    return .run { send in
-                        do {
-                            for try await event in quizClient.streamCategoryDocument(categoryId: id) {
-                                await send(.streamEventReceived(event))
-                            }
-                        } catch {
-                            await send(.streamFailed(error))
-                        }
-                    }.cancellable(id: CancelID.streaming, cancelInFlight: true)
-                } else if state.documentType == .document {
-                    guard let goalId = state.goalId else { return .none }
-                    let docId = state.documentId
-                    return .run { send in
-                        do {
-                            for try await event in quizClient.streamPDFSummary(goalId: goalId, documentId: docId) {
-                                await send(.streamEventReceived(event))
-                            }
-                        } catch {
-                            await send(.streamFailed(error))
-                        }
-                    }.cancellable(id: CancelID.streaming, cancelInFlight: true)
-                }
-                return .none
+                return startStreaming(&state)
 
             case .streamEventReceived(let event):
                 switch event {
@@ -142,82 +116,10 @@ struct ContentSummaryFeature {
                 }
 
             case .streamCompleted:
-                guard !state.streamingText.isEmpty else {
-                    // 빈 스트림 → GET fallback + 타이핑 애니메이션
-                    if state.documentType == .category {
-                        guard let id = state.categoryId else {
-                            state.isStreaming = false; return .none
-                        }
-                        return fetchCategoryFallback(categoryId: id)
-                    } else if state.documentType == .document {
-                        guard let goalId = state.goalId else {
-                            state.isStreaming = false; return .none
-                        }
-                        return fetchPDFFallback(goalId: goalId, documentId: state.documentId)
-                    }
-                    state.isStreaming = false
-                    return .none
-                }
-                // 정상 스트리밍 완료
-                state.summaryText = state.streamingText
-                state.streamingText = ""   // Markdown 렌더링으로 전환
-                state.isStreaming = false
-
-                if state.documentType == .category {
-                    // 퀴즈가 없으면(신규 문서) documentId GET 후 퀴즈 조회
-                    guard state.quizzes.isEmpty, let categoryId = state.categoryId else {
-                        return .none
-                    }
-                    state.isQuizLoading = true
-                    return .run { send in
-                        let result = await Result {
-                            try await quizClient.fetchCategoryDocumentIfExists(categoryId: categoryId)
-                        }
-                        await send(.fetchDocumentMetaCompleted(result))
-                    }
-                } else if state.documentType == .document {
-                    // PDF: SSE는 텍스트만 스트리밍, 퀴즈는 POST /summary 로 생성 필요
-                    guard state.quizzes.isEmpty else { return .none }
-                    state.isQuizLoading = true
-                    guard let goalId = state.goalId else { return .none }
-                    let docId = state.documentId
-                    return .run { send in
-                        let result = await Result {
-                            try await quizClient.createAndFetchPDFQuizzes(goalId: goalId, documentId: docId)
-                        }
-                        await send(.fetchQuizzesCompleted(result))
-                    }
-                }
-                return .none
+                return streamCompleted(&state)
 
             case .streamFailed(let error):
-                Log.quiz.error("[ContentSummary] streamFailed: \(error)")
-                // QUIZ-002: 퀴즈 횟수 소진
-                if let api = error as? APIError,
-                   case .serverError(let code, let message, _) = api, code == "QUIZ-002" {
-                    state.isStreaming = false
-                    state.errorMessage = message.isEmpty ? "오늘의 퀴즈 횟수를 모두 소진했어요." : message
-                    return .none
-                }
-                // QUIZ-003: 이미 생성된 문서 → GET fallback + 타이핑 애니메이션
-                if let api = error as? APIError,
-                   case .serverError(let code, _, _) = api, code == "QUIZ-003" {
-                    if state.documentType == .category {
-                        guard let id = state.categoryId else { return .none }
-                        // isStreaming = true 유지 — fallback GET 동안 로딩 표시
-                        return fetchCategoryFallback(categoryId: id)
-                    } else if state.documentType == .document {
-                        guard let goalId = state.goalId else { return .none }
-                        return fetchPDFFallback(goalId: goalId, documentId: state.documentId)
-                    }
-                }
-                // 일반 에러 → 오버레이 표시
-                state.isStreaming = false
-                let overlayMsg = (error as? APIError)?.overlayMessage ?? "에러가 발생했습니다."
-                state.errorOverlayMessage = overlayMsg
-                state.showErrorOverlay = true
-                state.isRetryingError = false
-                return .none
+                return streamFailed(&state, error: error)
 
             case .fallbackResponse(.success(let doc)):
                 // 카테고리 fallback: 서버에서 받은 실제 값으로 업데이트
@@ -317,6 +219,119 @@ struct ContentSummaryFeature {
                 return .none
             }
         }
+    }
+
+    /// 문서 유형에 맞는 요약 SSE 스트리밍 시작
+    private func startStreaming(_ state: inout State) -> Effect<Action> {
+        state.isStreaming = true
+        state.streamingText = ""
+        if state.documentType == .category {
+            guard let id = state.categoryId else { return .none }
+            return .run { send in
+                do {
+                    for try await event in quizClient.streamCategoryDocument(categoryId: id) {
+                        await send(.streamEventReceived(event))
+                    }
+                } catch {
+                    await send(.streamFailed(error))
+                }
+            }.cancellable(id: CancelID.streaming, cancelInFlight: true)
+        } else if state.documentType == .document {
+            guard let goalId = state.goalId else { return .none }
+            let docId = state.documentId
+            return .run { send in
+                do {
+                    for try await event in quizClient.streamPDFSummary(goalId: goalId, documentId: docId) {
+                        await send(.streamEventReceived(event))
+                    }
+                } catch {
+                    await send(.streamFailed(error))
+                }
+            }.cancellable(id: CancelID.streaming, cancelInFlight: true)
+        }
+        return .none
+    }
+
+    /// 스트리밍 종료 처리: 빈 스트림이면 저장본 조회, 아니면 요약 확정 후 퀴즈 준비
+    private func streamCompleted(_ state: inout State) -> Effect<Action> {
+        guard !state.streamingText.isEmpty else {
+            // 빈 스트림 → GET fallback + 타이핑 애니메이션
+            if state.documentType == .category {
+                guard let id = state.categoryId else {
+                    state.isStreaming = false; return .none
+                }
+                return fetchCategoryFallback(categoryId: id)
+            } else if state.documentType == .document {
+                guard let goalId = state.goalId else {
+                    state.isStreaming = false; return .none
+                }
+                return fetchPDFFallback(goalId: goalId, documentId: state.documentId)
+            }
+            state.isStreaming = false
+            return .none
+        }
+        // 정상 스트리밍 완료
+        state.summaryText = state.streamingText
+        state.streamingText = ""   // Markdown 렌더링으로 전환
+        state.isStreaming = false
+
+        if state.documentType == .category {
+            // 퀴즈가 없으면(신규 문서) documentId GET 후 퀴즈 조회
+            guard state.quizzes.isEmpty, let categoryId = state.categoryId else {
+                return .none
+            }
+            state.isQuizLoading = true
+            return .run { send in
+                let result = await Result {
+                    try await quizClient.fetchCategoryDocumentIfExists(categoryId: categoryId)
+                }
+                await send(.fetchDocumentMetaCompleted(result))
+            }
+        } else if state.documentType == .document {
+            // PDF: SSE는 텍스트만 스트리밍, 퀴즈는 POST /summary 로 생성 필요
+            guard state.quizzes.isEmpty else { return .none }
+            state.isQuizLoading = true
+            guard let goalId = state.goalId else { return .none }
+            let docId = state.documentId
+            return .run { send in
+                let result = await Result {
+                    try await quizClient.createAndFetchPDFQuizzes(goalId: goalId, documentId: docId)
+                }
+                await send(.fetchQuizzesCompleted(result))
+            }
+        }
+        return .none
+    }
+
+    /// 스트리밍 실패 처리: 횟수 소진 알럿 / 이미 생성된 문서는 저장본 조회 / 그 외 에러 오버레이
+    private func streamFailed(_ state: inout State, error: Error) -> Effect<Action> {
+        Log.quiz.error("[ContentSummary] streamFailed: \(error)")
+        // QUIZ-002: 퀴즈 횟수 소진
+        if let api = error as? APIError,
+           case .serverError(let code, let message, _) = api, code == "QUIZ-002" {
+            state.isStreaming = false
+            state.errorMessage = message.isEmpty ? "오늘의 퀴즈 횟수를 모두 소진했어요." : message
+            return .none
+        }
+        // QUIZ-003: 이미 생성된 문서 → GET fallback + 타이핑 애니메이션
+        if let api = error as? APIError,
+           case .serverError(let code, _, _) = api, code == "QUIZ-003" {
+            if state.documentType == .category {
+                guard let id = state.categoryId else { return .none }
+                // isStreaming = true 유지 — fallback GET 동안 로딩 표시
+                return fetchCategoryFallback(categoryId: id)
+            } else if state.documentType == .document {
+                guard let goalId = state.goalId else { return .none }
+                return fetchPDFFallback(goalId: goalId, documentId: state.documentId)
+            }
+        }
+        // 일반 에러 → 오버레이 표시
+        state.isStreaming = false
+        let overlayMsg = (error as? APIError)?.overlayMessage ?? "에러가 발생했습니다."
+        state.errorOverlayMessage = overlayMsg
+        state.showErrorOverlay = true
+        state.isRetryingError = false
+        return .none
     }
 
     private func fetchCategoryFallback(categoryId: Int) -> Effect<Action> {
