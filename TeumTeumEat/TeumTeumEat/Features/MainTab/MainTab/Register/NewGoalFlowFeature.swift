@@ -27,6 +27,7 @@ struct NewGoalFlowFeature {
         }
     }
 
+    @Dependency(\.analyticsClient) var analyticsClient
     var body: some ReducerOf<Self> {
         Scope(state: \.contentSelection, action: \.contentSelection) {
             ContentSelectionFeature()
@@ -38,8 +39,10 @@ struct NewGoalFlowFeature {
                 switch state.contentSelection.selectedType {
                 case .category:
                     state.addSubject = AddSubjectFlowFeature.State(contentType: .category)
+                    analyticsClient.log(.subjectAddStart(contentType: "category", source: "goal_complete"))
                 case .fileUpload:
                     state.addSubject = AddSubjectFlowFeature.State(contentType: .fileUpload)
+                    analyticsClient.log(.subjectAddStart(contentType: "document", source: "goal_complete"))
                 case nil:
                     break
                 }

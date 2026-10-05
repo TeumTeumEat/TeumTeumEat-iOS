@@ -200,10 +200,12 @@ struct QuizFlowFeature {
             // SubjectComplete → 새 주제 추가 (QuizFlow 내부에서 띄움)
             case .step(.subjectComplete(.delegate(.navigateToFileUpload))):
                 state.destination = .addSubject(AddSubjectFlowFeature.State(contentType: .fileUpload))
+                analyticsClient.log(.subjectAddStart(contentType: "document", source: "quiz_complete"))
                 return .none
 
             case .step(.subjectComplete(.delegate(.navigateToCategory))):
                 state.destination = .addSubject(AddSubjectFlowFeature.State(contentType: .category))
+                analyticsClient.log(.subjectAddStart(contentType: "category", source: "quiz_complete"))
                 return .none
 
             // 새 주제 추가 완료 → 홈으로

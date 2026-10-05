@@ -48,6 +48,7 @@ struct MyPageView: View {
             .background(Color.white)
         }
         .navigationBarHidden(true)
+        .trackScreen(.myPage)
         .toolbar(.hidden, for: .tabBar)
         .onAppear {
             store.send(.onAppear)

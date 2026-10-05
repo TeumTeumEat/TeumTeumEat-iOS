@@ -141,6 +141,7 @@ struct LoginFeature {
 
                     // Analytics
                     let method = state.pendingProvider?.rawValue.lowercased() ?? "unknown"
+                    analyticsClient.setUserProperty(.loginMethod(method))
                     if state.isNewUser {
                         analyticsClient.log(.signUp(method: method))
                     } else {

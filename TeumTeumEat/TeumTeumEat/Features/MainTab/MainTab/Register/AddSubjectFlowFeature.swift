@@ -61,6 +61,7 @@ struct AddSubjectFlowFeature {
         }
     }
 
+    @Dependency(\.analyticsClient) var analyticsClient
     var body: some ReducerOf<Self> {
         Scope(state: \.step, action: \.step) {
             Step.body
@@ -81,10 +82,12 @@ struct AddSubjectFlowFeature {
                 return .none
 
             case .step(.category(.delegate(.backToContentSelection))):
+                analyticsClient.log(.subjectAddCancel(contentType: state.contentType.analyticsValue, step: "category"))
                 return .send(.delegate(.cancelled))
 
             // MARK: - File Upload
             case .step(.fileUpload(.backTapped)):
+                analyticsClient.log(.subjectAddCancel(contentType: state.contentType.analyticsValue, step: "file_upload"))
                 return .send(.delegate(.cancelled))
 
             case .step(.fileUpload(.nextTapped)):
@@ -139,6 +142,12 @@ struct AddSubjectFlowFeature {
             // MARK: - Loading & Complete
             case .step(.loading(.loadingCompleted)):
                 Log.register.debug("주제 추가 API 완료 (\(state.contentType))")
+                let data = makeOnboardingData(state)
+                analyticsClient.log(.subjectAddComplete(
+                    contentType: data.analyticsContentType,
+                    difficulty: data.analyticsDifficulty,
+                    durationWeeks: state.selectedWeeks
+                ))
                 state.step = .complete(AddSubjectCompleteFeature.State())
                 return .none
 

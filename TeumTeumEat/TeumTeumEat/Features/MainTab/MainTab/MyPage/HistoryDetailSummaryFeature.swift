@@ -123,6 +123,7 @@ struct HistoryDetailSummaryView: View {
         }
         .background(.white)
         .navigationBarHidden(true)
+        .trackScreen(.historyDetail)
         .navigationDestination(
             item: $store.scope(state: \.detailAnswer, action: \.detailAnswer)
         ) { answerStore in

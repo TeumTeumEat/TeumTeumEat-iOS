@@ -87,6 +87,7 @@ struct SubjectListView: View {
             }
         }
         .navigationBarHidden(true)
+        .trackScreen(.subjectList)
         .toolbar(.hidden, for: .tabBar)
         .onAppear {
             Log.myPage.debug("SubjectListView appeared - calling API")
