@@ -31,10 +31,14 @@ struct TeumTeumEatApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AppView(store: Self.store)
-            .onOpenURL { url in
-                if AuthApi.isKakaoTalkLoginUrl(url) {
-                    _ = AuthController.handleOpenUrl(url: url)
+            // 단위 테스트의 호스트 앱으로 실행될 때는 화면을 띄우지 않음
+            // (스플래시 등 앱 플로우가 테스트용 dependency를 호출해 테스트가 실패하는 것 방지)
+            if !isTesting {
+                AppView(store: Self.store)
+                .onOpenURL { url in
+                    if AuthApi.isKakaoTalkLoginUrl(url) {
+                        _ = AuthController.handleOpenUrl(url: url)
+                    }
                 }
             }
         }
