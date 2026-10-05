@@ -108,4 +108,84 @@ struct HomeFeatureTests {
         await store.skipReceivedActions()  // 받은 응답 액션을 모두 반영
         #expect(store.state.isLoading == false)
     }
+
+    @Test("카테고리 주제에서 캐릭터를 누르면 카테고리 요약으로 퀴즈 흐름을 시작한다")
+    func characterEatTapped_category_startsQuizFlow() async {
+        var state = HomeFeature.State()
+        state.currentGoal = Fixture.goal(id: 1, categoryId: 10)
+        state.quizStatus = Fixture.quizStatus(hasSolvedToday: true, isQuizGuideSeen: false)
+        let store = TestStore(initialState: state) {
+            HomeFeature()
+        }
+
+        let expected = ContentSummaryFeature.State(
+            documentId: 0,
+            summaryText: "",
+            hasSolvedToday: true,
+            isFirstTime: true,
+            documentType: .category,
+            quizzes: [],
+            categoryId: 10
+        )
+        await store.send(.characterEatTapped)
+        await store.receive({ action in
+            guard case let .delegate(.startQuizFlow(quizzes, summaryData, isQuizGuideSeen)) = action else { return false }
+            return quizzes.isEmpty && summaryData == expected && isQuizGuideSeen == false
+        })
+    }
+
+    @Test("문서 주제에서 캐릭터를 누르면 문서 요약으로 퀴즈 흐름을 시작한다")
+    func characterEatTapped_document_startsQuizFlow() async {
+        var state = HomeFeature.State()
+        state.currentGoal = Fixture.documentGoal(id: 3, documentId: 30)
+        state.quizStatus = Fixture.quizStatus()
+        let store = TestStore(initialState: state) {
+            HomeFeature()
+        }
+
+        let expected = ContentSummaryFeature.State(
+            documentId: 30,
+            summaryText: "",
+            hasSolvedToday: false,
+            isFirstTime: true,
+            documentType: .document,
+            quizzes: [],
+            goalId: 3
+        )
+        await store.send(.characterEatTapped)
+        await store.receive({ action in
+            guard case let .delegate(.startQuizFlow(quizzes, summaryData, isQuizGuideSeen)) = action else { return false }
+            return quizzes.isEmpty && summaryData == expected && isQuizGuideSeen == true
+        })
+    }
+
+    @Test("주제를 완료했으면 캐릭터를 눌러도 퀴즈 대신 완료 알럿을 띄운다")
+    func characterEatTapped_goalCompleted_showsAlert() async {
+        var state = HomeFeature.State()
+        state.currentGoal = Fixture.goal()
+        state.isGoalCompleted = true
+        let store = TestStore(initialState: state) {
+            HomeFeature()
+        }
+
+        await store.send(.characterEatTapped) {
+            $0.showGoalCompletedAlert = true
+        }
+    }
+
+    @Test("오늘 퀴즈를 이미 풀었거나 목표가 없으면 캐릭터를 눌러도 아무 일도 없다")
+    func characterEatTapped_completedTodayOrNoGoal_doesNothing() async {
+        var state = HomeFeature.State()
+        state.currentGoal = Fixture.goal()
+        state.isTodayQuizCompleted = true
+        let store = TestStore(initialState: state) {
+            HomeFeature()
+        }
+        await store.send(.characterEatTapped)
+
+        let emptyStore = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        }
+        await emptyStore.send(.characterEatTapped)
+    }
 }

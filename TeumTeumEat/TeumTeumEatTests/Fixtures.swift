@@ -24,6 +24,16 @@ enum Fixture {
         """)
     }
 
+    static func documentGoal(id: Int = 3, documentId: Int = 30) -> GoalResponse {
+        decode("""
+        {
+          "goalId": \(id), "type": "DOCUMENT", "startDate": "2026-10-01", "endDate": "2026-10-28",
+          "studyPeriod": "4", "difficulty": "중", "prompt": null, "fileName": "회의록.pdf",
+          "category": null, "documentId": \(documentId), "isExpired": false, "isCompleted": false
+        }
+        """)
+    }
+
     static func quizStatus(
         hasSolvedToday: Bool = false,
         availableQuizCount: Int = 1,
