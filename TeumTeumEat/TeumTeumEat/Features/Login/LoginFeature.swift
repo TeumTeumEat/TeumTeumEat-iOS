@@ -11,6 +11,7 @@ import KakaoSDKUser
 
 @Reducer
 struct LoginFeature {
+    @Dependency(\.analyticsClient) var analyticsClient
     @ObservableState
     struct State: Equatable {
         var isLoading = false
@@ -141,9 +142,9 @@ struct LoginFeature {
                     // Analytics
                     let method = state.pendingProvider?.rawValue.lowercased() ?? "unknown"
                     if state.isNewUser {
-                        AnalyticsManager.logSignUp(method: method)
+                        analyticsClient.log(.signUp(method: method))
                     } else {
-                        AnalyticsManager.logLogin(method: method)
+                        analyticsClient.log(.login(method: method))
                     }
 
                     Log.auth.debug("다음 화면 분기:")
