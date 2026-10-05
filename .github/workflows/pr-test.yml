@@ -1,0 +1,95 @@
+name: PR Unit Tests
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+  workflow_dispatch: # 수동 실행 가능
+
+# 같은 PR에 새 커밋이 push되면 이전 실행 취소
+concurrency:
+  group: pr-test-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: TeumTeumEatTests
+    runs-on: macos-26
+    timeout-minutes: 40
+
+    env:
+      PROJECT: TeumTeumEat/TeumTeumEat.xcodeproj
+      SCHEME: TeumTeumEat
+      SOURCE_PACKAGES: ${{ github.workspace }}/SourcePackages
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Create dummy config files
+        run: .github/scripts/create-ci-config.sh
+
+      - name: Cache SPM packages
+        uses: actions/cache@v4
+        with:
+          path: SourcePackages
+          key: spm-${{ runner.os }}-${{ hashFiles('TeumTeumEat/TeumTeumEat.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved', 'TeumTeumEat/Packages/*/Package.swift') }}
+          restore-keys: spm-${{ runner.os }}-
+
+      - name: Resolve packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -clonedSourcePackagesDirPath "$SOURCE_PACKAGES"
+
+      - name: Pick iPhone simulator
+        run: |
+          # 러너 이미지마다 설치된 시뮬레이터가 달라 사용 가능한 iPhone 중 최신 런타임을 선택
+          UDID=$(xcrun simctl list devices available -j | jq -r '
+            .devices | to_entries
+            | map(select(.key | contains("iOS")))
+            | sort_by(.key | capture("iOS-(?<maj>[0-9]+)-(?<min>[0-9]+)") | [(.maj|tonumber), (.min|tonumber)])
+            | last.value
+            | map(select(.name | startswith("iPhone")))
+            | first.udid')
+          echo "Simulator: $UDID"
+          xcrun simctl list devices | grep "$UDID"
+          echo "SIMULATOR_UDID=$UDID" >> "$GITHUB_ENV"
+
+      - name: Run unit tests
+        run: |
+          set +e
+          xcodebuild test \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
+            -only-testing:TeumTeumEatTests \
+            -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" \
+            -skipMacroValidation \
+            -skipPackagePluginValidation \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO \
+            > xcodebuild.log 2>&1
+          STATUS=$?
+          # 전체 로그는 실패 시 아티팩트로 올리고, 콘솔에는 에러/테스트 결과만 출력
+          grep -E '(error:|^Test (case|suite)|\*\* )' xcodebuild.log || tail -50 xcodebuild.log
+          if [ -d TestResults.xcresult ]; then
+            xcrun xcresulttool get test-results summary --path TestResults.xcresult \
+              | jq '{result, totalTestCount, passedTests, failedTests, skippedTests}'
+          fi
+          exit $STATUS
+
+      - name: Upload test results (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            TestResults.xcresult
+            xcodebuild.log
+          retention-days: 7
