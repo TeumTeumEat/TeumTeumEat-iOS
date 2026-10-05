@@ -49,6 +49,16 @@ enum Fixture {
         currentStreak: 2
     )
 
+    static let historyItems = [
+        HistoryItemResponse(id: 1, type: "CATEGORY", title: "SwiftUI", summarySnippet: "선언형 UI", lastStudiedAt: "2026-10-01"),
+        HistoryItemResponse(id: 2, type: "DOCUMENT", title: "회의록.pdf", summarySnippet: "회의 요약", lastStudiedAt: "2026-10-01"),
+    ]
+
+    static let topicCategories = [
+        HistoryCategoryResponse(categoryName: "SwiftUI", histories: [historyItems[0]]),
+        HistoryCategoryResponse(categoryName: "회의록.pdf", histories: [historyItems[1]]),
+    ]
+
     static let quizzes = [
         UserQuiz(quizId: 1, question: "SwiftUI는 선언형인가요?", options: ["O", "X"], type: "OX"),
         UserQuiz(quizId: 2, question: "상태 관리 래퍼는?", options: ["@State", "@Binding", "@Bindable", "@Environment"], type: "MULTIPLE"),
