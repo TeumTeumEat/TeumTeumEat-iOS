@@ -33,6 +33,8 @@ struct MyPageFeature {
         var showNotificationSettingsAlert: Bool = false
         var showLogoutAlert: Bool = false
         var showWithdrawalAlert: Bool = false
+        var isWithdrawing: Bool = false
+        var withdrawalErrorMessage: String?
         
         // 계정 정보
         var socialLoginType: SocialLoginType = .apple
@@ -62,6 +64,8 @@ struct MyPageFeature {
         case confirmWithdrawal
         case cancelWithdrawal
         case withdrawalResponse(Result<Void, Error>)
+        case withdrawalRetryTapped
+        case withdrawalErrorDismissed
         case delegate(Delegate)
         
         enum Delegate {
@@ -316,8 +320,11 @@ struct MyPageFeature {
                 return .none
                 
             case .confirmWithdrawal:
+                // 응답 대기 중 중복 요청 방지
+                guard !state.isWithdrawing else { return .none }
                 Log.myPage.debug("회원탈퇴 확인됨 - API 호출")
                 state.showWithdrawalAlert = false
+                state.isWithdrawing = true
                 return .run { send in
                     do {
                         try await userClient.withdrawUser()
@@ -334,12 +341,23 @@ struct MyPageFeature {
                 
             case .withdrawalResponse(.success):
                 Log.myPage.debug("회원탈퇴 성공")
+                state.isWithdrawing = false
                 analyticsClient.log(.accountDelete)
                 return .send(.delegate(.withdrawal))
                 
             case .withdrawalResponse(.failure(let error)):
                 Log.myPage.error("회원탈퇴 실패: \(error)")
-                // TODO: 에러 Alert 표시
+                state.isWithdrawing = false
+                state.withdrawalErrorMessage = (error as? APIError)?.overlayMessage
+                    ?? "회원탈퇴에 실패했어요. 잠시 후 다시 시도해 주세요."
+                return .none
+
+            case .withdrawalRetryTapped:
+                state.withdrawalErrorMessage = nil
+                return .send(.confirmWithdrawal)
+
+            case .withdrawalErrorDismissed:
+                state.withdrawalErrorMessage = nil
                 return .none
                 
             case .delegate:
