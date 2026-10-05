@@ -24,6 +24,16 @@ enum Fixture {
         """)
     }
 
+    static func documentGoal(id: Int = 3, documentId: Int = 30) -> GoalResponse {
+        decode("""
+        {
+          "goalId": \(id), "type": "DOCUMENT", "startDate": "2026-10-01", "endDate": "2026-10-28",
+          "studyPeriod": "4", "difficulty": "중", "prompt": null, "fileName": "회의록.pdf",
+          "category": null, "documentId": \(documentId), "isExpired": false, "isCompleted": false
+        }
+        """)
+    }
+
     static func quizStatus(
         hasSolvedToday: Bool = false,
         availableQuizCount: Int = 1,
@@ -48,6 +58,16 @@ enum Fixture {
         totalStamps: 3,
         currentStreak: 2
     )
+
+    static let historyItems = [
+        HistoryItemResponse(id: 1, type: "CATEGORY", title: "SwiftUI", summarySnippet: "선언형 UI", lastStudiedAt: "2026-10-01"),
+        HistoryItemResponse(id: 2, type: "DOCUMENT", title: "회의록.pdf", summarySnippet: "회의 요약", lastStudiedAt: "2026-10-01"),
+    ]
+
+    static let topicCategories = [
+        HistoryCategoryResponse(categoryName: "SwiftUI", histories: [historyItems[0]]),
+        HistoryCategoryResponse(categoryName: "회의록.pdf", histories: [historyItems[1]]),
+    ]
 
     static let quizzes = [
         UserQuiz(quizId: 1, question: "SwiftUI는 선언형인가요?", options: ["O", "X"], type: "OX"),

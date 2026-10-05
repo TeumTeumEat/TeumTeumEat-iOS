@@ -20,7 +20,9 @@ final class RewardedAdManager: NSObject, ObservableObject {
     private var didClickOutToAppStore: Bool = false
 
     // 광고 조기 종료 시 유저에게 안내할 콜백
-    var onAdInterrupted: (() -> Void)?
+    private var interruptedHandler: (() -> Void)?
+    // 광고 표시가 끝났을 때(정상 종료 / 조기 종료 / 표시 실패 / 표시 불가) 호출
+    private var finishedHandler: (() -> Void)?
 
     private override init() {}
 
@@ -39,17 +41,24 @@ final class RewardedAdManager: NSObject, ObservableObject {
         }
     }
 
-    func showAd(onRewarded: @escaping () -> Void) {
+    func showAd(
+        onRewarded: @escaping () -> Void,
+        onInterrupted: @escaping () -> Void,
+        onFinished: @escaping () -> Void
+    ) {
         guard !isAdShowing else {
             Log.ad.debug("Ad is already showing")
+            onFinished()
             return
         }
         guard let ad = rewardedAd else {
             Log.ad.debug("Ad not ready")
+            onFinished()
             return
         }
         guard let topVC = topViewController() else {
             Log.ad.debug("topViewController를 찾을 수 없습니다")
+            onFinished()
             return
         }
 
@@ -57,6 +66,8 @@ final class RewardedAdManager: NSObject, ObservableObject {
         rewardEarned = false
         didClickOutToAppStore = false
         pendingRewardHandler = onRewarded
+        interruptedHandler = onInterrupted
+        finishedHandler = onFinished
         isAdShowing = true
 
         ad.fullScreenContentDelegate = self
@@ -68,6 +79,14 @@ final class RewardedAdManager: NSObject, ObservableObject {
 
         rewardedAd = nil
         isAdReady = false
+    }
+
+    private func resetHandlers() {
+        pendingRewardHandler = nil
+        interruptedHandler = nil
+        finishedHandler = nil
+        rewardEarned = false
+        didClickOutToAppStore = false
     }
 
     private func topViewController(from base: UIViewController? = nil) -> UIViewController? {
@@ -114,23 +133,20 @@ extension RewardedAdManager: FullScreenContentDelegate {
             pendingRewardHandler?()
         } else {
             Log.ad.debug("[AdManager] 광고 시청 미완료로 보상 미지급")
-            onAdInterrupted?()
+            interruptedHandler?()
         }
 
-        pendingRewardHandler = nil
-        rewardEarned = false
-        didClickOutToAppStore = false
-
+        finishedHandler?()
+        resetHandlers()
         loadAd()
     }
 
     // 광고 표시 실패
     func ad(_ ad: FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {
         isAdShowing = false
-        pendingRewardHandler = nil
-        rewardEarned = false
-        didClickOutToAppStore = false
         Log.ad.error("[AdManager] 광고 표시 실패: \(error)")
+        finishedHandler?()
+        resetHandlers()
         loadAd()
     }
 }
