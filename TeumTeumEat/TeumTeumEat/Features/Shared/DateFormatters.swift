@@ -14,6 +14,8 @@ enum DateFormatters {
     static let yearMonthDay = fixed("yyyy-MM-dd")
     /// "2026-10-05T12:34:56.123456" (서버 일시, 타임존 없음)
     static let serverDateTime = fixed("yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
+    /// "2026-10-05T12:34:56+09:00" (ISO 8601)
+    static let iso8601 = ISO8601DateFormatter()
     /// "2026-10-05T12:34:56.123Z" (ISO 8601, 소수 초 포함)
     static let iso8601WithFractionalSeconds: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
