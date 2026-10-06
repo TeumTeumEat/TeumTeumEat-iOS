@@ -76,6 +76,12 @@ enum AnalyticsEvent: Equatable, Sendable {
     case historyTabSelect(tab: String)
     case notificationToggle(enabled: Bool)
 
+    // 리그
+    /// source: home(1등 도전 말풍선) / history(상단 배너)
+    case leagueView(source: String)
+    /// 리그 화면 "순위 올리기" 버튼
+    case leagueRankUpClick
+
     var name: String {
         switch self {
         case .login: AnalyticsEventLogin
@@ -103,6 +109,8 @@ enum AnalyticsEvent: Equatable, Sendable {
         case .subjectAddCancel: "subject_add_cancel"
         case .historyTabSelect: "history_tab_select"
         case .notificationToggle: "notification_toggle"
+        case .leagueView: "league_view"
+        case .leagueRankUpClick: "league_rank_up_click"
         }
     }
 
@@ -135,13 +143,15 @@ enum AnalyticsEvent: Equatable, Sendable {
             ["has_active_subjects": hasActiveSubjects ? "true" : "false"]
         case let .subjectAddStart(contentType, source):
             ["content_type": contentType, "source": source]
+        case let .leagueView(source):
+            ["source": source]
         case let .subjectAddCancel(contentType, step):
             ["content_type": contentType, "step": step]
         case let .historyTabSelect(tab):
             ["tab": tab]
         case let .notificationToggle(enabled):
             ["enabled": enabled ? "true" : "false"]
-        case .logout, .accountDelete, .adRewardRequest, .adRewardEarned, .adInterrupted:
+        case .logout, .accountDelete, .adRewardRequest, .adRewardEarned, .adInterrupted, .leagueRankUpClick:
             nil
         }
     }
@@ -177,6 +187,7 @@ enum AnalyticsScreen: String {
     case myPage = "my_page"
     case subjectList = "subject_list"
     case appSettings = "app_settings"
+    case league
 }
 
 extension View {

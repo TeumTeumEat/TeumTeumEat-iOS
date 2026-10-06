@@ -20,8 +20,13 @@ struct HomeView: View {
                     stampCount: store.stampCount,
                     onSettingTapped: {
                         store.send(.settingTapped)
+                    },
+                    onLeagueTapped: {
+                        store.send(.leagueTapped)
                     }
                 )
+                // 리그 말풍선이 아래 콘텐츠 위에 보이도록
+                .zIndex(1)
                 
                 Spacer()
                     .frame(height: topSpacing)
@@ -226,6 +231,8 @@ struct HomeNavigationBar: View {
     let fireCount: Int
     let stampCount: Int
     let onSettingTapped: () -> Void
+    /// nil이 아니면 불꽃 아래 "1등 도전" 말풍선 표시 (Home에서만)
+    var onLeagueTapped: (() -> Void)? = nil
     
     var body: some View {
         HStack(spacing: 0) {
@@ -249,6 +256,15 @@ struct HomeNavigationBar: View {
                 Text("\(fireCount)")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.black)
+            }
+            .overlay(alignment: .top) {
+                if let onLeagueTapped {
+                    // 레이아웃에 영향 없이 nav bar 아래로 띄움
+                    SpeechBubbleView(text: "1등 도전 👑", style: .dark)
+                        .fixedSize()
+                        .offset(y: 30)
+                        .onTapGesture { onLeagueTapped() }
+                }
             }
             
             Spacer()
@@ -284,26 +300,40 @@ struct HomeNavigationBar: View {
 
 // MARK: - Speech Bubble
 struct SpeechBubbleView: View {
-    var body: some View {
-        VStack(alignment: .trailing, spacing: 0) {
-            // 말풍선 꼬리 - 오른쪽 상단, 위를 향함
-            TriangleUp()
-                .fill(Color.white)
-                .frame(width: 14, height: 8)
-                .shadow(color: .black.opacity(0.12), radius: 2, x: 0, y: -2)
-                .padding(.trailing, 16)
+    enum Style {
+        /// 흰 배경 + 검정 글씨, 꼬리 오른쪽 (퀴즈 더 풀기)
+        case light
+        /// 검정 배경 + 흰 글씨, 작은 크기, 꼬리 가운데 (리그 1등 도전)
+        case dark
+    }
 
-            Text("음냐냐.. 퀴즈 더 풀고싶다~ click!")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.black)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
+    var text: String = "음냐냐.. 퀴즈 더 풀고싶다~ click!"
+    var style: Style = .light
+
+    var body: some View {
+        VStack(alignment: style == .light ? .trailing : .center, spacing: 0) {
+            // 말풍선 꼬리 - 위를 향함
+            TriangleUp()
+                .fill(backgroundColor)
+                .frame(width: style == .light ? 14 : 10, height: style == .light ? 8 : 6)
+                .shadow(color: .black.opacity(style == .light ? 0.12 : 0), radius: 2, x: 0, y: -2)
+                .padding(.trailing, style == .light ? 16 : 0)
+
+            Text(text)
+                .font(.system(size: style == .light ? 13 : 12, weight: .medium))
+                .foregroundColor(style == .light ? .black : .white)
+                .padding(.horizontal, style == .light ? 14 : 10)
+                .padding(.vertical, style == .light ? 10 : 6)
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.white)
+                    RoundedRectangle(cornerRadius: style == .light ? 12 : 8)
+                        .fill(backgroundColor)
                         .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 2)
                 )
         }
+    }
+
+    private var backgroundColor: Color {
+        style == .light ? .white : .black
     }
 }
 

@@ -60,6 +60,11 @@ struct MainTabView: View {
             ) { myPageStore in
                 MyPageView(store: myPageStore)
             }
+            .navigationDestination(
+                item: $store.scope(state: \.destination?.league, action: \.destination.league)
+            ) { leagueStore in
+                LeagueView(store: leagueStore)
+            }
             .navigationBarHidden(true)
         }
         .fullScreenCover(

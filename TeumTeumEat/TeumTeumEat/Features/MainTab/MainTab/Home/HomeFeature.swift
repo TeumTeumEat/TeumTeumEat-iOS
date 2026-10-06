@@ -89,6 +89,7 @@ struct HomeFeature {
         case goalCompletedSelectExistingTapped
         case fetchActiveGoalsResponse(Result<[GoalResponse], Error>)
         case settingTapped
+        case leagueTapped
         case characterEatTapped
         case speechBubbleTapped
         case dismissCouponModal
@@ -109,6 +110,7 @@ struct HomeFeature {
             isQuizGuideSeen: Bool
         )
         case openMyPageRequested
+        case openLeagueRequested
         case startNewGoalTapped
     }
     
@@ -266,6 +268,9 @@ struct HomeFeature {
 
             case .settingTapped:
                 return .send(.delegate(.openMyPageRequested))
+
+            case .leagueTapped:
+                return .send(.delegate(.openLeagueRequested))
 
             case .speechBubbleTapped:
                 state.showCouponModal = true

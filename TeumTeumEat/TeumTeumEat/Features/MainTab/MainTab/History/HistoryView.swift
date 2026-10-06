@@ -49,6 +49,12 @@ struct HistoryView: View {
                         tabs: store.tabs
                     )
                     .padding(.top, 1)
+
+                    LeagueEntryBanner {
+                        store.send(.leagueTapped)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
                     
                     VStack(spacing: 16) {
                         switch store.selectedTab {
@@ -313,5 +319,31 @@ struct StampCountCapsule: View {
             Capsule()
                 .fill(backgroundColor)
         )
+    }
+}
+
+// MARK: - League Entry Banner
+
+/// 히스토리 상단 리그 진입 배너
+private struct LeagueEntryBanner: View {
+    let onTapped: () -> Void
+
+    var body: some View {
+        Button(action: onTapped) {
+            HStack(spacing: 0) {
+                Text("리그에 진입해 1등에 도전해 보세요 👑")
+                    .font(.system(size: 13, weight: .medium))
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .frame(height: 40)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.black)
+            )
+        }
     }
 }

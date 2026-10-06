@@ -18,6 +18,7 @@ public struct Log: Sendable {
     public static let home = Log(category: "Home")
     public static let quiz = Log(category: "Quiz")
     public static let history = Log(category: "History")
+    public static let league = Log(category: "League")
     public static let myPage = Log(category: "MyPage")
     public static let register = Log(category: "Register")
     public static let onboarding = Log(category: "Onboarding")
