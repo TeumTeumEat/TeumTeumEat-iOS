@@ -29,10 +29,13 @@ struct MainTabFeatureTests {
         }
     }
 
-    @Test("홈 / 히스토리에서 리그 진입을 요청하면 리그 화면을 띄운다")
+    @Test("홈 / 히스토리에서 리그 진입을 요청하면 리그 화면을 띄우고 진입 위치를 기록한다")
     func openLeagueRequested_presentsLeague() async {
+        let events = LockIsolated<[AnalyticsEvent]>([])
         let store = TestStore(initialState: MainTabFeature.State()) {
             MainTabFeature()
+        } withDependencies: {
+            $0.analyticsClient.log = { event in events.withValue { $0.append(event) } }
         }
 
         await store.send(.home(.delegate(.openLeagueRequested))) {
@@ -44,6 +47,7 @@ struct MainTabFeatureTests {
         await store.send(.quiz(.delegate(.openLeagueRequested))) {
             $0.destination = .league(LeagueFeature.State())
         }
+        #expect(events.value == [.leagueView(source: "home"), .leagueView(source: "history")])
     }
 
     @Test("리그에서 순위 올리기를 누르면 리그를 닫고 홈 탭으로 이동한다")
