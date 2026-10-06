@@ -144,8 +144,8 @@ struct LeagueFeature {
 private extension Color {
     /// 배경 그라데이션 시작색 (0% #FAFFD2 → 100% #FFFFFF)
     static let leagueBackgroundTop = Color(hex: "#FAFFD2")
-    // TODO: 시안 수치(hex) 받으면 교체 — 현재는 시안 이미지 기준 근사값
-    static let leagueMyRow = Color(hex: "#F4F9C4")
+    /// 랭킹 리스트에서 내 줄 강조색
+    static let leagueMyRow = Color(hex: "#F8FFBA")
 }
 
 struct LeagueView: View {
