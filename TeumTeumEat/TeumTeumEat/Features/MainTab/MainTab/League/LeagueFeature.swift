@@ -5,6 +5,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import Lottie
 
 /// 주간 리그 랭킹 화면 (Home / History에서 push로 진입)
 @Reducer
@@ -144,9 +145,6 @@ struct LeagueFeature {
 private extension Color {
     static let leagueBackgroundTop = Color(hex: "#F3F8CC")
     static let leagueMyRow = Color(hex: "#F4F9C4")
-    static let crownGold = Color(hex: "#FFC93C")
-    static let crownSilver = Color(hex: "#C9CCD1")
-    static let crownBronze = Color(hex: "#E8A23A")
 }
 
 struct LeagueView: View {
@@ -177,7 +175,7 @@ struct LeagueView: View {
                 VStack(spacing: 0) {
                     LeagueHeaderView()
                         .padding(.top, 24)
-                    LeaguePodiumView(rankers: store.podium)
+                    LeaguePodiumView(rankers: store.podium, isParticipating: league.myRank != nil)
                         .padding(.top, 28)
                     LazyVStack(spacing: 0) {
                         ForEach(store.restRankers) { ranker in
@@ -262,45 +260,54 @@ private struct LeagueHeaderView: View {
 
 private struct LeaguePodiumView: View {
     let rankers: [LeagueRanker]
+    /// 이번 주 리그 참여 여부 (1위 카드 Lottie 분기)
+    let isParticipating: Bool
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 14) {
             // 시상대 순서: 2위 - 1위 - 3위
-            podiumCard(at: 1, crownColor: .crownSilver, isFirst: false)
-            podiumCard(at: 0, crownColor: .crownGold, isFirst: true)
-            podiumCard(at: 2, crownColor: .crownBronze, isFirst: false)
+            sideCard(at: 1, crownImage: "icon_crown_second")
+            LeagueFirstPlaceCard(
+                ranker: rankers.first,
+                animation: isParticipating ? .inProgress : .unfilled
+            )
+            sideCard(at: 2, crownImage: "icon_crown_third")
         }
     }
 
     @ViewBuilder
-    private func podiumCard(at index: Int, crownColor: Color, isFirst: Bool) -> some View {
+    private func sideCard(at index: Int, crownImage: String) -> some View {
         if rankers.indices.contains(index) {
-            LeaguePodiumCard(ranker: rankers[index], crownColor: crownColor, isFirst: isFirst)
+            LeagueSideCard(ranker: rankers[index], crownImage: crownImage)
+                // 1위 Lottie 카드 아래쪽 여백만큼 올려 바닥선을 맞춤
+                .padding(.bottom, 2)
         } else {
-            Color.clear.frame(width: LeaguePodiumCard.width(isFirst: isFirst))
+            Color.clear.frame(width: LeagueSideCard.width)
         }
     }
 }
 
-private struct LeaguePodiumCard: View {
-    let ranker: LeagueRanker
-    let crownColor: Color
-    let isFirst: Bool
+/// 2위 / 3위 카드
+private struct LeagueSideCard: View {
+    static let width: CGFloat = 88
 
-    static func width(isFirst: Bool) -> CGFloat { isFirst ? 118 : 88 }
+    let ranker: LeagueRanker
+    let crownImage: String
 
     var body: some View {
         VStack(spacing: 4) {
-            // TODO: 왕관 / 1위 캐릭터 에셋 받으면 교체
-            LeagueCrown(rank: ranker.rank, color: crownColor, size: isFirst ? 36 : 28)
+            Image(crownImage)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 32, height: 32)
 
-            VStack(spacing: isFirst ? 6 : 4) {
+            VStack(spacing: 4) {
                 Text(LeagueNickname.shortMasked(ranker.nickname))
-                    .font(.system(size: isFirst ? 20 : 16, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.gray900)
-                LeagueSnackCountText(count: ranker.snackCount, numberSize: isFirst ? 24 : 20)
+                LeagueSnackCountText(count: ranker.snackCount, numberSize: 20)
             }
-            .frame(width: Self.width(isFirst: isFirst), height: isFirst ? 96 : 72)
+            .frame(width: Self.width, height: 72)
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color.white)
@@ -314,20 +321,72 @@ private struct LeaguePodiumCard: View {
     }
 }
 
-private struct LeagueCrown: View {
-    let rank: Int
-    let color: Color
-    let size: CGFloat
+/// 1위 카드 (카드 배경 + 캐릭터 + 왕관이 Lottie에 포함되어 있어 텍스트만 카드 영역에 얹음)
+private struct LeagueFirstPlaceCard: View {
+    enum Animation {
+        /// 이번 주 참여함 (스낵을 하나라도 모음)
+        case inProgress
+        /// 이번 주 미참여
+        case unfilled
+
+        var name: String {
+            switch self {
+            case .inProgress: "lottie_league_rank1_in_progress"
+            case .unfilled: "lottie_league_rank1_unfilled"
+            }
+        }
+
+        /// Lottie 원본 크기 (1pt = 1px로 그려야 카드 폭이 시안의 118과 맞음)
+        var size: CGSize {
+            switch self {
+            case .inProgress: CGSize(width: 123, height: 153)
+            case .unfilled: CGSize(width: 130, height: 161)
+            }
+        }
+
+        /// Lottie 안 league_card 레이어 영역 (118.8 x 98.8)
+        var cardFrame: CGRect {
+            switch self {
+            case .inProgress: CGRect(x: 2, y: 52, width: 119, height: 99)
+            case .unfilled: CGRect(x: 2, y: 60, width: 119, height: 99)
+            }
+        }
+
+        /// in_progress Lottie의 카드에는 테두리가 없어 흰 배경에서 묻히므로 2·3위 카드와 같은 테두리를 덧그림
+        var needsCardBorder: Bool { self == .inProgress }
+    }
+
+    let ranker: LeagueRanker?
+    let animation: Animation
 
     var body: some View {
-        Image(systemName: "crown.fill")
-            .font(.system(size: size))
-            .foregroundColor(color)
-            .overlay(alignment: .center) {
-                Text("\(rank)")
-                    .font(.system(size: size * 0.35, weight: .bold))
-                    .foregroundColor(.white)
-                    .offset(y: size * 0.1)
+        LottieView(animation: .named(animation.name))
+            .playing(loopMode: .loop)
+            .frame(width: animation.size.width, height: animation.size.height)
+            .background(alignment: .topLeading) {
+                if animation.needsCardBorder {
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white)
+                        .shadow(color: .black.opacity(0.06), radius: 8, y: 2)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.gray200, lineWidth: 1)
+                        )
+                        .frame(width: animation.cardFrame.width, height: animation.cardFrame.height)
+                        .offset(x: animation.cardFrame.minX, y: animation.cardFrame.minY)
+                }
+            }
+            .overlay(alignment: .topLeading) {
+                if let ranker {
+                    VStack(spacing: 6) {
+                        Text(LeagueNickname.shortMasked(ranker.nickname))
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.gray900)
+                        LeagueSnackCountText(count: ranker.snackCount, numberSize: 24)
+                    }
+                    .frame(width: animation.cardFrame.width, height: animation.cardFrame.height)
+                    .offset(x: animation.cardFrame.minX, y: animation.cardFrame.minY)
+                }
             }
     }
 }
