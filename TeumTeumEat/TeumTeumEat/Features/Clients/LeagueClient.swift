@@ -4,12 +4,16 @@
 //
 
 import ComposableArchitecture
+import CoreNetwork
 import Foundation
 
 /// 주간 리그 API
 @DependencyClient
 struct LeagueClient {
     var fetchLeague: @Sendable () async throws -> LeagueResponse
+    /// 마지막으로 결과 모달을 보여준 주차
+    var lastSeenResultWeek: @Sendable () -> String? = { nil }
+    var setLastSeenResultWeek: @Sendable (_ weekStartDate: String) -> Void
 }
 
 extension LeagueClient: DependencyKey {
@@ -19,11 +23,15 @@ extension LeagueClient: DependencyKey {
             // 로딩 상태 확인용 네트워크 지연
             try await Task.sleep(for: .milliseconds(500))
             return .mock.endingNextSundayMidnight()
-        }
+        },
+        lastSeenResultWeek: { UserDefaultsManager.leagueLastSeenResultWeek },
+        setLastSeenResultWeek: { UserDefaultsManager.leagueLastSeenResultWeek = $0 }
     )
 
     static let previewValue = LeagueClient(
-        fetchLeague: { .mock }
+        fetchLeague: { .mock },
+        lastSeenResultWeek: { nil },
+        setLastSeenResultWeek: { _ in }
     )
 
     // 테스트에서 override하지 않은 API가 호출되면 테스트 실패
@@ -44,7 +52,8 @@ private extension LeagueResponse {
             isActive: isActive,
             weekEndAt: DateFormatters.iso8601.string(from: nextMonday),
             myRank: myRank,
-            rankers: rankers
+            rankers: rankers,
+            lastWeekResult: LeagueWeekResult.mock
         )
     }
 }

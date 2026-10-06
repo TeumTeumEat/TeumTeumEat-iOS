@@ -17,6 +17,18 @@ struct LeagueResponse: Decodable, Equatable {
     let myRank: LeagueMyRank?
     /// 랭킹 보드 (서버에서 순위 계산 후 정렬해서 내려줌, 동점이면 같은 순위)
     let rankers: [LeagueRanker]
+    /// 지난주 리그 결과 (새 주 첫 진입 시 결과 모달로 한 번 표시)
+    var lastWeekResult: LeagueWeekResult? = nil
+}
+
+struct LeagueWeekResult: Decodable, Equatable {
+    /// 주차 시작일 ("2026-09-28") — 이미 본 결과인지 구분하는 키
+    let weekStartDate: String
+    /// 제목 "9월 4주 리그 결과"용
+    let month: Int
+    let weekOfMonth: Int
+    /// 지난주 최종 순위 (참여하지 않았으면 nil → 모달 표시 안 함)
+    let rank: Int?
 }
 
 struct LeagueRanker: Decodable, Equatable, Identifiable {
@@ -94,5 +106,14 @@ extension LeagueResponse {
         weekEndAt: mock.weekEndAt,
         myRank: nil,
         rankers: mock.rankers
+    )
+}
+
+extension LeagueWeekResult {
+    static let mock = LeagueWeekResult(
+        weekStartDate: "2026-09-28",
+        month: 9,
+        weekOfMonth: 5,
+        rank: 2
     )
 }
