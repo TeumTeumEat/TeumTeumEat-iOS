@@ -301,8 +301,8 @@ private struct LeagueWeekResultView: View {
                 .foregroundColor(.black)
 
             image
-                .frame(height: 140)
-                .padding(.top, 24)
+                .frame(height: 100)
+                .padding(.top, 28)
 
             if let rank = kind.displayRank {
                 Text("\(rank)위")
@@ -328,22 +328,25 @@ private struct LeagueWeekResultView: View {
         }
     }
 
-    // TODO: 트로피 / 아쉬운 캐릭터 에셋 받으면 교체
-    @ViewBuilder
     private var image: some View {
-        switch kind {
-        case .first, .podium:
-            Image(systemName: "trophy.fill")
-                .resizable()
-                .scaledToFit()
-                .foregroundColor(Color(hex: "#FFC93C"))
-                .padding(.vertical, 10)
-        case .outOfRank:
-            Image(systemName: "face.dashed")
-                .resizable()
-                .scaledToFit()
-                .foregroundColor(.blue500)
-                .padding(.vertical, 20)
+        Group {
+            switch kind {
+            case .first:
+                Image("league_trophy_first")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 179, height: 100)
+            case .podium:
+                Image("league_trophy_podium")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 179, height: 100)
+            case .outOfRank:
+                Image("league_character_melted")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 143, height: 82)
+            }
         }
     }
 
