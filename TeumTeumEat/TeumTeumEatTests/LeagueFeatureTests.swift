@@ -195,6 +195,20 @@ struct LeagueFeatureTests {
         await store.skipCountdownTimer()
     }
 
+    @Test("i 버튼을 누르면 리그 안내를 띄우고, 딤을 탭하면 닫는다")
+    func infoTapped_presentsAndDismissesInfo() async {
+        let store = TestStore(initialState: LeagueFeature.State(league: .mock)) {
+            LeagueFeature()
+        }
+
+        await store.send(.infoTapped) {
+            $0.isInfoPresented = true
+        }
+        await store.send(.infoDismissed) {
+            $0.isInfoPresented = false
+        }
+    }
+
     @Test("순위 올리기를 누르면 클릭을 기록하고 상위 화면에 이동을 요청한다")
     func rankUpTapped_logsAndSendsDelegate() async {
         let events = LockIsolated<[AnalyticsEvent]>([])
