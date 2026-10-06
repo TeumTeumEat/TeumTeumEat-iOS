@@ -134,9 +134,14 @@ struct MainTabFeature {
                 Log.app.debug("History에서 MyPage 열기")
                 return .none
 
-            case .home(.delegate(.openLeagueRequested)),
-                 .quiz(.delegate(.openLeagueRequested)):
+            case .home(.delegate(.openLeagueRequested)):
                 state.destination = .league(LeagueFeature.State())
+                analyticsClient.log(.leagueView(source: "home"))
+                return .none
+
+            case .quiz(.delegate(.openLeagueRequested)):
+                state.destination = .league(LeagueFeature.State())
+                analyticsClient.log(.leagueView(source: "history"))
                 return .none
 
             // MARK: - League

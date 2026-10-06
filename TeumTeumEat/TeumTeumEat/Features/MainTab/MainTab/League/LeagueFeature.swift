@@ -164,6 +164,7 @@ struct LeagueView: View {
                 .ignoresSafeArea()
         )
         .navigationBarHidden(true)
+        .trackScreen(.league)
         .onAppear { store.send(.onAppear) }
     }
 
