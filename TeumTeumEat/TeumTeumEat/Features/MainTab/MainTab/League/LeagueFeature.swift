@@ -421,16 +421,15 @@ private struct LeagueNavigationBar: View {
                     .foregroundColor(.black)
             }
             Spacer()
-            // TODO: 시안 아이콘 에셋 받으면 교체
             Button(action: onShareTapped) {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 20))
-                    .foregroundColor(.black)
+                Image("icon_share")
+                    .resizable()
+                    .frame(width: 24, height: 24)
             }
             Button(action: onInfoTapped) {
-                Image(systemName: "info.circle.fill")
-                    .font(.system(size: 22))
-                    .foregroundColor(.black)
+                Image("icon_info")
+                    .resizable()
+                    .frame(width: 24, height: 24)
             }
         }
         .padding(.horizontal, 20)
