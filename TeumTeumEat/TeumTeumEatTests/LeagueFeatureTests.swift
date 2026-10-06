@@ -136,14 +136,18 @@ struct LeagueFeatureTests {
         await store.skipCountdownTimer()
     }
 
-    @Test("순위 올리기를 누르면 상위 화면에 이동을 요청한다")
-    func rankUpTapped_sendsDelegate() async {
+    @Test("순위 올리기를 누르면 클릭을 기록하고 상위 화면에 이동을 요청한다")
+    func rankUpTapped_logsAndSendsDelegate() async {
+        let events = LockIsolated<[AnalyticsEvent]>([])
         let store = TestStore(initialState: LeagueFeature.State(league: .mock)) {
             LeagueFeature()
+        } withDependencies: {
+            $0.analyticsClient.log = { event in events.withValue { $0.append(event) } }
         }
 
         await store.send(.rankUpTapped)
         await store.receive(\.delegate.rankUpRequested)
+        #expect(events.value == [.leagueRankUpClick])
     }
 
     @Test("뒤로가기를 누르면 화면을 닫는다")
