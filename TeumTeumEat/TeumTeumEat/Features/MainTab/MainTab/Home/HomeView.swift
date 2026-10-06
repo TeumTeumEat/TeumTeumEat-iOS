@@ -260,7 +260,7 @@ struct HomeNavigationBar: View {
             .overlay(alignment: .top) {
                 if let onLeagueTapped {
                     // 레이아웃에 영향 없이 nav bar 아래로 띄움
-                    SpeechBubbleView(text: "1등 도전", style: .dark)
+                    SpeechBubbleView(text: "1등 도전 👑", style: .dark)
                         .fixedSize()
                         .offset(y: 30)
                         .onTapGesture { onLeagueTapped() }
