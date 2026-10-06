@@ -136,6 +136,65 @@ struct LeagueFeatureTests {
         await store.skipCountdownTimer()
     }
 
+    @Test("새 주차의 지난주 결과를 아직 보지 않았으면 결과 모달을 띄우고 본 주차로 기록한다")
+    func lastWeekResult_unseen_showsModalAndMarksSeen() async {
+        var league = LeagueResponse.mock
+        league.lastWeekResult = LeagueWeekResult.mock
+        let seenWeek = LockIsolated<String?>("2026-09-21")
+        let store = TestStore(initialState: LeagueFeature.State()) {
+            LeagueFeature()
+        } withDependencies: {
+            $0.leagueClient.fetchLeague = { league }
+            $0.leagueClient.lastSeenResultWeek = { seenWeek.value }
+            $0.leagueClient.setLastSeenResultWeek = { seenWeek.setValue($0) }
+            $0.date.now = Self.weekEnd.addingTimeInterval(-10)
+            $0.continuousClock = TestClock()
+        }
+
+        await store.send(.onAppear) {
+            $0.isLoading = true
+        }
+        await store.receive(\.leagueLoaded.success) {
+            $0.isLoading = false
+            $0.league = league
+            $0.remainingSeconds = 10
+            $0.weekResult = LeagueWeekResult.mock
+        }
+        #expect(seenWeek.value == "2026-09-28")
+
+        await store.send(.weekResultDismissed) {
+            $0.weekResult = nil
+        }
+        await store.skipCountdownTimer()
+    }
+
+    @Test("이미 본 주차이거나 지난주에 참여하지 않았으면 결과 모달을 띄우지 않는다", arguments: [
+        (seenWeek: "2026-09-28", rank: 2 as Int?),
+        (seenWeek: "2026-09-21", rank: nil as Int?)
+    ])
+    func lastWeekResult_seenOrNotParticipated_doesNotShowModal(seenWeek: String, rank: Int?) async {
+        var league = LeagueResponse.mock
+        league.lastWeekResult = LeagueWeekResult(weekStartDate: "2026-09-28", month: 9, weekOfMonth: 5, rank: rank)
+        let store = TestStore(initialState: LeagueFeature.State()) {
+            LeagueFeature()
+        } withDependencies: {
+            $0.leagueClient.fetchLeague = { league }
+            $0.leagueClient.lastSeenResultWeek = { seenWeek }
+            $0.date.now = Self.weekEnd.addingTimeInterval(-10)
+            $0.continuousClock = TestClock()
+        }
+
+        await store.send(.onAppear) {
+            $0.isLoading = true
+        }
+        await store.receive(\.leagueLoaded.success) {
+            $0.isLoading = false
+            $0.league = league
+            $0.remainingSeconds = 10
+        }
+        await store.skipCountdownTimer()
+    }
+
     @Test("순위 올리기를 누르면 클릭을 기록하고 상위 화면에 이동을 요청한다")
     func rankUpTapped_logsAndSendsDelegate() async {
         let events = LockIsolated<[AnalyticsEvent]>([])
