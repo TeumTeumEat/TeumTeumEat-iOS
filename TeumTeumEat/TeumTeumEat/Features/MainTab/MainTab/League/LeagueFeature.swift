@@ -17,6 +17,8 @@ struct LeagueFeature {
         var errorMessage: String?
         /// 리그 리셋까지 남은 시간 (초)
         var remainingSeconds: Int = 0
+        /// 지난주 결과 모달 (nil이 아니면 딤 위에 표시)
+        var weekResult: LeagueWeekResult?
 
         /// 1~3위 시상대
         var podium: [LeagueRanker] { Array(league?.rankers.prefix(3) ?? []) }
@@ -39,6 +41,8 @@ struct LeagueFeature {
         case shareTapped
         case infoTapped
         case rankUpTapped
+        case weekResultDismissed
+        case weekResultShareTapped
         case leagueLoaded(Result<LeagueResponse, Error>)
         case timerTicked
         case delegate(Delegate)
@@ -83,10 +87,19 @@ struct LeagueFeature {
                 analyticsClient.log(.leagueRankUpClick)
                 return .send(.delegate(.rankUpRequested))
 
+            case .weekResultDismissed:
+                state.weekResult = nil
+                return .none
+
+            case .weekResultShareTapped:
+                // TODO: 공유 이슈에서 연결
+                return .none
+
             case .leagueLoaded(.success(let league)):
                 state.isLoading = false
                 state.league = league
                 Log.league.debug("League loaded: active=\(league.isActive), rankers=\(league.rankers.count)")
+                showWeekResultIfNeeded(&state, result: league.lastWeekResult)
 
                 guard let weekEnd = DateFormatters.iso8601.date(from: league.weekEndAt) else {
                     Log.league.error("Invalid weekEndAt: \(league.weekEndAt)")
@@ -124,6 +137,14 @@ struct LeagueFeature {
                 return .none
             }
         }
+    }
+
+    /// 지난주에 참여했고 아직 보지 않은 주차면 결과 모달을 한 번 띄움
+    private func showWeekResultIfNeeded(_ state: inout State, result: LeagueWeekResult?) {
+        guard let result, result.rank != nil,
+              leagueClient.lastSeenResultWeek() != result.weekStartDate else { return }
+        state.weekResult = result
+        leagueClient.setLastSeenResultWeek(result.weekStartDate)
     }
 
     private func remainingSeconds(until date: Date) -> Int {
@@ -164,6 +185,16 @@ struct LeagueView: View {
             LinearGradient(colors: [.leagueBackgroundTop, .white], startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea()
         )
+        .overlay {
+            if let result = store.weekResult {
+                LeagueModalContainer(onDismiss: { store.send(.weekResultDismissed) }) {
+                    LeagueWeekResultView(result: result) {
+                        store.send(.weekResultShareTapped)
+                    }
+                }
+            }
+        }
+        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: store.weekResult)
         .navigationBarHidden(true)
         .trackScreen(.league)
         .onAppear { store.send(.onAppear) }
@@ -202,6 +233,128 @@ struct LeagueView: View {
         } else {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+}
+
+// MARK: - Modal
+
+/// 딤 + 가운데 카드 (딤 영역을 탭하면 닫힘) — 결과 모달 / 리그 안내 공통
+private struct LeagueModalContainer<Content: View>: View {
+    let onDismiss: () -> Void
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+                .onTapGesture(perform: onDismiss)
+
+            content
+                .padding(.horizontal, 24)
+                .padding(.top, 28)
+                .padding(.bottom, 20)
+                .frame(maxWidth: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color.white)
+                )
+                .padding(.horizontal, 40)
+                .transition(.scale(scale: 0.95).combined(with: .opacity))
+        }
+    }
+}
+
+private struct LeagueWeekResultView: View {
+    let result: LeagueWeekResult
+    let onShareTapped: () -> Void
+
+    private enum Kind {
+        case first
+        case podium(rank: Int)
+        case outOfRank
+
+        init(rank: Int?) {
+            switch rank {
+            case 1: self = .first
+            case let rank? where rank <= 3: self = .podium(rank: rank)
+            default: self = .outOfRank
+            }
+        }
+
+        /// 순위권(1~3위)일 때만 "n위" 표시
+        var displayRank: Int? {
+            switch self {
+            case .first: 1
+            case let .podium(rank): rank
+            case .outOfRank: nil
+            }
+        }
+    }
+
+    private var kind: Kind { Kind(rank: result.rank) }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text("\(result.month)월 \(result.weekOfMonth)주 리그 결과")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.black)
+
+            image
+                .frame(height: 140)
+                .padding(.top, 24)
+
+            if let rank = kind.displayRank {
+                Text("\(rank)위")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(.black)
+                    .padding(.top, 20)
+            }
+
+            Text(message)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(.gray900)
+                .multilineTextAlignment(.center)
+                .lineSpacing(2)
+                .padding(.top, 12)
+
+            Button(action: onShareTapped) {
+                Text("공유하기")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.gray500)
+                    .padding(.vertical, 6)
+            }
+            .padding(.top, 8)
+        }
+    }
+
+    // TODO: 트로피 / 아쉬운 캐릭터 에셋 받으면 교체
+    @ViewBuilder
+    private var image: some View {
+        switch kind {
+        case .first, .podium:
+            Image(systemName: "trophy.fill")
+                .resizable()
+                .scaledToFit()
+                .foregroundColor(Color(hex: "#FFC93C"))
+                .padding(.vertical, 10)
+        case .outOfRank:
+            Image(systemName: "face.dashed")
+                .resizable()
+                .scaledToFit()
+                .foregroundColor(.blue500)
+                .padding(.vertical, 20)
+        }
+    }
+
+    private var message: String {
+        switch kind {
+        case .first:
+            "이번주 간식왕은 바로 너!🍿👑\n누구보다 열심히 틈틈이 채웠네요."
+        case .podium:
+            "이번 주도 틈틈이 잘 먹었어요!🍱\n다음주엔 한입만 더하면 1위를 노릴지도?"
+        case .outOfRank:
+            "이번주 순위권엔 진입하지 못했어요.😅\n월요일, 다시 1등을 향해 화이팅!"
         }
     }
 }
