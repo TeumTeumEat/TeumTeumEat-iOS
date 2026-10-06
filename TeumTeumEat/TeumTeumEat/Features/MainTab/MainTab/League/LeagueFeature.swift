@@ -55,6 +55,7 @@ struct LeagueFeature {
     @Dependency(\.dismiss) var dismiss
     @Dependency(\.date.now) var now
     @Dependency(\.continuousClock) var clock
+    @Dependency(\.analyticsClient) var analyticsClient
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -78,6 +79,7 @@ struct LeagueFeature {
                 return .none
 
             case .rankUpTapped:
+                analyticsClient.log(.leagueRankUpClick)
                 return .send(.delegate(.rankUpRequested))
 
             case .leagueLoaded(.success(let league)):

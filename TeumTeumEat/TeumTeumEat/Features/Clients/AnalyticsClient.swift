@@ -79,6 +79,8 @@ enum AnalyticsEvent: Equatable, Sendable {
     // 리그
     /// source: home(1등 도전 말풍선) / history(상단 배너)
     case leagueView(source: String)
+    /// 리그 화면 "순위 올리기" 버튼
+    case leagueRankUpClick
 
     var name: String {
         switch self {
@@ -108,6 +110,7 @@ enum AnalyticsEvent: Equatable, Sendable {
         case .historyTabSelect: "history_tab_select"
         case .notificationToggle: "notification_toggle"
         case .leagueView: "league_view"
+        case .leagueRankUpClick: "league_rank_up_click"
         }
     }
 
@@ -148,7 +151,7 @@ enum AnalyticsEvent: Equatable, Sendable {
             ["tab": tab]
         case let .notificationToggle(enabled):
             ["enabled": enabled ? "true" : "false"]
-        case .logout, .accountDelete, .adRewardRequest, .adRewardEarned, .adInterrupted:
+        case .logout, .accountDelete, .adRewardRequest, .adRewardEarned, .adInterrupted, .leagueRankUpClick:
             nil
         }
     }
