@@ -10,12 +10,17 @@ import Testing
 
 @MainActor
 struct LeagueFeatureTests {
-    @Test("첫 진입 시 리그 랭킹을 조회한다")
+    /// LeagueResponse.mock의 마감 시각 (2026-10-12T00:00:00+09:00)
+    private static let weekEnd = DateFormatters.iso8601.date(from: LeagueResponse.mock.weekEndAt)!
+
+    @Test("첫 진입 시 리그 랭킹을 조회하고 리셋까지 남은 시간을 계산한다")
     func onAppear_loadsLeague() async {
         let store = TestStore(initialState: LeagueFeature.State()) {
             LeagueFeature()
         } withDependencies: {
             $0.leagueClient.fetchLeague = { .mock }
+            $0.date.now = Self.weekEnd.addingTimeInterval(-(2 * 86400 + 61))
+            $0.continuousClock = TestClock()
         }
 
         await store.send(.onAppear) {
@@ -24,7 +29,12 @@ struct LeagueFeatureTests {
         await store.receive(\.leagueLoaded.success) {
             $0.isLoading = false
             $0.league = .mock
+            $0.remainingSeconds = 2 * 86400 + 61
         }
+        // 하루 이상 남아도 일 단위로 바꾸지 않고 시간을 누적해서 표시
+        #expect(store.state.remainingTimeText == "48 : 01 : 01")
+
+        await store.skipCountdownTimer()
     }
 
     @Test("이미 조회한 리그가 있으면 다시 진입해도 조회하지 않는다")
@@ -34,6 +44,58 @@ struct LeagueFeatureTests {
         }
 
         await store.send(.onAppear)
+    }
+
+    @Test("1초마다 남은 시간을 갱신하고, 리셋 시각이 되면 새 주차 리그를 다시 조회한다")
+    func timer_countsDown_thenRefetchesAtReset() async {
+        let clock = TestClock()
+        let now = LockIsolated(Self.weekEnd.addingTimeInterval(-2))
+        let nextWeek = LeagueResponse(
+            isActive: true,
+            weekEndAt: "2026-10-19T00:00:00+09:00",
+            myRank: nil,
+            rankers: []
+        )
+        let fetchCount = LockIsolated(0)
+        let store = TestStore(initialState: LeagueFeature.State()) {
+            LeagueFeature()
+        } withDependencies: {
+            $0.leagueClient.fetchLeague = {
+                fetchCount.withValue { $0 += 1 }
+                return fetchCount.value == 1 ? .mock : nextWeek
+            }
+            $0.date = DateGenerator { now.value }
+            $0.continuousClock = clock
+        }
+
+        await store.send(.onAppear) {
+            $0.isLoading = true
+        }
+        await store.receive(\.leagueLoaded.success) {
+            $0.isLoading = false
+            $0.league = .mock
+            $0.remainingSeconds = 2
+        }
+
+        now.withValue { $0.addTimeInterval(1) }
+        await clock.advance(by: .seconds(1))
+        await store.receive(\.timerTicked) {
+            $0.remainingSeconds = 1
+        }
+
+        now.withValue { $0.addTimeInterval(1) }
+        await clock.advance(by: .seconds(1))
+        await store.receive(\.timerTicked) {
+            $0.remainingSeconds = 0
+            $0.isLoading = true
+        }
+        await store.receive(\.leagueLoaded.success) {
+            $0.isLoading = false
+            $0.league = nextWeek
+            $0.remainingSeconds = 7 * 86400
+        }
+
+        await store.skipCountdownTimer()
     }
 
     @Test("조회에 실패하면 에러 메시지를 보여주고, 다시 시도하면 에러를 지우고 다시 조회한다")
@@ -48,6 +110,8 @@ struct LeagueFeatureTests {
                 }
                 return .mockInactive
             }
+            $0.date.now = Self.weekEnd.addingTimeInterval(-10)
+            $0.continuousClock = TestClock()
         }
 
         await store.send(.onAppear) {
@@ -66,7 +130,20 @@ struct LeagueFeatureTests {
         await store.receive(\.leagueLoaded.success) {
             $0.isLoading = false
             $0.league = .mockInactive
+            $0.remainingSeconds = 10
         }
+
+        await store.skipCountdownTimer()
+    }
+
+    @Test("순위 올리기를 누르면 상위 화면에 이동을 요청한다")
+    func rankUpTapped_sendsDelegate() async {
+        let store = TestStore(initialState: LeagueFeature.State(league: .mock)) {
+            LeagueFeature()
+        }
+
+        await store.send(.rankUpTapped)
+        await store.receive(\.delegate.rankUpRequested)
     }
 
     @Test("뒤로가기를 누르면 화면을 닫는다")
@@ -80,5 +157,15 @@ struct LeagueFeatureTests {
 
         await store.send(.backTapped)
         #expect(isDismissed.value)
+    }
+}
+
+private extension TestStoreOf<LeagueFeature> {
+    /// 타이머는 화면이 닫힐 때 MainTab의 @Presents가 취소하므로 단독 테스트에서는 건너뜀
+    /// (skipInFlightEffects는 건너뛴 effect를 known issue로 남겨 결과가 "expected failure"로 표시되므로 기록을 끔)
+    func skipCountdownTimer() async {
+        await withExhaustivity(.off(showSkippedAssertions: false)) {
+            await skipInFlightEffects()
+        }
     }
 }
