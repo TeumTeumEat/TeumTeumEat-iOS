@@ -56,7 +56,7 @@ final class RewardedAdManager: NSObject, ObservableObject {
             onFinished()
             return
         }
-        guard let topVC = topViewController() else {
+        guard let topVC = UIApplication.shared.topViewController() else {
             Log.ad.debug("topViewController를 찾을 수 없습니다")
             onFinished()
             return
@@ -87,25 +87,6 @@ final class RewardedAdManager: NSObject, ObservableObject {
         finishedHandler = nil
         rewardEarned = false
         didClickOutToAppStore = false
-    }
-
-    private func topViewController(from base: UIViewController? = nil) -> UIViewController? {
-        let root = base ?? UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap { $0.windows }
-            .first(where: { $0.isKeyWindow })?
-            .rootViewController
-
-        if let nav = root as? UINavigationController {
-            return topViewController(from: nav.visibleViewController)
-        }
-        if let tab = root as? UITabBarController {
-            return topViewController(from: tab.selectedViewController)
-        }
-        if let presented = root?.presentedViewController {
-            return topViewController(from: presented)
-        }
-        return root
     }
 }
 
