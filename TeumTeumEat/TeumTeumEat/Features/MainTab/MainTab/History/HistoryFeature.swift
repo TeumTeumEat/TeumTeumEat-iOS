@@ -51,6 +51,7 @@ struct HistoryFeature {
     enum Action {
         case onAppear
         case settingTapped
+        case leagueTapped
         case tabSelected(Int)
         case monthChanged(year: Int, month: Int)
         case dateSelected(String?)
@@ -69,6 +70,7 @@ struct HistoryFeature {
     
     enum Delegate {
         case openMyPageRequested
+        case openLeagueRequested
     }
     
     @Dependency(\.goalClient) var goalClient
@@ -86,6 +88,9 @@ struct HistoryFeature {
                  
              case .settingTapped:
                  return .send(.delegate(.openMyPageRequested))
+
+             case .leagueTapped:
+                 return .send(.delegate(.openLeagueRequested))
                  
              case .tabSelected(let index):
                  state.selectedTab = index

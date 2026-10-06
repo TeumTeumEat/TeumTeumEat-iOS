@@ -19,6 +19,7 @@ struct MainTabFeature {
         case addSubject(AddSubjectFlowFeature)
         case quizFlow(QuizFlowFeature)
         case myPage(MyPageFeature)
+        case league(LeagueFeature)
     }
 
     @ObservableState
@@ -131,6 +132,18 @@ struct MainTabFeature {
             case .quiz(.delegate(.openMyPageRequested)):
                 state.destination = .myPage(MyPageFeature.State())
                 Log.app.debug("History에서 MyPage 열기")
+                return .none
+
+            case .home(.delegate(.openLeagueRequested)),
+                 .quiz(.delegate(.openLeagueRequested)):
+                state.destination = .league(LeagueFeature.State())
+                return .none
+
+            // MARK: - League
+            // TODO: 순위 올리기 이동 화면 기획 확정 후 수정 (현재는 홈 탭으로 이동)
+            case .destination(.presented(.league(.delegate(.rankUpRequested)))):
+                state.destination = nil
+                state.selectedTab = .home
                 return .none
 
             // MARK: - NewGoalFlow
