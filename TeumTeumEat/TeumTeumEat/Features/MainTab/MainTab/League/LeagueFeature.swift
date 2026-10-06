@@ -19,6 +19,8 @@ struct LeagueFeature {
         var remainingSeconds: Int = 0
         /// 지난주 결과 모달 (nil이 아니면 딤 위에 표시)
         var weekResult: LeagueWeekResult?
+        /// 리그 안내 모달 (i 버튼)
+        var isInfoPresented: Bool = false
 
         /// 1~3위 시상대
         var podium: [LeagueRanker] { Array(league?.rankers.prefix(3) ?? []) }
@@ -42,6 +44,7 @@ struct LeagueFeature {
         case infoTapped
         case rankUpTapped
         case weekResultDismissed
+        case infoDismissed
         case weekResultShareTapped
         case leagueLoaded(Result<LeagueResponse, Error>)
         case timerTicked
@@ -80,7 +83,11 @@ struct LeagueFeature {
                 return .none
 
             case .infoTapped:
-                // TODO: 리그 규칙 안내 시안 받으면 연결
+                state.isInfoPresented = true
+                return .none
+
+            case .infoDismissed:
+                state.isInfoPresented = false
                 return .none
 
             case .rankUpTapped:
@@ -192,9 +199,14 @@ struct LeagueView: View {
                         store.send(.weekResultShareTapped)
                     }
                 }
+            } else if store.isInfoPresented {
+                LeagueModalContainer(onDismiss: { store.send(.infoDismissed) }) {
+                    LeagueInfoView()
+                }
             }
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.85), value: store.weekResult)
+        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: store.isInfoPresented)
         .navigationBarHidden(true)
         .trackScreen(.league)
         .onAppear { store.send(.onAppear) }
@@ -358,6 +370,38 @@ private struct LeagueWeekResultView: View {
             "이번 주도 틈틈이 잘 먹었어요!🍱\n다음주엔 한입만 더하면 1위를 노릴지도?"
         case .outOfRank:
             "이번주 순위권엔 진입하지 못했어요.😅\n월요일, 다시 1등을 향해 화이팅!"
+        }
+    }
+}
+
+/// 리그 안내 (i 버튼)
+private struct LeagueInfoView: View {
+    // TODO: 안내 문구 확정되면 교체 (현재는 정해진 리그 규칙으로 만든 초안)
+    private let rules = [
+        "퀴즈를 풀면 스낵을 모을 수 있어요. 매주 최대 77개까지 모을 수 있어요.",
+        "이번 주에 모은 스낵 개수로 순위가 정해져요.",
+        "스낵 개수가 같으면 스트릭이 긴 순, 먼저 가입한 순으로 순위가 정해져요.",
+        "리그는 매주 일요일 자정에 초기화돼요."
+    ]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text("주간 리그 안내")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.black)
+
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(rules, id: \.self) { rule in
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text("•")
+                        Text(rule)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            .font(.system(size: 15, weight: .medium))
+            .foregroundColor(.gray900)
+            .padding(.top, 20)
         }
     }
 }
