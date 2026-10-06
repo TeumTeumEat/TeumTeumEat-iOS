@@ -23,7 +23,7 @@ struct LeagueRanker: Decodable, Equatable, Identifiable {
     var id: Int { userId }
     let rank: Int
     let userId: Int
-    /// 마스킹된 닉네임 (예: 김*민)
+    /// 닉네임 (화면에는 LeagueNickname으로 마스킹해서 표시)
     let nickname: String
     /// 이번 주 모은 스낵 개수 (랭크 기준)
     let snackCount: Int
@@ -39,21 +39,50 @@ struct LeagueMyRank: Decodable, Equatable {
     let snackCount: Int
 }
 
+// MARK: - 닉네임 마스킹
+
+// TODO: 서버가 마스킹해서 내려주기로 하면 정리 (이미 마스킹된 값이 와도 같은 결과가 나옴)
+enum LeagueNickname {
+    /// 리스트 / 내 순위: 첫 글자와 마지막 글자만 남기고 가운데를 글자 수만큼 가림
+    /// 가나다라마 → 가***마, 이서민 → 이*민, 이준 → 이*
+    static func masked(_ nickname: String) -> String {
+        mask(nickname, middleCount: max(0, nickname.count - 2))
+    }
+
+    /// 1~3위 시상대: 카드 폭이 좁아 가운데를 * 하나로 줄임
+    /// 가나다라마 → 가*마, 이준 → 이*
+    static func shortMasked(_ nickname: String) -> String {
+        mask(nickname, middleCount: 1)
+    }
+
+    private static func mask(_ nickname: String, middleCount: Int) -> String {
+        guard let first = nickname.first else { return nickname }
+        switch nickname.count {
+        case 1:
+            return nickname
+        case 2:
+            return "\(first)*"
+        default:
+            return "\(first)\(String(repeating: "*", count: middleCount))\(nickname.last!)"
+        }
+    }
+}
+
 // MARK: - Mock
 
 extension LeagueResponse {
     static let mock: LeagueResponse = {
         let rankers: [(rank: Int, nickname: String, snackCount: Int)] = [
-            (1, "틈*잇", 12), (2, "김*민", 10), (3, "이*재", 9),
-            (4, "김*영", 8), (5, "임*현", 7), (5, "강*수", 7),
-            (7, "이*", 6), (8, "이*민", 5), (9, "김*주", 4),
-            (10, "박*연", 4), (11, "최*호", 3), (12, "정*아", 2),
-            (13, "윤*", 2), (14, "한*우", 1), (15, "오*림", 1)
+            (1, "틈틈잇", 12), (2, "김가나다민", 10), (3, "이수재", 9),
+            (4, "김하영", 8), (5, "임재현", 7), (5, "강민수", 7),
+            (7, "이준", 6), (8, "이서민", 5), (9, "김지주", 4),
+            (10, "박서연", 4), (11, "최지호", 3), (12, "정다아", 2),
+            (13, "윤", 2), (14, "한지우", 1), (15, "오아름림", 1)
         ]
         return LeagueResponse(
             isActive: true,
             weekEndAt: "2026-10-12T00:00:00+09:00",
-            myRank: LeagueMyRank(rank: 8, userId: 8, nickname: "이*민", todaySnackCount: 1, snackCount: 5),
+            myRank: LeagueMyRank(rank: 8, userId: 8, nickname: "이서민", todaySnackCount: 1, snackCount: 5),
             rankers: rankers.enumerated().map { index, ranker in
                 LeagueRanker(rank: ranker.rank, userId: index + 1, nickname: ranker.nickname, snackCount: ranker.snackCount)
             }

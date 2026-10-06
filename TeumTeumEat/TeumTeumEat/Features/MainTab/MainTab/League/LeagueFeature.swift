@@ -292,7 +292,7 @@ private struct LeaguePodiumCard: View {
             LeagueCrown(rank: ranker.rank, color: crownColor, size: isFirst ? 36 : 28)
 
             VStack(spacing: isFirst ? 6 : 4) {
-                Text(ranker.nickname)
+                Text(LeagueNickname.shortMasked(ranker.nickname))
                     .font(.system(size: isFirst ? 20 : 16, weight: .semibold))
                     .foregroundColor(.gray900)
                 LeagueSnackCountText(count: ranker.snackCount, numberSize: isFirst ? 24 : 20)
@@ -341,7 +341,7 @@ private struct LeagueRankerRow: View {
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.gray600)
                 .frame(width: 28, alignment: .leading)
-            Text(ranker.nickname)
+            Text(LeagueNickname.masked(ranker.nickname))
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.gray900)
             Spacer()
@@ -404,7 +404,7 @@ private struct LeagueMyRankBar: View {
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(.gray600)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(myRank.nickname)
+                    Text(LeagueNickname.masked(myRank.nickname))
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.gray900)
                     Text("오늘 \(blueNumber(myRank.todaySnackCount))스낵   총 \(blueNumber(myRank.snackCount))스낵")
