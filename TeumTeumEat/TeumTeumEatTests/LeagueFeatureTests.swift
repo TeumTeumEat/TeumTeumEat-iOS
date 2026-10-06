@@ -160,6 +160,35 @@ struct LeagueFeatureTests {
     }
 }
 
+struct LeagueNicknameTests {
+    @Test("리스트에서는 첫 글자와 마지막 글자만 남기고 가운데를 글자 수만큼 가린다", arguments: [
+        ("가나다라마", "가***마"),
+        ("이서민", "이*민"),
+        ("이준", "이*"),
+        ("윤", "윤"),
+        ("", "")
+    ])
+    func masked(nickname: String, expected: String) {
+        #expect(LeagueNickname.masked(nickname) == expected)
+    }
+
+    @Test("시상대에서는 가운데를 * 하나로 줄인다", arguments: [
+        ("가나다라마", "가*마"),
+        ("이서민", "이*민"),
+        ("이준", "이*"),
+        ("윤", "윤")
+    ])
+    func shortMasked(nickname: String, expected: String) {
+        #expect(LeagueNickname.shortMasked(nickname) == expected)
+    }
+
+    @Test("이미 마스킹된 닉네임이 와도 같은 결과로 표시한다")
+    func alreadyMasked() {
+        #expect(LeagueNickname.masked("가***마") == "가***마")
+        #expect(LeagueNickname.shortMasked("가***마") == "가*마")
+    }
+}
+
 private extension TestStoreOf<LeagueFeature> {
     /// 타이머는 화면이 닫힐 때 MainTab의 @Presents가 취소하므로 단독 테스트에서는 건너뜀
     /// (skipInFlightEffects는 건너뛴 effect를 known issue로 남겨 결과가 "expected failure"로 표시되므로 기록을 끔)
