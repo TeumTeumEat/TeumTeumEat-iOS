@@ -88,6 +88,7 @@ struct LeagueFeature {
         case rankUpTapped
         case weekResultDismissed
         case infoDismissed
+        case infoJoinTapped
         case weekResultShareTapped
         case shareChannelSelected(ShareChannel)
         case shareSheetClosed
@@ -137,6 +138,11 @@ struct LeagueFeature {
             case .infoDismissed:
                 state.isInfoPresented = false
                 return .none
+
+            case .infoJoinTapped:
+                // 참여하기 = 퀴즈를 풀러 가는 흐름이라 순위 올리기와 같이 홈으로 이동
+                state.isInfoPresented = false
+                return .send(.delegate(.rankUpRequested))
 
             case .rankUpTapped:
                 analyticsClient.log(.leagueRankUpClick)
@@ -288,7 +294,10 @@ struct LeagueView: View {
                 }
             } else if store.isInfoPresented {
                 LeagueModalContainer(onDismiss: { store.send(.infoDismissed) }) {
-                    LeagueInfoView()
+                    LeagueInfoView(
+                        onClose: { store.send(.infoDismissed) },
+                        onJoin: { store.send(.infoJoinTapped) }
+                    )
                 }
             }
         }
@@ -487,32 +496,81 @@ private struct LeagueWeekResultView: View {
 
 /// 리그 안내 (i 버튼)
 private struct LeagueInfoView: View {
-    // TODO: 안내 문구 확정되면 교체 (현재는 정해진 리그 규칙으로 만든 초안)
+    let onClose: () -> Void
+    let onJoin: () -> Void
+
     private let rules = [
-        "퀴즈를 풀면 스낵을 모을 수 있어요. 매주 최대 77개까지 모을 수 있어요.",
-        "이번 주에 모은 스낵 개수로 순위가 정해져요.",
-        "스낵 개수가 같으면 스트릭이 긴 순, 먼저 가입한 순으로 순위가 정해져요.",
-        "리그는 매주 일요일 자정에 초기화돼요."
+        "퀴즈를 풀수록 점수가 쌓이고\n리그 순위가 올라가요.",
+        "매주 새로운 시작\n한 주 동안 쌓은 점수로 순위가 결정돼요.",
+        "전체 사용자와 경쟁\n더 많이 학습할수록 순위가 올라가요."
     ]
 
     var body: some View {
         VStack(spacing: 0) {
-            Text("주간 리그 안내")
-                .font(.system(size: 20, weight: .bold))
+            Text("리그에 도전해보세요!")
+                .font(.system(size: 22, weight: .bold))
                 .foregroundColor(.black)
+            Text("틈틈잇 리그가 생겼어요!")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(.gray700)
+                .padding(.top, 6)
 
-            VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                // TODO: 시안 티켓 아이콘 에셋 받으면 교체
+                Image(systemName: "ticket.fill")
+                    .font(.system(size: 22))
+                    .foregroundColor(.gray500)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("퀴즈 1회 = 1점")
+                    Text("점수 쌓을수록 → 주간 순위 UP")
+                }
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.gray900)
+                // 작은 화면에서도 시안처럼 한 줄 유지
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
+            .background(RoundedRectangle(cornerRadius: 14).fill(Color.gray100))
+            .padding(.top, 24)
+
+            VStack(alignment: .leading, spacing: 12) {
                 ForEach(rules, id: \.self) { rule in
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text("•")
                         Text(rule)
+                            .lineSpacing(2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
-            .font(.system(size: 15, weight: .medium))
-            .foregroundColor(.gray900)
+            .font(.system(size: 13, weight: .regular))
+            .foregroundColor(.gray600)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 6)
             .padding(.top, 20)
+
+            HStack(spacing: 10) {
+                Button(action: onClose) {
+                    Text("닫기")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.blue500)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(RoundedRectangle(cornerRadius: 16).fill(Color.blue100))
+                }
+                Button(action: onJoin) {
+                    Text("참여하기")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(RoundedRectangle(cornerRadius: 16).fill(Color.blue500))
+                }
+            }
+            .padding(.top, 24)
         }
     }
 }
