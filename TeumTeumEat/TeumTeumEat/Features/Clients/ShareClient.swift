@@ -5,7 +5,6 @@
 
 import ComposableArchitecture
 import KakaoSDKShare
-import KakaoSDKTemplate
 import UIKit
 
 /// 공유 채널
@@ -67,24 +66,18 @@ extension ShareClient: DependencyKey {
 }
 
 private extension ShareClient {
-    // TODO: 카카오 디벨로퍼스 메시지 템플릿 ID 받으면 shareCustom으로 교체 (현재는 이미지 없는 텍스트 템플릿)
+    /// 카카오 디벨로퍼스 > 메시지 템플릿 (피드형, 이미지 / 버튼 / 앱 실행 링크는 콘솔에서 관리)
+    static let kakaoTemplateId: Int64 = 137806
+
     /// 메시지의 "앱에서 보기"를 누르면 앱이 있으면 앱 실행, 없으면 콘솔에 등록한 스토어로 이동
     @MainActor
     static func shareToKakaoTalk(_ content: ShareContent) async throws {
-        let template = TextTemplate(
-            text: content.text,
-            link: Link(
-                webUrl: content.url,
-                mobileWebUrl: content.url,
-                androidExecutionParams: ["from": "share"],
-                iosExecutionParams: ["from": "share"]
-            ),
-            buttonTitle: "앱에서 보기"
-        )
+        // 템플릿에 ${description} 변수를 넣으면 공유 위치별 문구(초대 / 순위 결과)로 채워짐 (변수가 없으면 무시됨)
+        let templateArgs = ["description": content.text]
 
         guard ShareApi.isKakaoTalkSharingAvailable() else {
             // 카카오톡 미설치: 웹 공유 페이지로 이동
-            guard let url = ShareApi.shared.makeDefaultUrl(templatable: template) else {
+            guard let url = ShareApi.shared.makeCustomUrl(templateId: kakaoTemplateId, templateArgs: templateArgs) else {
                 throw ShareError.kakaoUnavailable
             }
             await UIApplication.shared.open(url)
@@ -92,7 +85,7 @@ private extension ShareClient {
         }
 
         let sharingURL: URL = try await withCheckedThrowingContinuation { continuation in
-            ShareApi.shared.shareDefault(templatable: template) { result, error in
+            ShareApi.shared.shareCustom(templateId: kakaoTemplateId, templateArgs: templateArgs) { result, error in
                 if let result {
                     continuation.resume(returning: result.url)
                 } else {
