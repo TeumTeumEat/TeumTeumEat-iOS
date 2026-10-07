@@ -500,8 +500,8 @@ private struct LeagueInfoView: View {
     let onJoin: () -> Void
 
     private let rules = [
-        "퀴즈를 풀수록 점수가 쌓이고\n리그 순위가 올라가요.",
-        "매주 새로운 시작\n한 주 동안 쌓은 점수로 순위가 결정돼요.",
+        "퀴즈를 풀수록 스낵이 쌓이고\n리그 순위가 올라가요.",
+        "매주 새로운 시작\n한 주 동안 쌓은 스낵으로 순위가 결정돼요.",
         "전체 사용자와 경쟁\n더 많이 학습할수록 순위가 올라가요."
     ]
 
@@ -516,13 +516,14 @@ private struct LeagueInfoView: View {
                 .padding(.top, 6)
 
             HStack(spacing: 10) {
-                // TODO: 시안 티켓 아이콘 에셋 받으면 교체
-                Image(systemName: "ticket.fill")
-                    .font(.system(size: 22))
-                    .foregroundColor(.gray500)
+                // 광고 쿠폰 모달과 같은 티켓 아이콘
+                Image("coupon")
+                    .resizable()
+                    .frame(width: 24, height: 24)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("퀴즈 1회 = 1점")
-                    Text("점수 쌓을수록 → 주간 순위 UP")
+                    // 시안은 "점"이지만 리그 화면 표현(스낵)에 맞춤 (디자이너 확인 중)
+                    Text("퀴즈 1회 = 1스낵")
+                    Text("스낵 쌓을수록 → 주간 순위 UP")
                 }
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(.gray900)
