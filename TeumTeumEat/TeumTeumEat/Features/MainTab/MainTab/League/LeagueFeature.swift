@@ -15,6 +15,8 @@ struct LeagueFeature {
         var league: LeagueResponse?
         var isLoading: Bool = false
         var errorMessage: String?
+        /// 리그 리셋 시각 (응답 받은 시각 + remainingSeconds, 서버 resetAt은 타임존이 없어 사용하지 않음)
+        var resetDate: Date?
         /// 리그 리셋까지 남은 시간 (초)
         var remainingSeconds: Int = 0
         /// 지난주 결과 모달 (nil이 아니면 딤 위에 표시)
@@ -80,6 +82,7 @@ struct LeagueFeature {
         case shareSheetClosed
         case shareSheetDismissed
         case leagueLoaded(Result<LeagueResponse, Error>)
+        case latestResultLoaded(Result<LeagueWeekResult, Error>)
         case timerTicked
         case delegate(Delegate)
     }
@@ -169,15 +172,10 @@ struct LeagueFeature {
             case .leagueLoaded(.success(let league)):
                 state.isLoading = false
                 state.league = league
-                Log.league.debug("League loaded: active=\(league.isActive), rankers=\(league.rankers.count)")
-                showWeekResultIfNeeded(&state, result: league.lastWeekResult)
+                Log.league.debug("League loaded: myRank=\(String(describing: league.me.rank)), rankers=\(league.rankers.count)")
 
-                guard let weekEnd = DateFormatters.iso8601.date(from: league.weekEndAt) else {
-                    Log.league.error("Invalid weekEndAt: \(league.weekEndAt)")
-                    state.remainingSeconds = 0
-                    return .cancel(id: CancelID.timer)
-                }
-                state.remainingSeconds = remainingSeconds(until: weekEnd)
+                state.resetDate = now.addingTimeInterval(TimeInterval(league.remainingSeconds))
+                state.remainingSeconds = max(0, league.remainingSeconds)
                 guard state.remainingSeconds > 0 else { return .cancel(id: CancelID.timer) }
                 return .run { send in
                     for await _ in clock.timer(interval: .seconds(1)) {
@@ -192,13 +190,21 @@ struct LeagueFeature {
                 Log.league.error("Failed to load league: \(error)")
                 return .none
 
+            case .latestResultLoaded(.success(let result)):
+                showWeekResultIfNeeded(&state, result: result)
+                return .none
+
+            case .latestResultLoaded(.failure(let error)):
+                // 결과 모달은 부가 기능이라 실패해도 화면에 에러를 띄우지 않음
+                Log.league.error("Failed to load latest league result: \(error)")
+                return .none
+
             case .timerTicked:
                 // 1초씩 빼지 않고 매번 마감 시각 기준으로 다시 계산 (백그라운드 다녀와도 정확하도록)
-                guard let weekEndAt = state.league?.weekEndAt,
-                      let weekEnd = DateFormatters.iso8601.date(from: weekEndAt) else { return .none }
-                state.remainingSeconds = remainingSeconds(until: weekEnd)
+                guard let resetDate = state.resetDate else { return .none }
+                state.remainingSeconds = remainingSeconds(until: resetDate)
                 guard state.remainingSeconds == 0 else { return .none }
-                // 리셋 시각이 지나면 새 주차 리그를 다시 조회
+                // 리셋 시각이 지나면 새 주차 리그와 방금 끝난 주 결과를 다시 조회
                 return .merge(
                     .cancel(id: CancelID.timer),
                     fetchLeague(&state)
@@ -211,8 +217,8 @@ struct LeagueFeature {
     }
 
     /// 지난주에 참여했고 아직 보지 않은 주차면 결과 모달을 한 번 띄움
-    private func showWeekResultIfNeeded(_ state: inout State, result: LeagueWeekResult?) {
-        guard let result, result.rank != nil,
+    private func showWeekResultIfNeeded(_ state: inout State, result: LeagueWeekResult) {
+        guard result.rank != nil,
               leagueClient.lastSeenResultWeek() != result.weekStartDate else { return }
         state.weekResult = result
         leagueClient.setLastSeenResultWeek(result.weekStartDate)
@@ -222,12 +228,18 @@ struct LeagueFeature {
         max(0, Int(date.timeIntervalSince(now).rounded(.up)))
     }
 
+    /// 랭킹과 지난주 결과를 함께 조회 (결과는 모달 표시 여부 판단용)
     private func fetchLeague(_ state: inout State) -> Effect<Action> {
         state.isLoading = true
         state.errorMessage = nil
-        return .run { send in
-            await send(.leagueLoaded(Result { try await leagueClient.fetchLeague() }))
-        }
+        return .merge(
+            .run { send in
+                await send(.leagueLoaded(Result { try await leagueClient.fetchLeague() }))
+            },
+            .run { send in
+                await send(.latestResultLoaded(Result { try await leagueClient.fetchLatestResult() }))
+            }
+        )
     }
 }
 
@@ -294,11 +306,12 @@ struct LeagueView: View {
                 VStack(spacing: 0) {
                     LeagueHeaderView()
                         .padding(.top, 24)
-                    LeaguePodiumView(rankers: store.podium, isParticipating: league.myRank != nil)
+                    LeaguePodiumView(rankers: store.podium, isParticipating: league.me.rank != nil)
                         .padding(.top, 28)
                     LazyVStack(spacing: 0) {
-                        ForEach(store.restRankers) { ranker in
-                            LeagueRankerRow(ranker: ranker, isMe: ranker.userId == league.myRank?.userId)
+                        // 동점이면 순위가 같고 닉네임도 마스킹되어 겹칠 수 있어 위치로 구분
+                        ForEach(Array(store.restRankers.enumerated()), id: \.offset) { _, ranker in
+                            LeagueRankerRow(ranker: ranker)
                         }
                     }
                     .padding(.top, 16)
@@ -308,7 +321,7 @@ struct LeagueView: View {
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 VStack(spacing: 0) {
                     LeagueCountdownBar(remainingTimeText: store.remainingTimeText)
-                    LeagueMyRankBar(myRank: league.myRank) {
+                    LeagueMyRankBar(me: league.me) {
                         store.send(.rankUpTapped)
                     }
                 }
@@ -383,7 +396,7 @@ private struct LeagueWeekResultView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text("\(result.month)월 \(result.weekOfMonth)주 리그 결과")
+            Text("\(result.weekLabel ?? "지난주") 리그 결과")
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.black)
 
@@ -631,10 +644,10 @@ private struct LeagueSideCard: View {
                 .frame(width: 32, height: 32)
 
             VStack(spacing: 4) {
-                Text(LeagueNickname.shortMasked(ranker.nickname))
+                Text(LeagueNickname.shortMasked(ranker.name))
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.gray900)
-                LeagueSnackCountText(count: ranker.snackCount, numberSize: 20)
+                LeagueSnackCountText(count: ranker.weeklySnackCount, numberSize: 20)
             }
             .frame(width: Self.width, height: 72)
             .background(
@@ -708,10 +721,10 @@ private struct LeagueFirstPlaceCard: View {
             .overlay(alignment: .topLeading) {
                 if let ranker {
                     VStack(spacing: 6) {
-                        Text(LeagueNickname.shortMasked(ranker.nickname))
+                        Text(LeagueNickname.shortMasked(ranker.name))
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(.gray900)
-                        LeagueSnackCountText(count: ranker.snackCount, numberSize: 24)
+                        LeagueSnackCountText(count: ranker.weeklySnackCount, numberSize: 24)
                     }
                     .frame(width: animation.cardFrame.width, height: animation.cardFrame.height)
                     .offset(x: animation.cardFrame.minX, y: animation.cardFrame.minY)
@@ -724,7 +737,6 @@ private struct LeagueFirstPlaceCard: View {
 
 private struct LeagueRankerRow: View {
     let ranker: LeagueRanker
-    let isMe: Bool
 
     var body: some View {
         HStack(spacing: 0) {
@@ -732,15 +744,15 @@ private struct LeagueRankerRow: View {
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.gray600)
                 .frame(width: 28, alignment: .leading)
-            Text(LeagueNickname.masked(ranker.nickname))
+            Text(LeagueNickname.masked(ranker.name))
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.gray900)
             Spacer()
-            LeagueSnackCountText(count: ranker.snackCount, numberSize: 20)
+            LeagueSnackCountText(count: ranker.weeklySnackCount, numberSize: 20)
         }
         .padding(.horizontal, 24)
         .frame(height: 50)
-        .background(isMe ? Color.leagueMyRow : Color.clear)
+        .background(ranker.isMe ? Color.leagueMyRow : Color.clear)
     }
 }
 
@@ -785,20 +797,20 @@ private struct LeagueCountdownBar: View {
 }
 
 private struct LeagueMyRankBar: View {
-    let myRank: LeagueMyRank?
+    let me: LeagueMyRank
     let onRankUpTapped: () -> Void
 
     var body: some View {
         HStack(spacing: 16) {
-            if let myRank {
-                Text("\(myRank.rank)")
+            if let rank = me.rank {
+                Text("\(rank)")
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(.gray600)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(LeagueNickname.masked(myRank.nickname))
+                    Text(LeagueNickname.masked(me.name))
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.gray900)
-                    Text("오늘 \(blueNumber(myRank.todaySnackCount))스낵   총 \(blueNumber(myRank.snackCount))스낵")
+                    Text("오늘 \(blueNumber(me.todaySnackCount))스낵   총 \(blueNumber(me.weeklySnackCount))스낵")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.gray700)
                 }

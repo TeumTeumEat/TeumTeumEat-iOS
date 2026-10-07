@@ -680,6 +680,43 @@ extension APIClient {
     }
 }
 
+// MARK: - League
+
+extension APIClient {
+    /// 이번 주 리그 랭킹 (상위 10명 + 내 순위)
+    func fetchLeague() async throws -> LeagueResponse {
+        try await leagueRequest(endpoint: "/api/v1/league")
+    }
+
+    /// 이번 주 내 순위만 조회 (리그 화면 외 사용)
+    func fetchLeagueMyRank() async throws -> LeagueMyRank {
+        try await leagueRequest(endpoint: "/api/v1/league/me")
+    }
+
+    /// 지난주 확정된 내 순위 (결과 모달)
+    func fetchLatestLeagueResult() async throws -> LeagueWeekResult {
+        try await leagueRequest(endpoint: "/api/v1/league/results/latest")
+    }
+
+    private func leagueRequest<T: Decodable>(endpoint: String) async throws -> T {
+        let response: APIResponse<T> = try await request(
+            endpoint: endpoint,
+            method: .get,
+            requiresAuth: true
+        )
+
+        guard response.code == "OK",
+              let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        return data
+    }
+}
+
 // MARK: - SSE Helpers (file-private)
 private struct SSEErrorResponse: Decodable {
     let code: String
