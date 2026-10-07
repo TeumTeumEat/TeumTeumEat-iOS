@@ -36,8 +36,7 @@ struct LeagueFeatureTests {
             $0.remainingSeconds = 2 * 86400 + 61
         }
         await store.receive(\.latestResultLoaded.success)
-        // 하루 이상 남아도 일 단위로 바꾸지 않고 시간을 누적해서 표시
-        #expect(store.state.remainingTimeText == "48 : 01 : 01")
+        #expect(store.state.remainingTimeText == "2일 00 : 01 : 01")
 
         await store.skipCountdownTimer()
     }
@@ -320,6 +319,37 @@ struct LeagueFeatureTests {
 
         await store.send(.backTapped)
         #expect(isDismissed.value)
+    }
+}
+
+struct LeagueStateTests {
+    @Test("리셋까지 하루 이상 남으면 일 + 시:분:초, 하루 미만이면 시:분:초로 표시한다", arguments: [
+        (86399, "23 : 59 : 59"),
+        (86400, "1일 00 : 00 : 00"),
+        (4 * 86400 + 1304, "4일 00 : 21 : 44"),
+        (0, "00 : 00 : 00")
+    ])
+    func remainingTimeText(seconds: Int, expected: String) {
+        var state = LeagueFeature.State()
+        state.remainingSeconds = seconds
+        #expect(state.remainingTimeText == expected)
+    }
+
+    @Test("랭커가 10명 미만이면 4위부터 10위까지 남은 자리를 빈 순위로 채운다", arguments: [
+        (0, Array(4...10)),
+        (2, Array(4...10)),
+        (6, Array(7...10)),
+        (10, [Int]())
+    ])
+    func placeholderRanks(rankerCount: Int, expected: [Int]) {
+        let rankers = (0..<rankerCount).map {
+            LeagueRanker(rank: $0 + 1, name: "김*민", weeklySnackCount: 10 - $0, isMe: false)
+        }
+        let league = LeagueResponse(
+            weekStartDate: "2026-10-05", resetAt: "2026-10-12T00:00:00", remainingSeconds: 100,
+            rankers: rankers, me: LeagueMyRank(rank: nil, name: "크", weeklySnackCount: 0, todaySnackCount: 0)
+        )
+        #expect(LeagueFeature.State(league: league).placeholderRanks == expected)
     }
 }
 
