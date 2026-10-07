@@ -24,6 +24,11 @@ struct MyPageView: View {
             ) { appSettingsStore in
                 AppSettingsView(store: appSettingsStore)
             }
+            .navigationDestination(
+                item: $store.scope(state: \.destination?.noticeList, action: \.destination.noticeList)
+            ) { noticeListStore in
+                NoticeListView(store: noticeListStore)
+            }
     }
 
     private var content: some View {
@@ -307,6 +312,24 @@ struct MyPageView: View {
                 .padding(.top, 20)
             
             VStack(spacing: 20) {
+                // 공지사항
+                Button {
+                    store.send(.viewNoticesTapped)
+                } label: {
+                    HStack {
+                        Text("공지사항")
+                            .bodyRegular16()
+                            .foregroundColor(.black)
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12))
+                            .foregroundColor(.gray)
+                    }
+                    .contentShape(Rectangle())
+                }
+
                 // 이용약관
                 Link(destination: URL(string: "https://resolute-flier-02d.notion.site/2d8151abb62e80cbaefde6ddcef603cc")!) {
                     HStack {

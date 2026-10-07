@@ -10,6 +10,17 @@ import Testing
 
 @MainActor
 struct MyPageFeatureTests {
+    @Test("공지사항을 누르면 공지 목록을 띄운다")
+    func viewNoticesTapped_presentsNoticeList() async {
+        let store = TestStore(initialState: MyPageFeature.State()) {
+            MyPageFeature()
+        }
+
+        await store.send(.viewNoticesTapped) {
+            $0.destination = .noticeList(NoticeListFeature.State())
+        }
+    }
+
     @Test("회원탈퇴 API가 실패하면 로딩을 끝내고 에러 알럿을 띄운다")
     func withdrawalFailure_showsErrorAlert() async {
         var state = MyPageFeature.State()

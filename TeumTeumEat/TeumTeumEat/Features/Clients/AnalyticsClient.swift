@@ -194,6 +194,8 @@ enum AnalyticsScreen: String {
     case myPage = "my_page"
     case subjectList = "subject_list"
     case appSettings = "app_settings"
+    case noticeList = "notice_list"
+    case noticeDetail = "notice_detail"
     case league
 }
 
