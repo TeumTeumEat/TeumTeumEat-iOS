@@ -58,13 +58,24 @@ struct LeagueFeature {
         var podium: [LeagueRanker] { Array(league?.rankers.prefix(3) ?? []) }
         /// 4위 이하 리스트
         var restRankers: [LeagueRanker] { Array(league?.rankers.dropFirst(3) ?? []) }
+        /// 리스트 빈 자리 순위 (랭커가 10명 미만이면 10위까지 "-"로 채워 올라갈 자리가 있음을 보여줌)
+        var placeholderRanks: [Int] {
+            let filledCount = league?.rankers.count ?? 0
+            let start = max(4, filledCount + 1)
+            return start <= Self.maxRankers ? Array(start...Self.maxRankers) : []
+        }
 
-        /// "23 : 20 : 10" (하루 이상 남으면 시간을 누적해서 "48 : 00 : 00")
+        /// 서버가 내려주는 최대 랭커 수
+        static let maxRankers = 10
+
+        /// "23 : 20 : 10", 하루 이상 남으면 "4일 00 : 21 : 44"
         var remainingTimeText: String {
-            let hours = remainingSeconds / 3600
+            let days = remainingSeconds / 86400
+            let hours = remainingSeconds % 86400 / 3600
             let minutes = remainingSeconds % 3600 / 60
             let seconds = remainingSeconds % 60
-            return String(format: "%02d : %02d : %02d", hours, minutes, seconds)
+            let time = String(format: "%02d : %02d : %02d", hours, minutes, seconds)
+            return days > 0 ? "\(days)일 \(time)" : time
         }
     }
 
@@ -315,16 +326,18 @@ struct LeagueView: View {
                             .foregroundColor(.gray500)
                             .multilineTextAlignment(.center)
                             .lineSpacing(2)
-                            .padding(.top, 40)
-                    } else {
-                        LazyVStack(spacing: 0) {
-                            // 동점이면 순위가 같고 닉네임도 마스킹되어 겹칠 수 있어 위치로 구분
-                            ForEach(Array(store.restRankers.enumerated()), id: \.offset) { _, ranker in
-                                LeagueRankerRow(ranker: ranker)
-                            }
-                        }
-                        .padding(.top, 16)
+                            .padding(.top, 24)
                     }
+                    LazyVStack(spacing: 0) {
+                        // 동점이면 순위가 같고 닉네임도 마스킹되어 겹칠 수 있어 위치로 구분
+                        ForEach(Array(store.restRankers.enumerated()), id: \.offset) { _, ranker in
+                            LeagueRankerRow(ranker: ranker)
+                        }
+                        ForEach(store.placeholderRanks, id: \.self) { rank in
+                            LeagueRankerRow(placeholderRank: rank)
+                        }
+                    }
+                    .padding(.top, 16)
                 }
                 .padding(.bottom, 24)
             }
@@ -759,34 +772,61 @@ private struct LeaguePodiumText: View {
 // MARK: - Ranker Row
 
 private struct LeagueRankerRow: View {
-    let ranker: LeagueRanker
+    let rank: Int
+    let name: String
+    let countText: String
+    let isMe: Bool
+
+    init(ranker: LeagueRanker) {
+        rank = ranker.rank
+        name = LeagueNickname.masked(ranker.name)
+        countText = "\(ranker.weeklySnackCount)"
+        isMe = ranker.isMe
+    }
+
+    /// 아직 사람이 없는 순위 ("-" / "-스낵")
+    init(placeholderRank: Int) {
+        rank = placeholderRank
+        name = "-"
+        countText = "-"
+        isMe = false
+    }
 
     var body: some View {
         HStack(spacing: 0) {
-            Text("\(ranker.rank)")
+            Text("\(rank)")
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.gray600)
                 .frame(width: 28, alignment: .leading)
-            Text(LeagueNickname.masked(ranker.name))
+            Text(name)
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.gray900)
             Spacer()
-            LeagueSnackCountText(count: ranker.weeklySnackCount, numberSize: 20)
+            LeagueSnackCountText(countText: countText, numberSize: 20)
         }
         .padding(.horizontal, 24)
         .frame(height: 50)
-        .background(ranker.isMe ? Color.leagueMyRow : Color.clear)
+        .background(isMe ? Color.leagueMyRow : Color.clear)
     }
 }
 
 /// "12스낵" (숫자만 파란색으로 크게)
 private struct LeagueSnackCountText: View {
-    let count: Int
+    let countText: String
     let numberSize: CGFloat
+
+    init(count: Int, numberSize: CGFloat) {
+        self.init(countText: "\(count)", numberSize: numberSize)
+    }
+
+    init(countText: String, numberSize: CGFloat) {
+        self.countText = countText
+        self.numberSize = numberSize
+    }
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 1) {
-            Text("\(count)")
+            Text(countText)
                 .font(.system(size: numberSize, weight: .semibold))
                 .foregroundColor(.blue500)
             Text("스낵")
