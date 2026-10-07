@@ -294,6 +294,20 @@ struct LeagueFeatureTests {
         await store.send(.shareSheetDismissed)
     }
 
+    @Test("안내 모달에서 참여하기를 누르면 모달을 닫고 홈으로 이동을 요청한다")
+    func infoJoinTapped_closesInfoAndRequestsHome() async {
+        var state = LeagueFeature.State(league: .mock)
+        state.isInfoPresented = true
+        let store = TestStore(initialState: state) {
+            LeagueFeature()
+        }
+
+        await store.send(.infoJoinTapped) {
+            $0.isInfoPresented = false
+        }
+        await store.receive(\.delegate.rankUpRequested)
+    }
+
     @Test("순위 올리기를 누르면 클릭을 기록하고 상위 화면에 이동을 요청한다")
     func rankUpTapped_logsAndSendsDelegate() async {
         let events = LockIsolated<[AnalyticsEvent]>([])
