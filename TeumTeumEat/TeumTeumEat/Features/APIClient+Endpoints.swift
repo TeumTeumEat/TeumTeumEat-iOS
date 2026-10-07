@@ -717,6 +717,29 @@ extension APIClient {
     }
 }
 
+// MARK: - Notice
+
+extension APIClient {
+    /// 공지 목록 (최신순, page는 0부터 시작)
+    func fetchNotices(page: Int, size: Int) async throws -> NoticeSliceResponse {
+        let response: APIResponse<NoticeSliceResponse> = try await request(
+            endpoint: "/api/v1/notices?page=\(page)&size=\(size)",
+            method: .get,
+            requiresAuth: true
+        )
+
+        guard response.code == "OK",
+              let data = response.data else {
+            throw APIError.serverError(
+                code: response.code,
+                message: response.message,
+                details: response.details
+            )
+        }
+        return data
+    }
+}
+
 // MARK: - SSE Helpers (file-private)
 private struct SSEErrorResponse: Decodable {
     let code: String
