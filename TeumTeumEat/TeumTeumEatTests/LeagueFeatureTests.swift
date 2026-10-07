@@ -209,6 +209,81 @@ struct LeagueFeatureTests {
         }
     }
 
+    @Test("공유 버튼 → 다른 앱으로 공유를 고르면 클릭을 기록하고, 시트가 닫힌 뒤 초대 링크를 기본 공유 시트로 공유한다")
+    func shareTapped_selectSystem_sharesInviteAfterSheetDismissed() async {
+        let events = LockIsolated<[AnalyticsEvent]>([])
+        let shared = LockIsolated<[ShareContent]>([])
+        let store = TestStore(initialState: LeagueFeature.State(league: .mock)) {
+            LeagueFeature()
+        } withDependencies: {
+            $0.analyticsClient.log = { event in events.withValue { $0.append(event) } }
+            $0.shareClient.shareToSystem = { content in shared.withValue { $0.append(content) } }
+        }
+
+        await store.send(.shareTapped) {
+            $0.shareSheet = .league
+        }
+        await store.send(.shareChannelSelected(.system)) {
+            $0.shareSheet = nil
+            $0.pendingShare = .init(channel: .system, content: .invite)
+        }
+        // 시트가 완전히 닫히기 전에는 공유하지 않음
+        #expect(shared.value.isEmpty)
+
+        await store.send(.shareSheetDismissed) {
+            $0.pendingShare = nil
+        }
+        await store.finish()
+
+        #expect(shared.value == [.invite])
+        #expect(events.value == [.shareClick(channel: "system", source: "league")])
+    }
+
+    @Test("결과 모달에서 공유하기 → 카카오톡을 고르면 모달을 닫고 순위 문구로 카카오톡 공유한다")
+    func weekResultShare_selectKakao_sharesResult() async {
+        let events = LockIsolated<[AnalyticsEvent]>([])
+        let shared = LockIsolated<[ShareContent]>([])
+        var state = LeagueFeature.State(league: .mock)
+        state.weekResult = LeagueWeekResult.mock
+        let store = TestStore(initialState: state) {
+            LeagueFeature()
+        } withDependencies: {
+            $0.analyticsClient.log = { event in events.withValue { $0.append(event) } }
+            $0.shareClient.shareToKakao = { content in shared.withValue { $0.append(content) } }
+        }
+
+        await store.send(.weekResultShareTapped) {
+            $0.weekResult = nil
+            $0.shareSheet = .weekResult(LeagueWeekResult.mock)
+        }
+        await store.send(.shareChannelSelected(.kakao)) {
+            $0.shareSheet = nil
+            $0.pendingShare = .init(channel: .kakao, content: .leagueResult(LeagueWeekResult.mock))
+        }
+        await store.send(.shareSheetDismissed) {
+            $0.pendingShare = nil
+        }
+        await store.finish()
+
+        #expect(shared.value.map(\.text) == ["틈틈잇 9월 5주 리그에서 2위를 했어요! 같이 도전해 보세요."])
+        #expect(events.value == [.shareClick(channel: "kakao", source: "league_result")])
+    }
+
+    @Test("공유 채널을 고르지 않고 시트를 닫으면 공유하지 않는다")
+    func shareSheetClosedWithoutSelection_doesNotShare() async {
+        let store = TestStore(initialState: LeagueFeature.State(league: .mock)) {
+            LeagueFeature()
+        }
+
+        await store.send(.shareTapped) {
+            $0.shareSheet = .league
+        }
+        await store.send(.shareSheetClosed) {
+            $0.shareSheet = nil
+        }
+        await store.send(.shareSheetDismissed)
+    }
+
     @Test("순위 올리기를 누르면 클릭을 기록하고 상위 화면에 이동을 요청한다")
     func rankUpTapped_logsAndSendsDelegate() async {
         let events = LockIsolated<[AnalyticsEvent]>([])
@@ -234,6 +309,14 @@ struct LeagueFeatureTests {
 
         await store.send(.backTapped)
         #expect(isDismissed.value)
+    }
+}
+
+struct LeagueShareContentTests {
+    @Test("지난주 순위권 밖이면 순위 대신 초대 문구로 공유한다")
+    func leagueResult_outOfRank_sharesInvite() {
+        let result = LeagueWeekResult(weekStartDate: "2026-09-28", month: 9, weekOfMonth: 5, rank: 7)
+        #expect(ShareContent.leagueResult(result) == .invite)
     }
 }
 

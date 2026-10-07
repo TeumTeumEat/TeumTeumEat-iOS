@@ -21,6 +21,36 @@ struct LeagueFeature {
         var weekResult: LeagueWeekResult?
         /// 리그 안내 모달 (i 버튼)
         var isInfoPresented: Bool = false
+        /// 공유 채널 선택 바텀시트 (nil이 아니면 표시)
+        var shareSheet: ShareSource?
+        /// 바텀시트에서 고른 공유 (시트가 완전히 닫힌 뒤 실행해야 공유 화면이 겹치지 않음)
+        var pendingShare: PendingShare?
+
+        enum ShareSource: Equatable {
+            /// 리그 화면 네비게이션 바 공유 버튼
+            case league
+            /// 지난주 결과 모달 "공유하기"
+            case weekResult(LeagueWeekResult)
+
+            var analyticsValue: String {
+                switch self {
+                case .league: "league"
+                case .weekResult: "league_result"
+                }
+            }
+
+            var content: ShareContent {
+                switch self {
+                case .league: .invite
+                case let .weekResult(result): .leagueResult(result)
+                }
+            }
+        }
+
+        struct PendingShare: Equatable {
+            let channel: ShareChannel
+            let content: ShareContent
+        }
 
         /// 1~3위 시상대
         var podium: [LeagueRanker] { Array(league?.rankers.prefix(3) ?? []) }
@@ -46,6 +76,9 @@ struct LeagueFeature {
         case weekResultDismissed
         case infoDismissed
         case weekResultShareTapped
+        case shareChannelSelected(ShareChannel)
+        case shareSheetClosed
+        case shareSheetDismissed
         case leagueLoaded(Result<LeagueResponse, Error>)
         case timerTicked
         case delegate(Delegate)
@@ -64,6 +97,7 @@ struct LeagueFeature {
     @Dependency(\.date.now) var now
     @Dependency(\.continuousClock) var clock
     @Dependency(\.analyticsClient) var analyticsClient
+    @Dependency(\.shareClient) var shareClient
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
@@ -79,7 +113,7 @@ struct LeagueFeature {
                 return .run { _ in await dismiss() }
 
             case .shareTapped:
-                // TODO: 공유 이슈에서 연결
+                state.shareSheet = .league
                 return .none
 
             case .infoTapped:
@@ -99,8 +133,38 @@ struct LeagueFeature {
                 return .none
 
             case .weekResultShareTapped:
-                // TODO: 공유 이슈에서 연결
+                guard let result = state.weekResult else { return .none }
+                state.weekResult = nil
+                state.shareSheet = .weekResult(result)
                 return .none
+
+            case let .shareChannelSelected(channel):
+                guard let source = state.shareSheet else { return .none }
+                analyticsClient.log(.shareClick(channel: channel.rawValue, source: source.analyticsValue))
+                state.pendingShare = State.PendingShare(channel: channel, content: source.content)
+                state.shareSheet = nil
+                return .none
+
+            case .shareSheetClosed:
+                // 드래그로 닫음 (공유 선택 없음)
+                state.shareSheet = nil
+                return .none
+
+            case .shareSheetDismissed:
+                guard let share = state.pendingShare else { return .none }
+                state.pendingShare = nil
+                return .run { _ in
+                    switch share.channel {
+                    case .kakao:
+                        do {
+                            try await shareClient.shareToKakao(share.content)
+                        } catch {
+                            Log.league.error("Kakao share failed: \(error)")
+                        }
+                    case .system:
+                        await shareClient.shareToSystem(share.content)
+                    }
+                }
 
             case .leagueLoaded(.success(let league)):
                 state.isLoading = false
@@ -207,6 +271,17 @@ struct LeagueView: View {
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.85), value: store.weekResult)
         .animation(.spring(response: 0.3, dampingFraction: 0.85), value: store.isInfoPresented)
+        .sheet(
+            isPresented: Binding(
+                get: { store.shareSheet != nil },
+                set: { if !$0 { store.send(.shareSheetClosed) } }
+            ),
+            onDismiss: { store.send(.shareSheetDismissed) }
+        ) {
+            LeagueShareSheet { channel in
+                store.send(.shareChannelSelected(channel))
+            }
+        }
         .navigationBarHidden(true)
         .trackScreen(.league)
         .onAppear { store.send(.onAppear) }
@@ -402,6 +477,60 @@ private struct LeagueInfoView: View {
             .font(.system(size: 15, weight: .medium))
             .foregroundColor(.gray900)
             .padding(.top, 20)
+        }
+    }
+}
+
+// MARK: - Share Sheet
+
+/// 공유 채널 선택 바텀시트
+private struct LeagueShareSheet: View {
+    let onSelect: (ShareChannel) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("공유하기")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.black)
+                .padding(.bottom, 12)
+
+            row(title: "카카오톡으로 공유하기", systemImage: "message.fill", iconColor: Color(hex: "#3A1D1D"), iconBackground: Color(hex: "#FEE500")) {
+                onSelect(.kakao)
+            }
+            row(title: "다른 앱으로 공유하기", systemImage: "square.and.arrow.up", iconColor: .gray800, iconBackground: .gray100) {
+                onSelect(.system)
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 28)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color.white)
+        .presentationDetents([.height(220)])
+        .presentationDragIndicator(.hidden)
+        .presentationCornerRadius(32)
+    }
+
+    private func row(
+        title: String,
+        systemImage: String,
+        iconColor: Color,
+        iconBackground: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(iconColor)
+                    .frame(width: 40, height: 40)
+                    .background(Circle().fill(iconBackground))
+                Text(title)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.gray900)
+                Spacer()
+            }
+            .frame(height: 56)
+            .contentShape(Rectangle())
         }
     }
 }

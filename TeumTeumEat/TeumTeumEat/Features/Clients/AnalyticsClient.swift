@@ -82,6 +82,10 @@ enum AnalyticsEvent: Equatable, Sendable {
     /// 리그 화면 "순위 올리기" 버튼
     case leagueRankUpClick
 
+    // 공유
+    /// channel: kakao / system, source: league(리그 화면 공유 버튼) / league_result(지난주 결과 모달)
+    case shareClick(channel: String, source: String)
+
     var name: String {
         switch self {
         case .login: AnalyticsEventLogin
@@ -111,6 +115,7 @@ enum AnalyticsEvent: Equatable, Sendable {
         case .notificationToggle: "notification_toggle"
         case .leagueView: "league_view"
         case .leagueRankUpClick: "league_rank_up_click"
+        case .shareClick: "share_click"
         }
     }
 
@@ -145,6 +150,8 @@ enum AnalyticsEvent: Equatable, Sendable {
             ["content_type": contentType, "source": source]
         case let .leagueView(source):
             ["source": source]
+        case let .shareClick(channel, source):
+            ["channel": channel, "source": source]
         case let .subjectAddCancel(contentType, step):
             ["content_type": contentType, "step": step]
         case let .historyTabSelect(tab):
