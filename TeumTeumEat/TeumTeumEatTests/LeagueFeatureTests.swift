@@ -10,16 +10,19 @@ import Testing
 
 @MainActor
 struct LeagueFeatureTests {
-    /// LeagueResponse.mock의 마감 시각 (2026-10-12T00:00:00+09:00)
-    private static let weekEnd = DateFormatters.iso8601.date(from: LeagueResponse.mock.weekEndAt)!
+    private static let now = Date(timeIntervalSince1970: 1_800_000_000)
+    /// 지난주 미참여 결과 (모달 표시 안 함)
+    private static let notParticipatedResult = LeagueWeekResult(weekStartDate: "2026-09-28", rank: nil, weeklySnackCount: 0)
 
-    @Test("첫 진입 시 리그 랭킹을 조회하고 리셋까지 남은 시간을 계산한다")
-    func onAppear_loadsLeague() async {
+    @Test("첫 진입 시 리그 랭킹과 지난주 결과를 조회하고 리셋까지 남은 시간을 계산한다")
+    func onAppear_loadsLeagueAndLatestResult() async {
+        let league = LeagueResponse.mock.remaining(2 * 86400 + 61)
         let store = TestStore(initialState: LeagueFeature.State()) {
             LeagueFeature()
         } withDependencies: {
-            $0.leagueClient.fetchLeague = { .mock }
-            $0.date.now = Self.weekEnd.addingTimeInterval(-(2 * 86400 + 61))
+            $0.leagueClient.fetchLeague = { league }
+            $0.leagueClient.fetchLatestResult = { Self.notParticipatedResult }
+            $0.date.now = Self.now
             $0.continuousClock = TestClock()
         }
 
@@ -28,11 +31,12 @@ struct LeagueFeatureTests {
         }
         await store.receive(\.leagueLoaded.success) {
             $0.isLoading = false
-            $0.league = .mock
+            $0.league = league
+            $0.resetDate = Self.now.addingTimeInterval(2 * 86400 + 61)
             $0.remainingSeconds = 2 * 86400 + 61
         }
-        // 하루 이상 남아도 일 단위로 바꾸지 않고 시간을 누적해서 표시
-        #expect(store.state.remainingTimeText == "48 : 01 : 01")
+        await store.receive(\.latestResultLoaded.success)
+        #expect(store.state.remainingTimeText == "2일 00 : 01 : 01")
 
         await store.skipCountdownTimer()
     }
@@ -46,24 +50,20 @@ struct LeagueFeatureTests {
         await store.send(.onAppear)
     }
 
-    @Test("1초마다 남은 시간을 갱신하고, 리셋 시각이 되면 새 주차 리그를 다시 조회한다")
+    @Test("1초마다 남은 시간을 갱신하고, 리셋 시각이 되면 새 주차 리그와 지난주 결과를 다시 조회한다")
     func timer_countsDown_thenRefetchesAtReset() async {
         let clock = TestClock()
-        let now = LockIsolated(Self.weekEnd.addingTimeInterval(-2))
-        let nextWeek = LeagueResponse(
-            isActive: true,
-            weekEndAt: "2026-10-19T00:00:00+09:00",
-            myRank: nil,
-            rankers: []
-        )
+        let now = LockIsolated(Self.now)
+        let nextWeek = LeagueResponse.mockNotParticipating.remaining(7 * 86400)
         let fetchCount = LockIsolated(0)
         let store = TestStore(initialState: LeagueFeature.State()) {
             LeagueFeature()
         } withDependencies: {
             $0.leagueClient.fetchLeague = {
                 fetchCount.withValue { $0 += 1 }
-                return fetchCount.value == 1 ? .mock : nextWeek
+                return fetchCount.value == 1 ? LeagueResponse.mock.remaining(2) : nextWeek
             }
+            $0.leagueClient.fetchLatestResult = { Self.notParticipatedResult }
             $0.date = DateGenerator { now.value }
             $0.continuousClock = clock
         }
@@ -73,9 +73,11 @@ struct LeagueFeatureTests {
         }
         await store.receive(\.leagueLoaded.success) {
             $0.isLoading = false
-            $0.league = .mock
+            $0.league = LeagueResponse.mock.remaining(2)
+            $0.resetDate = Self.now.addingTimeInterval(2)
             $0.remainingSeconds = 2
         }
+        await store.receive(\.latestResultLoaded.success)
 
         now.withValue { $0.addTimeInterval(1) }
         await clock.advance(by: .seconds(1))
@@ -92,13 +94,15 @@ struct LeagueFeatureTests {
         await store.receive(\.leagueLoaded.success) {
             $0.isLoading = false
             $0.league = nextWeek
+            $0.resetDate = Self.now.addingTimeInterval(2 + 7 * 86400)
             $0.remainingSeconds = 7 * 86400
         }
+        await store.receive(\.latestResultLoaded.success)
 
         await store.skipCountdownTimer()
     }
 
-    @Test("조회에 실패하면 에러 메시지를 보여주고, 다시 시도하면 에러를 지우고 다시 조회한다")
+    @Test("랭킹 조회에 실패하면 에러 메시지를 보여주고, 다시 시도하면 에러를 지우고 다시 조회한다")
     func loadFailure_thenRetry_loadsLeague() async {
         let shouldFail = LockIsolated(true)
         let store = TestStore(initialState: LeagueFeature.State()) {
@@ -108,9 +112,10 @@ struct LeagueFeatureTests {
                 if shouldFail.value {
                     throw APIError.networkError(URLError(.notConnectedToInternet))
                 }
-                return .mockInactive
+                return .mockNotParticipating
             }
-            $0.date.now = Self.weekEnd.addingTimeInterval(-10)
+            $0.leagueClient.fetchLatestResult = { Self.notParticipatedResult }
+            $0.date.now = Self.now
             $0.continuousClock = TestClock()
         }
 
@@ -121,6 +126,7 @@ struct LeagueFeatureTests {
             $0.isLoading = false
             $0.errorMessage = "인터넷 연결을 확인하고 다시 시도해 주세요."
         }
+        await store.receive(\.latestResultLoaded.success)
 
         shouldFail.setValue(false)
         await store.send(.retryTapped) {
@@ -129,25 +135,23 @@ struct LeagueFeatureTests {
         }
         await store.receive(\.leagueLoaded.success) {
             $0.isLoading = false
-            $0.league = .mockInactive
-            $0.remainingSeconds = 10
+            $0.league = .mockNotParticipating
+            $0.resetDate = Self.now.addingTimeInterval(86400)
+            $0.remainingSeconds = 86400
         }
+        await store.receive(\.latestResultLoaded.success)
 
         await store.skipCountdownTimer()
     }
 
-    @Test("새 주차의 지난주 결과를 아직 보지 않았으면 결과 모달을 띄우고 본 주차로 기록한다")
-    func lastWeekResult_unseen_showsModalAndMarksSeen() async {
-        var league = LeagueResponse.mock
-        league.lastWeekResult = LeagueWeekResult.mock
-        let seenWeek = LockIsolated<String?>("2026-09-21")
+    @Test("지난주 결과 조회에 실패해도 랭킹 화면은 그대로 보여준다")
+    func latestResultFailure_keepsLeague() async {
         let store = TestStore(initialState: LeagueFeature.State()) {
             LeagueFeature()
         } withDependencies: {
-            $0.leagueClient.fetchLeague = { league }
-            $0.leagueClient.lastSeenResultWeek = { seenWeek.value }
-            $0.leagueClient.setLastSeenResultWeek = { seenWeek.setValue($0) }
-            $0.date.now = Self.weekEnd.addingTimeInterval(-10)
+            $0.leagueClient.fetchLeague = { .mock }
+            $0.leagueClient.fetchLatestResult = { throw APIError.networkError(URLError(.timedOut)) }
+            $0.date.now = Self.now
             $0.continuousClock = TestClock()
         }
 
@@ -156,8 +160,26 @@ struct LeagueFeatureTests {
         }
         await store.receive(\.leagueLoaded.success) {
             $0.isLoading = false
-            $0.league = league
-            $0.remainingSeconds = 10
+            $0.league = .mock
+            $0.resetDate = Self.now.addingTimeInterval(86400)
+            $0.remainingSeconds = 86400
+        }
+        await store.receive(\.latestResultLoaded.failure)
+
+        await store.skipCountdownTimer()
+    }
+
+    @Test("새 주차의 지난주 결과를 아직 보지 않았으면 결과 모달을 띄우고 본 주차로 기록한다")
+    func latestResult_unseen_showsModalAndMarksSeen() async {
+        let seenWeek = LockIsolated<String?>("2026-09-21")
+        let store = TestStore(initialState: LeagueFeature.State(league: .mock)) {
+            LeagueFeature()
+        } withDependencies: {
+            $0.leagueClient.lastSeenResultWeek = { seenWeek.value }
+            $0.leagueClient.setLastSeenResultWeek = { seenWeek.setValue($0) }
+        }
+
+        await store.send(.latestResultLoaded(.success(LeagueWeekResult.mock))) {
             $0.weekResult = LeagueWeekResult.mock
         }
         #expect(seenWeek.value == "2026-09-28")
@@ -165,34 +187,22 @@ struct LeagueFeatureTests {
         await store.send(.weekResultDismissed) {
             $0.weekResult = nil
         }
-        await store.skipCountdownTimer()
     }
 
     @Test("이미 본 주차이거나 지난주에 참여하지 않았으면 결과 모달을 띄우지 않는다", arguments: [
         (seenWeek: "2026-09-28", rank: 2 as Int?),
         (seenWeek: "2026-09-21", rank: nil as Int?)
     ])
-    func lastWeekResult_seenOrNotParticipated_doesNotShowModal(seenWeek: String, rank: Int?) async {
-        var league = LeagueResponse.mock
-        league.lastWeekResult = LeagueWeekResult(weekStartDate: "2026-09-28", month: 9, weekOfMonth: 5, rank: rank)
-        let store = TestStore(initialState: LeagueFeature.State()) {
+    func latestResult_seenOrNotParticipated_doesNotShowModal(seenWeek: String, rank: Int?) async {
+        let store = TestStore(initialState: LeagueFeature.State(league: .mock)) {
             LeagueFeature()
         } withDependencies: {
-            $0.leagueClient.fetchLeague = { league }
             $0.leagueClient.lastSeenResultWeek = { seenWeek }
-            $0.date.now = Self.weekEnd.addingTimeInterval(-10)
-            $0.continuousClock = TestClock()
         }
 
-        await store.send(.onAppear) {
-            $0.isLoading = true
-        }
-        await store.receive(\.leagueLoaded.success) {
-            $0.isLoading = false
-            $0.league = league
-            $0.remainingSeconds = 10
-        }
-        await store.skipCountdownTimer()
+        await store.send(.latestResultLoaded(.success(
+            LeagueWeekResult(weekStartDate: "2026-09-28", rank: rank, weeklySnackCount: 3)
+        )))
     }
 
     @Test("i 버튼을 누르면 리그 안내를 띄우고, 딤을 탭하면 닫는다")
@@ -265,7 +275,7 @@ struct LeagueFeatureTests {
         }
         await store.finish()
 
-        #expect(shared.value.map(\.text) == ["틈틈잇 9월 5주 리그에서 2위를 했어요! 같이 도전해 보세요."])
+        #expect(shared.value.map(\.text) == ["틈틈잇 9월 4주 리그에서 2위를 했어요! 같이 도전해 보세요."])
         #expect(events.value == [.shareClick(channel: "kakao", source: "league_result")])
     }
 
@@ -312,10 +322,54 @@ struct LeagueFeatureTests {
     }
 }
 
+struct LeagueStateTests {
+    @Test("리셋까지 하루 이상 남으면 일 + 시:분:초, 하루 미만이면 시:분:초로 표시한다", arguments: [
+        (86399, "23 : 59 : 59"),
+        (86400, "1일 00 : 00 : 00"),
+        (4 * 86400 + 1304, "4일 00 : 21 : 44"),
+        (0, "00 : 00 : 00")
+    ])
+    func remainingTimeText(seconds: Int, expected: String) {
+        var state = LeagueFeature.State()
+        state.remainingSeconds = seconds
+        #expect(state.remainingTimeText == expected)
+    }
+
+    @Test("랭커가 10명 미만이면 4위부터 10위까지 남은 자리를 빈 순위로 채운다", arguments: [
+        (0, Array(4...10)),
+        (2, Array(4...10)),
+        (6, Array(7...10)),
+        (10, [Int]())
+    ])
+    func placeholderRanks(rankerCount: Int, expected: [Int]) {
+        let rankers = (0..<rankerCount).map {
+            LeagueRanker(rank: $0 + 1, name: "김*민", weeklySnackCount: 10 - $0, isMe: false)
+        }
+        let league = LeagueResponse(
+            weekStartDate: "2026-10-05", resetAt: "2026-10-12T00:00:00", remainingSeconds: 100,
+            rankers: rankers, me: LeagueMyRank(rank: nil, name: "크", weeklySnackCount: 0, todaySnackCount: 0)
+        )
+        #expect(LeagueFeature.State(league: league).placeholderRanks == expected)
+    }
+}
+
+struct LeagueWeekResultTests {
+    @Test("주차 표기는 주 시작일(월요일)이 그 달의 몇 번째 월요일인지 기준이다", arguments: [
+        ("2026-09-28", "9월 4주"),
+        ("2026-09-07", "9월 1주"),
+        ("2026-08-31", "8월 5주"),
+        ("2026-10-05", "10월 1주")
+    ])
+    func weekLabel(weekStartDate: String, expected: String) {
+        let result = LeagueWeekResult(weekStartDate: weekStartDate, rank: 1, weeklySnackCount: 1)
+        #expect(result.weekLabel == expected)
+    }
+}
+
 struct LeagueShareContentTests {
     @Test("지난주 순위권 밖이면 순위 대신 초대 문구로 공유한다")
     func leagueResult_outOfRank_sharesInvite() {
-        let result = LeagueWeekResult(weekStartDate: "2026-09-28", month: 9, weekOfMonth: 5, rank: 7)
+        let result = LeagueWeekResult(weekStartDate: "2026-09-28", rank: 7, weeklySnackCount: 3)
         #expect(ShareContent.leagueResult(result) == .invite)
     }
 }
@@ -356,5 +410,11 @@ private extension TestStoreOf<LeagueFeature> {
         await withExhaustivity(.off(showSkippedAssertions: false)) {
             await skipInFlightEffects()
         }
+    }
+}
+
+private extension LeagueResponse {
+    func remaining(_ seconds: Int) -> LeagueResponse {
+        LeagueResponse(weekStartDate: weekStartDate, resetAt: resetAt, remainingSeconds: seconds, rankers: rankers, me: me)
     }
 }

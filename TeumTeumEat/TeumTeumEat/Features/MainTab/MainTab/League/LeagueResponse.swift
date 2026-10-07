@@ -5,55 +5,59 @@
 
 import Foundation
 
-// TODO: API 스펙 확정 후 필드명 / 타입 맞추기 (현재는 mock 기준으로 가정한 모델)
-
-/// 주간 리그 (전체 유저 단일 랭킹, 매주 일요일 자정 마감)
+/// GET /api/v1/league — 이번 주 리그 랭킹 (월 00:00 ~ 다음 주 월 00:00, KST)
 struct LeagueResponse: Decodable, Equatable {
-    /// 이번 주 리그 진행 중 여부 (false면 랭킹 보드만 표시)
-    let isActive: Bool
-    /// 이번 주 리그 마감 시각 (ISO 8601, 타임존 포함)
-    let weekEndAt: String
-    /// 내 순위 (이번 주 아직 참여하지 않았으면 nil)
-    let myRank: LeagueMyRank?
-    /// 랭킹 보드 (서버에서 순위 계산 후 정렬해서 내려줌, 동점이면 같은 순위)
-    let rankers: [LeagueRanker]
-    /// 지난주 리그 결과 (새 주 첫 진입 시 결과 모달로 한 번 표시)
-    var lastWeekResult: LeagueWeekResult? = nil
-}
-
-struct LeagueWeekResult: Decodable, Equatable {
-    /// 주차 시작일 ("2026-09-28") — 이미 본 결과인지 구분하는 키
+    /// 이번 주 시작일 (월요일, "2026-10-05")
     let weekStartDate: String
-    /// 제목 "9월 4주 리그 결과"용
-    let month: Int
-    let weekOfMonth: Int
-    /// 지난주 최종 순위 (참여하지 않았으면 nil → 모달 표시 안 함)
-    let rank: Int?
+    /// 리그 리셋 시각 (KST, 타임존 없음 "2026-10-12T00:00:00") — 카운트다운은 remainingSeconds 기준
+    let resetAt: String
+    /// 리셋까지 남은 시간 (초)
+    let remainingSeconds: Int
+    /// 상위 랭커 (최대 10명, 순위 오름차순, 동점이면 같은 순위)
+    let rankers: [LeagueRanker]
+    /// 내 순위 및 스낵 현황
+    let me: LeagueMyRank
 }
 
-struct LeagueRanker: Decodable, Equatable, Identifiable {
-    var id: Int { userId }
+struct LeagueRanker: Decodable, Equatable {
     let rank: Int
-    let userId: Int
-    /// 닉네임 (화면에는 LeagueNickname으로 마스킹해서 표시)
-    let nickname: String
-    /// 이번 주 모은 스낵 개수 (랭크 기준)
-    let snackCount: Int
+    /// 마스킹된 닉네임
+    let name: String
+    /// 이번 주 스낵 수 (랭크 기준)
+    let weeklySnackCount: Int
+    let isMe: Bool
 }
 
+/// GET /api/v1/league/me 응답과 같은 형태
 struct LeagueMyRank: Decodable, Equatable {
-    let rank: Int
-    let userId: Int
-    let nickname: String
-    /// 오늘 모은 스낵 개수
+    /// 내 순위 (이번 주 스낵이 0개면 nil = 리그 미참여)
+    let rank: Int?
+    /// 마스킹된 닉네임
+    let name: String
+    let weeklySnackCount: Int
     let todaySnackCount: Int
-    /// 이번 주 모은 스낵 개수
-    let snackCount: Int
+}
+
+/// GET /api/v1/league/results/latest — 지난주 확정된 내 순위 (결과 모달용)
+struct LeagueWeekResult: Decodable, Equatable {
+    /// 결과 대상 주의 시작일 (월요일, "2026-09-28") — 이미 본 결과인지 구분하는 키
+    let weekStartDate: String
+    /// 최종 순위 (해당 주 스낵이 0개면 nil → 모달 표시 안 함)
+    let rank: Int?
+    let weeklySnackCount: Int
+
+    /// "9월 4주" — 주 시작일(월요일)이 그 달의 몇 번째 월요일인지 기준
+    var weekLabel: String? {
+        guard let date = DateFormatters.yearMonthDay.date(from: weekStartDate) else { return nil }
+        let components = Calendar(identifier: .gregorian).dateComponents([.month, .day], from: date)
+        guard let month = components.month, let day = components.day else { return nil }
+        return "\(month)월 \((day - 1) / 7 + 1)주"
+    }
 }
 
 // MARK: - 닉네임 마스킹
 
-// TODO: 서버가 마스킹해서 내려주기로 하면 정리 (이미 마스킹된 값이 와도 같은 결과가 나옴)
+// 서버가 마스킹해서 내려줌 — 이미 마스킹된 값이 와도 같은 결과가 나와 시상대(가*마) 표시용으로 유지
 enum LeagueNickname {
     /// 리스트 / 내 순위: 첫 글자와 마지막 글자만 남기고 가운데를 글자 수만큼 가림
     /// 가나다라마 → 가***마, 이서민 → 이*민, 이준 → 이*
@@ -83,39 +87,39 @@ enum LeagueNickname {
 // MARK: - Mock
 
 extension LeagueResponse {
+    /// 이번 주 참여 중 (나는 8위)
     static let mock: LeagueResponse = {
-        let rankers: [(rank: Int, nickname: String, snackCount: Int)] = [
-            (1, "틈틈잇", 12), (2, "김가나다민", 10), (3, "이수재", 9),
-            (4, "김하영", 8), (5, "임재현", 7), (5, "강민수", 7),
-            (7, "이준", 6), (8, "이서민", 5), (9, "김지주", 4),
-            (10, "박서연", 4), (11, "최지호", 3), (12, "정다아", 2),
-            (13, "윤", 2), (14, "한지우", 1), (15, "오아름림", 1)
+        let rankers: [(rank: Int, name: String, weeklySnackCount: Int)] = [
+            (1, "틈*잇", 12), (2, "김***민", 10), (3, "이*재", 9),
+            (4, "김*영", 8), (5, "임*현", 7), (5, "강*수", 7),
+            (7, "이*", 6), (8, "이*민", 5), (9, "김*주", 4),
+            (10, "박*연", 4)
         ]
         return LeagueResponse(
-            isActive: true,
-            weekEndAt: "2026-10-12T00:00:00+09:00",
-            myRank: LeagueMyRank(rank: 8, userId: 8, nickname: "이서민", todaySnackCount: 1, snackCount: 5),
-            rankers: rankers.enumerated().map { index, ranker in
-                LeagueRanker(rank: ranker.rank, userId: index + 1, nickname: ranker.nickname, snackCount: ranker.snackCount)
-            }
+            weekStartDate: "2026-10-05",
+            resetAt: "2026-10-12T00:00:00",
+            remainingSeconds: 86400,
+            rankers: rankers.map {
+                LeagueRanker(rank: $0.rank, name: $0.name, weeklySnackCount: $0.weeklySnackCount, isMe: $0.rank == 8)
+            },
+            me: LeagueMyRank(rank: 8, name: "이*민", weeklySnackCount: 5, todaySnackCount: 1)
         )
     }()
 
-    static let mockInactive = LeagueResponse(
-        isActive: false,
-        weekEndAt: mock.weekEndAt,
-        myRank: nil,
-        rankers: mock.rankers
+    /// 이번 주 미참여 (스낵 0개)
+    static let mockNotParticipating = LeagueResponse(
+        weekStartDate: mock.weekStartDate,
+        resetAt: mock.resetAt,
+        remainingSeconds: mock.remainingSeconds,
+        rankers: mock.rankers.map {
+            LeagueRanker(rank: $0.rank, name: $0.name, weeklySnackCount: $0.weeklySnackCount, isMe: false)
+        },
+        me: LeagueMyRank(rank: nil, name: "이*민", weeklySnackCount: 0, todaySnackCount: 0)
     )
 }
 
 extension LeagueWeekResult {
-    static let mock = LeagueWeekResult(
-        weekStartDate: "2026-09-28",
-        month: 9,
-        weekOfMonth: 5,
-        rank: 2
-    )
+    static let mock = LeagueWeekResult(weekStartDate: "2026-09-28", rank: 2, weeklySnackCount: 10)
 }
 
 // MARK: - 공유 문구
@@ -123,9 +127,9 @@ extension LeagueWeekResult {
 extension ShareContent {
     /// 지난주 리그 결과 공유 (순위권이면 순위를 함께 보여줌)
     static func leagueResult(_ result: LeagueWeekResult) -> ShareContent {
-        guard let rank = result.rank, rank <= 3 else { return .invite }
+        guard let rank = result.rank, rank <= 3, let weekLabel = result.weekLabel else { return .invite }
         return ShareContent(
-            text: "틈틈잇 \(result.month)월 \(result.weekOfMonth)주 리그에서 \(rank)위를 했어요! 같이 도전해 보세요.",
+            text: "틈틈잇 \(weekLabel) 리그에서 \(rank)위를 했어요! 같이 도전해 보세요.",
             url: appStoreURL
         )
     }
