@@ -308,13 +308,23 @@ struct LeagueView: View {
                         .padding(.top, 24)
                     LeaguePodiumView(rankers: store.podium, isParticipating: league.me.rank != nil)
                         .padding(.top, 28)
-                    LazyVStack(spacing: 0) {
-                        // 동점이면 순위가 같고 닉네임도 마스킹되어 겹칠 수 있어 위치로 구분
-                        ForEach(Array(store.restRankers.enumerated()), id: \.offset) { _, ranker in
-                            LeagueRankerRow(ranker: ranker)
+                    if store.restRankers.isEmpty {
+                        // 랭커가 3명 이하 (이번 주 초반 등)
+                        Text("아직 도전자가 적어요.\n스낵을 모아 순위에 이름을 올려보세요!")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray500)
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(2)
+                            .padding(.top, 40)
+                    } else {
+                        LazyVStack(spacing: 0) {
+                            // 동점이면 순위가 같고 닉네임도 마스킹되어 겹칠 수 있어 위치로 구분
+                            ForEach(Array(store.restRankers.enumerated()), id: \.offset) { _, ranker in
+                                LeagueRankerRow(ranker: ranker)
+                            }
                         }
+                        .padding(.top, 16)
                     }
-                    .padding(.top, 16)
                 }
                 .padding(.bottom, 24)
             }
@@ -617,15 +627,13 @@ private struct LeaguePodiumView: View {
         }
     }
 
-    @ViewBuilder
     private func sideCard(at index: Int, crownImage: String) -> some View {
-        if rankers.indices.contains(index) {
-            LeagueSideCard(ranker: rankers[index], crownImage: crownImage)
-                // 1위 Lottie 카드 아래쪽 여백만큼 올려 바닥선을 맞춤
-                .padding(.bottom, 2)
-        } else {
-            Color.clear.frame(width: LeagueSideCard.width)
-        }
+        LeagueSideCard(
+            ranker: rankers.indices.contains(index) ? rankers[index] : nil,
+            crownImage: crownImage
+        )
+        // 1위 Lottie 카드 아래쪽 여백만큼 올려 바닥선을 맞춤
+        .padding(.bottom, 2)
     }
 }
 
@@ -633,7 +641,8 @@ private struct LeaguePodiumView: View {
 private struct LeagueSideCard: View {
     static let width: CGFloat = 88
 
-    let ranker: LeagueRanker
+    /// nil이면 아직 이 순위에 사람이 없음
+    let ranker: LeagueRanker?
     let crownImage: String
 
     var body: some View {
@@ -643,13 +652,8 @@ private struct LeagueSideCard: View {
                 .scaledToFit()
                 .frame(width: 32, height: 32)
 
-            VStack(spacing: 4) {
-                Text(LeagueNickname.shortMasked(ranker.name))
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.gray900)
-                LeagueSnackCountText(count: ranker.weeklySnackCount, numberSize: 20)
-            }
-            .frame(width: Self.width, height: 72)
+            LeaguePodiumText(ranker: ranker, nameSize: 16, numberSize: 20, spacing: 4)
+                .frame(width: Self.width, height: 72)
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color.white)
@@ -719,17 +723,36 @@ private struct LeagueFirstPlaceCard: View {
                 }
             }
             .overlay(alignment: .topLeading) {
-                if let ranker {
-                    VStack(spacing: 6) {
-                        Text(LeagueNickname.shortMasked(ranker.name))
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(.gray900)
-                        LeagueSnackCountText(count: ranker.weeklySnackCount, numberSize: 24)
-                    }
+                LeaguePodiumText(ranker: ranker, nameSize: 20, numberSize: 24, spacing: 6)
                     .frame(width: animation.cardFrame.width, height: animation.cardFrame.height)
                     .offset(x: animation.cardFrame.minX, y: animation.cardFrame.minY)
-                }
             }
+    }
+}
+
+/// 시상대 카드 안 닉네임 + 스낵 수 (빈 자리는 "?" / "도전!")
+private struct LeaguePodiumText: View {
+    let ranker: LeagueRanker?
+    let nameSize: CGFloat
+    let numberSize: CGFloat
+    let spacing: CGFloat
+
+    var body: some View {
+        VStack(spacing: spacing) {
+            if let ranker {
+                Text(LeagueNickname.shortMasked(ranker.name))
+                    .font(.system(size: nameSize, weight: .semibold))
+                    .foregroundColor(.gray900)
+                LeagueSnackCountText(count: ranker.weeklySnackCount, numberSize: numberSize)
+            } else {
+                Text("?")
+                    .font(.system(size: nameSize, weight: .semibold))
+                    .foregroundColor(.gray400)
+                Text("도전!")
+                    .font(.system(size: numberSize - 4, weight: .semibold))
+                    .foregroundColor(.blue500)
+            }
+        }
     }
 }
 
