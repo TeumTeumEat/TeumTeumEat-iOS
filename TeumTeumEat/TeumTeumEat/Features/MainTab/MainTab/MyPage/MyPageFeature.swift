@@ -20,6 +20,7 @@ struct MyPageFeature {
     enum Destination {
         case subjectList(SubjectListFeature)
         case appSettings(AppSettingsFeature)
+        case noticeList(NoticeListFeature)
     }
 
     @ObservableState
@@ -50,6 +51,7 @@ struct MyPageFeature {
         case closeTapped
         case viewAllSubjectsTapped
         case viewAppSettingsTapped
+        case viewNoticesTapped
         case notificationToggled(Bool)
         case updateNotificationSettingResponse(Result<Void, Error>)
         case checkSystemNotificationStatus
@@ -278,6 +280,10 @@ struct MyPageFeature {
                 ))
                 return .none
                 
+            case .viewNoticesTapped:
+                state.destination = .noticeList(NoticeListFeature.State())
+                return .none
+
             case .viewAppSettingsTapped:
                 state.destination = .appSettings(AppSettingsFeature.State())
                 return .none
