@@ -84,6 +84,10 @@ enum AnalyticsEvent: Equatable, Sendable {
     /// 리그 안내 모달 "참여하기" 버튼
     case leagueInfoJoinClick
 
+    // 알림
+    /// 푸시 알림을 눌러 앱을 연 경우, type: daily_quiz / league_deadline / league_result / unknown
+    case notificationOpen(type: String)
+
     // 공유
     /// channel: kakao / system, source: league(리그 화면 공유 버튼) / league_result(지난주 결과 모달)
     case shareClick(channel: String, source: String)
@@ -119,6 +123,7 @@ enum AnalyticsEvent: Equatable, Sendable {
         case .leagueRankUpClick: "league_rank_up_click"
         case .leagueInfoJoinClick: "league_info_join_click"
         case .shareClick: "share_click"
+        case .notificationOpen: "notification_open"
         }
     }
 
@@ -155,6 +160,8 @@ enum AnalyticsEvent: Equatable, Sendable {
             ["source": source]
         case let .shareClick(channel, source):
             ["channel": channel, "source": source]
+        case let .notificationOpen(type):
+            ["type": type]
         case let .subjectAddCancel(contentType, step):
             ["content_type": contentType, "step": step]
         case let .historyTabSelect(tab):
@@ -221,6 +228,12 @@ enum AnalyticsValue {
         case "상", "HARD": "hard"
         default: "unknown"
         }
+    }
+
+    /// 푸시 data.type (DAILY_QUIZ / LEAGUE_DEADLINE / LEAGUE_RESULT) → 소문자, 없으면 unknown
+    static func notificationType(_ userInfo: [AnyHashable: Any]) -> String {
+        guard let type = userInfo["type"] as? String, !type.isEmpty else { return "unknown" }
+        return type.lowercased()
     }
 }
 

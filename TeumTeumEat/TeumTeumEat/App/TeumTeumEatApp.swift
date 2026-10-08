@@ -46,6 +46,7 @@ struct TeumTeumEatApp: App {
 }
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
+    @Dependency(\.analyticsClient) var analyticsClient
     
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
@@ -139,10 +140,13 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         
         let userInfo = response.notification.request.content.userInfo
         
-        // FCM 데이터 출력 (notification_open 이벤트용 data.type 확인, Debug 빌드에서만 기록)
+        // FCM 데이터 출력 (Debug 빌드에서만 기록)
         Log.app.debug("푸시 userInfo: \(userInfo)")
-        
-        // TODO: notification_open 이벤트 / 딥링크 처리 (서버 data.type 추가 후)
+
+        // FirebaseAppDelegateProxyEnabled = NO라 알림 열림을 직접 기록
+        analyticsClient.log(.notificationOpen(type: AnalyticsValue.notificationType(userInfo)))
+
+        // TODO: 딥링크 처리 (LEAGUE_DEADLINE / LEAGUE_RESULT → 리그 화면 등, 기획 확정 시)
         
         completionHandler()
     }
