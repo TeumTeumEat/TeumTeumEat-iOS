@@ -124,10 +124,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         
         let userInfo = notification.request.content.userInfo
         
-        // FCM 데이터 출력
-        if let messageID = userInfo["gcm.message_id"] {
-            Log.app.debug("FCM Message ID: \(messageID)")
-        }
+        // FCM 데이터 출력 (서버가 data에 무엇을 보내는지 확인용, Debug 빌드에서만 기록)
+        Log.app.debug("푸시 userInfo: \(userInfo)")
         
         // 앱 실행 중에도 알림 표시
         completionHandler([.banner, .sound, .badge])
@@ -141,12 +139,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         
         let userInfo = response.notification.request.content.userInfo
         
-        // FCM 데이터 처리
-        if let messageID = userInfo["gcm.message_id"] {
-            Log.app.debug("FCM Message ID: \(messageID)")
-        }
+        // FCM 데이터 출력 (notification_open 이벤트용 data.type 확인, Debug 빌드에서만 기록)
+        Log.app.debug("푸시 userInfo: \(userInfo)")
         
-        // TODO: 딥링크 처리 등
+        // TODO: notification_open 이벤트 / 딥링크 처리 (서버 data.type 추가 후)
         
         completionHandler()
     }
