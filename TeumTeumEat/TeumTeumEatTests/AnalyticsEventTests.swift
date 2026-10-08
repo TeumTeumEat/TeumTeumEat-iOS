@@ -153,3 +153,16 @@ struct AnalyticsEventTests {
         #expect(data.analyticsDifficulty == "unknown")
     }
 }
+
+struct NotificationTypeTests {
+    @Test("푸시 data.type을 소문자로 기록하고, 없으면 unknown으로 기록한다", arguments: [
+        (["type": "DAILY_QUIZ"] as [AnyHashable: Any], "daily_quiz"),
+        (["type": "LEAGUE_DEADLINE"], "league_deadline"),
+        (["type": "LEAGUE_RESULT"], "league_result"),
+        (["gcm.message_id": "123"], "unknown"),
+        (["type": ""], "unknown")
+    ])
+    func notificationType(userInfo: [AnyHashable: Any], expected: String) {
+        #expect(AnalyticsValue.notificationType(userInfo) == expected)
+    }
+}
