@@ -294,18 +294,22 @@ struct LeagueFeatureTests {
         await store.send(.shareSheetDismissed)
     }
 
-    @Test("안내 모달에서 참여하기를 누르면 모달을 닫고 홈으로 이동을 요청한다")
+    @Test("안내 모달에서 참여하기를 누르면 클릭을 기록하고, 모달을 닫고 홈으로 이동을 요청한다")
     func infoJoinTapped_closesInfoAndRequestsHome() async {
+        let events = LockIsolated<[AnalyticsEvent]>([])
         var state = LeagueFeature.State(league: .mock)
         state.isInfoPresented = true
         let store = TestStore(initialState: state) {
             LeagueFeature()
+        } withDependencies: {
+            $0.analyticsClient.log = { event in events.withValue { $0.append(event) } }
         }
 
         await store.send(.infoJoinTapped) {
             $0.isInfoPresented = false
         }
         await store.receive(\.delegate.rankUpRequested)
+        #expect(events.value == [.leagueInfoJoinClick])
     }
 
     @Test("순위 올리기를 누르면 클릭을 기록하고 상위 화면에 이동을 요청한다")
