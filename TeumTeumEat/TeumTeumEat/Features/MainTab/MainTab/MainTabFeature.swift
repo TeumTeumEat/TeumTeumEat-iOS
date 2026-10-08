@@ -52,6 +52,8 @@ struct MainTabFeature {
         case quiz(HistoryFeature.Action)
         case destination(PresentationAction<Destination.Action>)
         case delegate(Delegate)
+        /// 푸시 알림을 눌러 들어옴 (AppFeature에서 전달)
+        case pushNotificationOpened(PushNotificationType)
     }
 
     enum Delegate {
@@ -142,6 +144,27 @@ struct MainTabFeature {
             case .quiz(.delegate(.openLeagueRequested)):
                 state.destination = .league(LeagueFeature.State())
                 analyticsClient.log(.leagueView(source: "history"))
+                return .none
+
+            // MARK: - Push
+            case let .pushNotificationOpened(type):
+                // 퀴즈 / 주제 추가 / 새 목표 흐름 중이면 진행을 끊지 않도록 이동하지 않음
+                switch state.destination {
+                case .quizFlow, .addSubject, .newGoalFlow:
+                    return .none
+                case nil, .myPage, .league:
+                    break
+                }
+                switch type {
+                case .dailyQuiz:
+                    state.destination = nil
+                    state.selectedTab = .home
+                case .leagueDeadline, .leagueResult:
+                    // 이미 리그 화면이면 그대로 (결과 모달은 리그 화면 진입 시 조회됨)
+                    if case .league = state.destination { return .none }
+                    state.destination = .league(LeagueFeature.State())
+                    analyticsClient.log(.leagueView(source: "push"))
+                }
                 return .none
 
             // MARK: - League

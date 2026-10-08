@@ -77,7 +77,7 @@ enum AnalyticsEvent: Equatable, Sendable {
     case notificationToggle(enabled: Bool)
 
     // 리그
-    /// source: home(1등 도전 말풍선) / history(상단 배너)
+    /// source: home(1등 도전 말풍선) / history(상단 배너) / push(리그 알림)
     case leagueView(source: String)
     /// 리그 화면 "순위 올리기" 버튼
     case leagueRankUpClick

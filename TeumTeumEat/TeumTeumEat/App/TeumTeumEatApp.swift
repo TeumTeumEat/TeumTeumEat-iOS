@@ -146,7 +146,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         // FirebaseAppDelegateProxyEnabled = NO라 알림 열림을 직접 기록
         analyticsClient.log(.notificationOpen(type: AnalyticsValue.notificationType(userInfo)))
 
-        // TODO: 딥링크 처리 (LEAGUE_DEADLINE / LEAGUE_RESULT → 리그 화면 등, 기획 확정 시)
+        // 알림 종류별 화면 이동 (학습 알림 → 홈, 리그 알림 → 리그 화면)
+        if let type = PushNotificationType(userInfo: userInfo) {
+            Task { @MainActor in
+                TeumTeumEatApp.store.send(.pushNotificationTapped(type))
+            }
+        }
         
         completionHandler()
     }

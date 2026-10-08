@@ -20,6 +20,8 @@ struct AppFeature {
         var onboarding: OnboardingFeature.State?
         var mainTab: MainTabFeature.State?
         var isShowingSplash = true
+        /// 메인 화면이 뜨기 전(앱 첫 실행 중)에 누른 푸시 — 메인 화면이 뜨면 이동
+        var pendingPushNotification: PushNotificationType?
     }
     
     enum Action {
@@ -30,6 +32,8 @@ struct AppFeature {
         case logout
         case logoutFinalize
         case withdrawal
+        /// 푸시 알림을 눌러 앱에 들어옴
+        case pushNotificationTapped(PushNotificationType)
     }
     
     var body: some ReducerOf<Self> {
@@ -56,6 +60,14 @@ struct AppFeature {
     private func core(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
             
+        case let .pushNotificationTapped(type):
+            guard state.mainTab != nil else {
+                // 앱이 꺼져 있다가 푸시로 실행된 경우 스플래시 / 인증 확인이 끝난 뒤 이동
+                state.pendingPushNotification = type
+                return .none
+            }
+            return .send(.mainTab(.pushNotificationOpened(type)))
+
         case .mainTab(.delegate(.logout)):
             Log.app.debug("AppFeature: 로그아웃 요청 받음")
             return .send(.logout)
@@ -69,6 +81,7 @@ struct AppFeature {
 
         case .logoutFinalize:
             KeyChainManager.shared.deleteAll()
+            state.pendingPushNotification = nil
 
             state.login = nil
             state.onboarding = nil
@@ -90,6 +103,7 @@ struct AppFeature {
                     // 온보딩 완료 → 메인 화면
                     Log.app.debug("토큰 있음 & 온보딩 완료 → 메인")
                     state.mainTab = MainTabFeature.State()
+                    return openPendingPushNotification(&state)
                 } else {
                     // 온보딩 미완료 → 온보딩 화면
                     Log.app.debug("토큰 있음 & 온보딩 미완료 → 온보딩")
@@ -175,6 +189,13 @@ struct AppFeature {
         case .splash, .login, .onboarding, .mainTab:
             return .none
         }
+    }
+
+    /// 메인 화면이 뜨기 전에 누른 푸시가 있으면 이동
+    private func openPendingPushNotification(_ state: inout State) -> Effect<Action> {
+        guard let type = state.pendingPushNotification else { return .none }
+        state.pendingPushNotification = nil
+        return .send(.mainTab(.pushNotificationOpened(type)))
     }
 
     private func logOnboardingStep(_ step: String?) -> Reduce<State, Action> {
