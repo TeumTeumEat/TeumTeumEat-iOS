@@ -81,6 +81,8 @@ enum AnalyticsEvent: Equatable, Sendable {
     case leagueView(source: String)
     /// 리그 화면 "순위 올리기" 버튼
     case leagueRankUpClick
+    /// 리그 안내 모달 "참여하기" 버튼
+    case leagueInfoJoinClick
 
     // 공유
     /// channel: kakao / system, source: league(리그 화면 공유 버튼) / league_result(지난주 결과 모달)
@@ -115,6 +117,7 @@ enum AnalyticsEvent: Equatable, Sendable {
         case .notificationToggle: "notification_toggle"
         case .leagueView: "league_view"
         case .leagueRankUpClick: "league_rank_up_click"
+        case .leagueInfoJoinClick: "league_info_join_click"
         case .shareClick: "share_click"
         }
     }
@@ -158,7 +161,7 @@ enum AnalyticsEvent: Equatable, Sendable {
             ["tab": tab]
         case let .notificationToggle(enabled):
             ["enabled": enabled ? "true" : "false"]
-        case .logout, .accountDelete, .adRewardRequest, .adRewardEarned, .adInterrupted, .leagueRankUpClick:
+        case .logout, .accountDelete, .adRewardRequest, .adRewardEarned, .adInterrupted, .leagueRankUpClick, .leagueInfoJoinClick:
             nil
         }
     }

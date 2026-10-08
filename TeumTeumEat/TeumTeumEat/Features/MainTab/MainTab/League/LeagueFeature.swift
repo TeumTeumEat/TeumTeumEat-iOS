@@ -142,6 +142,7 @@ struct LeagueFeature {
             case .infoJoinTapped:
                 // 참여하기 = 퀴즈를 풀러 가는 흐름이라 순위 올리기와 같이 홈으로 이동
                 state.isInfoPresented = false
+                analyticsClient.log(.leagueInfoJoinClick)
                 return .send(.delegate(.rankUpRequested))
 
             case .rankUpTapped:
