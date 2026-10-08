@@ -433,7 +433,7 @@ private struct LeagueWeekResultView: View {
                 .foregroundColor(.black)
 
             image
-                .frame(height: 100)
+                .frame(height: 170)
                 .padding(.top, 28)
 
             if let rank = kind.displayRank {
@@ -460,25 +460,19 @@ private struct LeagueWeekResultView: View {
         }
     }
 
+    /// 결과 애니메이션: 1위 금 트로피 / 2·3위 은 트로피 / 순위권 밖 녹아내리는 캐릭터
+    /// 등장 동작이 있는 애니메이션이라 한 번 재생 후 마지막 장면에서 멈춤
     private var image: some View {
-        Group {
-            switch kind {
-            case .first:
-                Image("league_trophy_first")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 179, height: 100)
-            case .podium:
-                Image("league_trophy_podium")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 179, height: 100)
-            case .outOfRank:
-                Image("league_character_melted")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 143, height: 82)
-            }
+        LottieView(animation: .named(animationName))
+            .playing(loopMode: .playOnce)
+            .frame(maxWidth: .infinity)
+    }
+
+    private var animationName: String {
+        switch kind {
+        case .first: "league_result_trophy_gold"
+        case .podium: "league_result_trophy_silver"
+        case .outOfRank: "league_result_sit_melt"
         }
     }
 
