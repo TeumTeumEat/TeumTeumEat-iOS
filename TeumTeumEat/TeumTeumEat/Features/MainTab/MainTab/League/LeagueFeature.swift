@@ -295,10 +295,7 @@ struct LeagueView: View {
                 }
             } else if store.isInfoPresented {
                 LeagueModalContainer(onDismiss: { store.send(.infoDismissed) }) {
-                    LeagueInfoView(
-                        onClose: { store.send(.infoDismissed) },
-                        onJoin: { store.send(.infoJoinTapped) }
-                    )
+                    LeagueInfoView(onJoin: { store.send(.infoJoinTapped) })
                 }
             }
         }
@@ -491,13 +488,12 @@ private struct LeagueWeekResultView: View {
 
 /// 리그 안내 (i 버튼)
 private struct LeagueInfoView: View {
-    let onClose: () -> Void
     let onJoin: () -> Void
 
     private let rules = [
-        "퀴즈를 풀수록 스낵이 쌓이고\n리그 순위가 올라가요.",
-        "매주 새로운 시작\n한 주 동안 쌓은 스낵으로 순위가 결정돼요.",
-        "전체 사용자와 경쟁\n더 많이 학습할수록 순위가 올라가요."
+        "퀴즈를 풀면 스낵이 쌓여 리그 순위가 올라가요.",
+        "매주 새로운 리그가 시작돼요.",
+        "틈틈잇 전체 사용자와 스낵으로 경쟁해요."
     ]
 
     var body: some View {
@@ -505,20 +501,21 @@ private struct LeagueInfoView: View {
             Text("리그에 도전해보세요!")
                 .font(.system(size: 22, weight: .bold))
                 .foregroundColor(.black)
-            Text("틈틈잇 리그가 생겼어요!")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(.gray700)
-                .padding(.top, 6)
+            Image("league_trophy")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 100, height: 100)
+                .padding(.top, 24)
 
             HStack(spacing: 10) {
-                // 광고 쿠폰 모달과 같은 티켓 아이콘
-                Image("coupon")
+                // 헤더 i 버튼과 같은 모양, 기존 티켓 아이콘 색(gray500)
+                Image("icon_info_gray")
                     .resizable()
                     .frame(width: 24, height: 24)
                 VStack(alignment: .leading, spacing: 2) {
                     // 시안은 "점"이지만 리그 화면 표현(스낵)에 맞춤 (디자이너 확인 중)
                     Text("퀴즈 1회 = 1스낵")
-                    Text("스낵 쌓을수록 → 주간 순위 UP")
+                    Text("퀴즈를 풀고 순위를 높여보세요.")
                 }
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(.gray900)
@@ -532,13 +529,13 @@ private struct LeagueInfoView: View {
             .background(RoundedRectangle(cornerRadius: 14).fill(Color.gray100))
             .padding(.top, 24)
 
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
                 ForEach(rules, id: \.self) { rule in
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text("•")
                         Text(rule)
-                            .lineSpacing(2)
-                            .fixedSize(horizontal: false, vertical: true)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
                     }
                 }
             }
@@ -546,25 +543,15 @@ private struct LeagueInfoView: View {
             .foregroundColor(.gray600)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 6)
-            .padding(.top, 20)
+            .padding(.top, 16)
 
-            HStack(spacing: 10) {
-                Button(action: onClose) {
-                    Text("닫기")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.blue500)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(RoundedRectangle(cornerRadius: 16).fill(Color.blue100))
-                }
-                Button(action: onJoin) {
-                    Text("참여하기")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(RoundedRectangle(cornerRadius: 16).fill(Color.blue500))
-                }
+            Button(action: onJoin) {
+                Text("확인")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.blue500))
             }
             .padding(.top, 24)
         }
