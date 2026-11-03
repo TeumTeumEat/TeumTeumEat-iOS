@@ -87,8 +87,6 @@ struct LeagueFeature {
         case infoTapped
         case rankUpTapped
         case weekResultDismissed
-        // TODO: 결과 모달 UI 확인용 임시 - QA 후 제거
-        case debugWeekResultTapped(rank: Int)
         case infoDismissed
         case infoJoinTapped
         case weekResultShareTapped
@@ -150,10 +148,6 @@ struct LeagueFeature {
             case .rankUpTapped:
                 analyticsClient.log(.leagueRankUpClick)
                 return .send(.delegate(.rankUpRequested))
-
-            case let .debugWeekResultTapped(rank):
-                state.weekResult = LeagueWeekResult(weekStartDate: "2026-09-28", rank: rank, weeklySnackCount: 12)
-                return .none
 
             case .weekResultDismissed:
                 state.weekResult = nil
@@ -287,18 +281,6 @@ struct LeagueView: View {
                 onInfoTapped: { store.send(.infoTapped) }
             )
             content
-        }
-        // TODO: 결과 모달 UI 확인용 임시 - QA 후 제거
-        .overlay(alignment: .topLeading) {
-            HStack(spacing: 4) {
-                Button("1위") { store.send(.debugWeekResultTapped(rank: 1)) }
-                Button("5위") { store.send(.debugWeekResultTapped(rank: 5)) }
-                Button("15위") { store.send(.debugWeekResultTapped(rank: 15)) }
-            }
-            .font(.system(size: 11, weight: .bold))
-            .buttonStyle(.borderedProminent)
-            .padding(.top, 52)
-            .padding(.leading, 8)
         }
         .background(
             LinearGradient(colors: [.leagueBackgroundTop, .white], startPoint: .top, endPoint: .bottom)
