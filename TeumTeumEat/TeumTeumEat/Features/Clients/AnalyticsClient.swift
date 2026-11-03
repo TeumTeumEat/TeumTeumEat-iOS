@@ -85,8 +85,10 @@ enum AnalyticsEvent: Equatable, Sendable {
     case leagueInfoJoinClick
 
     // 알림
-    /// 푸시 알림을 눌러 앱을 연 경우, type: daily_quiz / league_deadline / league_result / unknown
-    case notificationOpen(type: String)
+    /// 푸시 알림을 눌러 앱을 연 경우 (notification_open은 Firebase 예약 이벤트명이라 사용 불가)
+    /// pushType: 서버 값 그대로 (DAILY_QUIZ / LEAGUE_DEADLINE / LEAGUE_RESULT), 없으면 unknown
+    /// destination: 실제 도착 화면 home / league / login / onboarding, 이동하지 않았으면 none
+    case pushOpen(pushType: String, destination: String)
 
     // 공유
     /// channel: kakao / system, source: league(리그 화면 공유 버튼) / league_result(지난주 결과 모달)
@@ -123,7 +125,7 @@ enum AnalyticsEvent: Equatable, Sendable {
         case .leagueRankUpClick: "league_rank_up_click"
         case .leagueInfoJoinClick: "league_info_join_click"
         case .shareClick: "share_click"
-        case .notificationOpen: "notification_open"
+        case .pushOpen: "push_open"
         }
     }
 
@@ -160,8 +162,8 @@ enum AnalyticsEvent: Equatable, Sendable {
             ["source": source]
         case let .shareClick(channel, source):
             ["channel": channel, "source": source]
-        case let .notificationOpen(type):
-            ["type": type]
+        case let .pushOpen(pushType, destination):
+            ["push_type": pushType, "destination": destination]
         case let .subjectAddCancel(contentType, step):
             ["content_type": contentType, "step": step]
         case let .historyTabSelect(tab):
@@ -230,10 +232,10 @@ enum AnalyticsValue {
         }
     }
 
-    /// 푸시 data.type (DAILY_QUIZ / LEAGUE_DEADLINE / LEAGUE_RESULT) → 소문자, 없으면 unknown
-    static func notificationType(_ userInfo: [AnyHashable: Any]) -> String {
+    /// 푸시 data.type (DAILY_QUIZ / LEAGUE_DEADLINE / LEAGUE_RESULT) 그대로, 없으면 unknown
+    static func pushType(_ userInfo: [AnyHashable: Any]) -> String {
         guard let type = userInfo["type"] as? String, !type.isEmpty else { return "unknown" }
-        return type.lowercased()
+        return type
     }
 }
 

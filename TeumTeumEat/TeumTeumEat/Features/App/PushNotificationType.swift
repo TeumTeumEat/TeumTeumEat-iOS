@@ -13,9 +13,4 @@ enum PushNotificationType: String, Equatable, Sendable {
     case leagueDeadline = "LEAGUE_DEADLINE"
     /// 지난주 리그 결과 (월 08:00, 순위에 든 유저만)
     case leagueResult = "LEAGUE_RESULT"
-
-    init?(userInfo: [AnyHashable: Any]) {
-        guard let raw = userInfo["type"] as? String else { return nil }
-        self.init(rawValue: raw)
-    }
 }

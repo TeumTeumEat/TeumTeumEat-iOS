@@ -46,8 +46,6 @@ struct TeumTeumEatApp: App {
 }
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
-    @Dependency(\.analyticsClient) var analyticsClient
-    
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         
@@ -143,14 +141,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         // FCM 데이터 출력 (Debug 빌드에서만 기록)
         Log.app.debug("푸시 userInfo: \(userInfo)")
 
-        // FirebaseAppDelegateProxyEnabled = NO라 알림 열림을 직접 기록
-        analyticsClient.log(.notificationOpen(type: AnalyticsValue.notificationType(userInfo)))
-
         // 알림 종류별 화면 이동 (학습 알림 → 홈, 리그 알림 → 리그 화면)
-        if let type = PushNotificationType(userInfo: userInfo) {
-            Task { @MainActor in
-                TeumTeumEatApp.store.send(.pushNotificationTapped(type))
-            }
+        // FirebaseAppDelegateProxyEnabled = NO라 알림 열림(push_open)은 도착 화면이 정해진 뒤 직접 기록
+        let pushType = AnalyticsValue.pushType(userInfo)
+        Task { @MainActor in
+            TeumTeumEatApp.store.send(.pushNotificationTapped(pushType: pushType))
         }
         
         completionHandler()

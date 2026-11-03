@@ -20,8 +20,8 @@ struct AppFeature {
         var onboarding: OnboardingFeature.State?
         var mainTab: MainTabFeature.State?
         var isShowingSplash = true
-        /// 메인 화면이 뜨기 전(앱 첫 실행 중)에 누른 푸시 — 메인 화면이 뜨면 이동
-        var pendingPushNotification: PushNotificationType?
+        /// 스플래시 중(앱 첫 실행 중)에 누른 푸시의 data.type — 도착 화면이 정해지면 처리
+        var pendingPushType: String?
     }
     
     enum Action {
@@ -32,8 +32,8 @@ struct AppFeature {
         case logout
         case logoutFinalize
         case withdrawal
-        /// 푸시 알림을 눌러 앱에 들어옴
-        case pushNotificationTapped(PushNotificationType)
+        /// 푸시 알림을 눌러 앱에 들어옴 (pushType: 서버 data.type 그대로, 없으면 unknown)
+        case pushNotificationTapped(pushType: String)
     }
     
     var body: some ReducerOf<Self> {
@@ -60,13 +60,18 @@ struct AppFeature {
     private func core(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
             
-        case let .pushNotificationTapped(type):
-            guard state.mainTab != nil else {
-                // 앱이 꺼져 있다가 푸시로 실행된 경우 스플래시 / 인증 확인이 끝난 뒤 이동
-                state.pendingPushNotification = type
-                return .none
+        case let .pushNotificationTapped(pushType):
+            if state.mainTab != nil {
+                return .send(.mainTab(.pushNotificationOpened(pushType: pushType)))
+            } else if state.login != nil {
+                analyticsClient.log(.pushOpen(pushType: pushType, destination: "login"))
+            } else if state.onboarding != nil {
+                analyticsClient.log(.pushOpen(pushType: pushType, destination: "onboarding"))
+            } else {
+                // 앱이 꺼져 있다가 푸시로 실행된 경우 스플래시 / 인증 확인이 끝난 뒤 처리
+                state.pendingPushType = pushType
             }
-            return .send(.mainTab(.pushNotificationOpened(type)))
+            return .none
 
         case .mainTab(.delegate(.logout)):
             Log.app.debug("AppFeature: 로그아웃 요청 받음")
@@ -81,7 +86,7 @@ struct AppFeature {
 
         case .logoutFinalize:
             KeyChainManager.shared.deleteAll()
-            state.pendingPushNotification = nil
+            state.pendingPushType = nil
 
             state.login = nil
             state.onboarding = nil
@@ -108,12 +113,14 @@ struct AppFeature {
                     // 온보딩 미완료 → 온보딩 화면
                     Log.app.debug("토큰 있음 & 온보딩 미완료 → 온보딩")
                     state.onboarding = OnboardingFeature.State()
+                    logPendingPushOpen(&state, destination: "onboarding")
                 }
                 
             case .unauthenticated:
                 // 토큰 없음 → 로그인 화면
                 Log.app.debug("토큰 없음 → 로그인")
                 state.login = LoginFeature.State()
+                logPendingPushOpen(&state, destination: "login")
             }
             return .none
             
@@ -193,9 +200,16 @@ struct AppFeature {
 
     /// 메인 화면이 뜨기 전에 누른 푸시가 있으면 이동
     private func openPendingPushNotification(_ state: inout State) -> Effect<Action> {
-        guard let type = state.pendingPushNotification else { return .none }
-        state.pendingPushNotification = nil
-        return .send(.mainTab(.pushNotificationOpened(type)))
+        guard let pushType = state.pendingPushType else { return .none }
+        state.pendingPushType = nil
+        return .send(.mainTab(.pushNotificationOpened(pushType: pushType)))
+    }
+
+    /// 메인 화면이 뜨기 전에 누른 푸시가 로그인 / 온보딩에서 멈춘 경우 push_open 기록
+    private func logPendingPushOpen(_ state: inout State, destination: String) {
+        guard let pushType = state.pendingPushType else { return }
+        state.pendingPushType = nil
+        analyticsClient.log(.pushOpen(pushType: pushType, destination: destination))
     }
 
     private func logOnboardingStep(_ step: String?) -> Reduce<State, Action> {

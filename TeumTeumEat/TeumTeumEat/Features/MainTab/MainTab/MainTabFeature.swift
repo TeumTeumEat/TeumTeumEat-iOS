@@ -53,7 +53,7 @@ struct MainTabFeature {
         case destination(PresentationAction<Destination.Action>)
         case delegate(Delegate)
         /// 푸시 알림을 눌러 들어옴 (AppFeature에서 전달)
-        case pushNotificationOpened(PushNotificationType)
+        case pushNotificationOpened(pushType: String)
     }
 
     enum Delegate {
@@ -147,24 +147,29 @@ struct MainTabFeature {
                 return .none
 
             // MARK: - Push
-            case let .pushNotificationOpened(type):
+            case let .pushNotificationOpened(pushType):
+                // push_open의 destination (이동하지 않았으면 none)
+                var arrived = "none"
+                switch (state.destination, PushNotificationType(rawValue: pushType)) {
                 // 퀴즈 / 주제 추가 / 새 목표 흐름 중이면 진행을 끊지 않도록 이동하지 않음
-                switch state.destination {
-                case .quizFlow, .addSubject, .newGoalFlow:
-                    return .none
-                case nil, .myPage, .league:
+                case (.quizFlow, _), (.addSubject, _), (.newGoalFlow, _):
                     break
-                }
-                switch type {
-                case .dailyQuiz:
+                // 모르는 알림 종류는 이동하지 않음
+                case (_, nil):
+                    break
+                case (_, .dailyQuiz):
                     state.destination = nil
                     state.selectedTab = .home
-                case .leagueDeadline, .leagueResult:
-                    // 이미 리그 화면이면 그대로 (결과 모달은 리그 화면 진입 시 조회됨)
-                    if case .league = state.destination { return .none }
+                    arrived = "home"
+                // 이미 리그 화면이면 그대로 (결과 모달은 리그 화면 진입 시 조회됨)
+                case (.league, .leagueDeadline), (.league, .leagueResult):
+                    arrived = "league"
+                case (_, .leagueDeadline), (_, .leagueResult):
                     state.destination = .league(LeagueFeature.State())
                     analyticsClient.log(.leagueView(source: "push"))
+                    arrived = "league"
                 }
+                analyticsClient.log(.pushOpen(pushType: pushType, destination: arrived))
                 return .none
 
             // MARK: - League
