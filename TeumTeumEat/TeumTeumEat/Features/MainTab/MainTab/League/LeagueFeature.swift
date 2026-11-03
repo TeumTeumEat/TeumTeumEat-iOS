@@ -933,7 +933,7 @@ private struct LeagueMyRankBar: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 18)
                     .frame(height: 48)
-                    .background(RoundedRectangle(cornerRadius: 18).fill(Color.blue500))
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.blue500))
             }
         }
         .padding(.horizontal, 24)
