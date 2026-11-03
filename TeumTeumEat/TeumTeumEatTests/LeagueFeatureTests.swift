@@ -385,10 +385,16 @@ struct LeagueWeekResultTests {
 }
 
 struct LeagueShareContentTests {
-    @Test("지난주 순위권 밖이면 순위 대신 초대 문구로 공유한다")
+    @Test("지난주 순위권(10위) 밖이면 순위 대신 초대 문구로 공유한다")
     func leagueResult_outOfRank_sharesInvite() {
-        let result = LeagueWeekResult(weekStartDate: "2026-09-28", rank: 7, weeklySnackCount: 3)
+        let result = LeagueWeekResult(weekStartDate: "2026-09-28", rank: 11, weeklySnackCount: 3)
         #expect(ShareContent.leagueResult(result) == .invite)
+    }
+
+    @Test("지난주 10위 안이면 순위 문구로 공유한다")
+    func leagueResult_inRank_sharesRank() {
+        let result = LeagueWeekResult(weekStartDate: "2026-09-28", rank: 10, weeklySnackCount: 3)
+        #expect(ShareContent.leagueResult(result).text == "틈틈잇 9월 4주 리그에서 10위를 했어요! 같이 도전해 보세요.")
     }
 }
 

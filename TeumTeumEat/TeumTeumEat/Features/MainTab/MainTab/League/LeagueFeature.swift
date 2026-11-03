@@ -407,12 +407,12 @@ private struct LeagueWeekResultView: View {
         init(rank: Int?) {
             switch rank {
             case 1: self = .first
-            case let rank? where rank <= 3: self = .podium(rank: rank)
+            case let rank? where rank <= 10: self = .podium(rank: rank)
             default: self = .outOfRank
             }
         }
 
-        /// 순위권(1~3위)일 때만 "n위" 표시
+        /// 순위권(1~10위)일 때만 "n위" 표시
         var displayRank: Int? {
             switch self {
             case .first: 1
