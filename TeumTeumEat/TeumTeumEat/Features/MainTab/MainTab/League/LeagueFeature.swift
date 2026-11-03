@@ -582,7 +582,7 @@ private struct LeagueShareSheet: View {
         .padding(.top, 28)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color.white)
-        .presentationDetents([.height(220)])
+        .presentationDetents([.height(190)])
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(32)
     }
