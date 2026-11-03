@@ -153,3 +153,16 @@ struct AnalyticsEventTests {
         #expect(data.analyticsDifficulty == "unknown")
     }
 }
+
+struct PushTypeTests {
+    @Test("푸시 data.type을 서버 값 그대로 기록하고, 없으면 unknown으로 기록한다", arguments: [
+        (["type": "DAILY_QUIZ"] as [AnyHashable: Any], "DAILY_QUIZ"),
+        (["type": "LEAGUE_DEADLINE"], "LEAGUE_DEADLINE"),
+        (["type": "NEW_TYPE"], "NEW_TYPE"),
+        (["gcm.message_id": "123"], "unknown"),
+        (["type": ""], "unknown")
+    ])
+    func pushType(userInfo: [AnyHashable: Any], expected: String) {
+        #expect(AnalyticsValue.pushType(userInfo) == expected)
+    }
+}

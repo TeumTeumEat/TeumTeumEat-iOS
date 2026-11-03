@@ -88,6 +88,7 @@ struct LeagueFeature {
         case rankUpTapped
         case weekResultDismissed
         case infoDismissed
+        case infoJoinTapped
         case weekResultShareTapped
         case shareChannelSelected(ShareChannel)
         case shareSheetClosed
@@ -137,6 +138,12 @@ struct LeagueFeature {
             case .infoDismissed:
                 state.isInfoPresented = false
                 return .none
+
+            case .infoJoinTapped:
+                // 참여하기 = 퀴즈를 풀러 가는 흐름이라 순위 올리기와 같이 홈으로 이동
+                state.isInfoPresented = false
+                analyticsClient.log(.leagueInfoJoinClick)
+                return .send(.delegate(.rankUpRequested))
 
             case .rankUpTapped:
                 analyticsClient.log(.leagueRankUpClick)
@@ -288,7 +295,7 @@ struct LeagueView: View {
                 }
             } else if store.isInfoPresented {
                 LeagueModalContainer(onDismiss: { store.send(.infoDismissed) }) {
-                    LeagueInfoView()
+                    LeagueInfoView(onJoin: { store.send(.infoJoinTapped) })
                 }
             }
         }
@@ -400,12 +407,12 @@ private struct LeagueWeekResultView: View {
         init(rank: Int?) {
             switch rank {
             case 1: self = .first
-            case let rank? where rank <= 3: self = .podium(rank: rank)
+            case let rank? where rank <= 10: self = .podium(rank: rank)
             default: self = .outOfRank
             }
         }
 
-        /// 순위권(1~3위)일 때만 "n위" 표시
+        /// 순위권(1~10위)일 때만 "n위" 표시
         var displayRank: Int? {
             switch self {
             case .first: 1
@@ -424,7 +431,7 @@ private struct LeagueWeekResultView: View {
                 .foregroundColor(.black)
 
             image
-                .frame(height: 100)
+                .frame(height: 170)
                 .padding(.top, 28)
 
             if let rank = kind.displayRank {
@@ -451,25 +458,19 @@ private struct LeagueWeekResultView: View {
         }
     }
 
+    /// 결과 애니메이션: 1위 금 트로피 / 2·3위 은 트로피 / 순위권 밖 녹아내리는 캐릭터
+    /// 등장 동작이 있는 애니메이션이라 한 번 재생 후 마지막 장면에서 멈춤
     private var image: some View {
-        Group {
-            switch kind {
-            case .first:
-                Image("league_trophy_first")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 179, height: 100)
-            case .podium:
-                Image("league_trophy_podium")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 179, height: 100)
-            case .outOfRank:
-                Image("league_character_melted")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 143, height: 82)
-            }
+        LottieView(animation: .named(animationName))
+            .playing(loopMode: .playOnce)
+            .frame(maxWidth: .infinity)
+    }
+
+    private var animationName: String {
+        switch kind {
+        case .first: "league_result_trophy_gold"
+        case .podium: "league_result_trophy_silver"
+        case .outOfRank: "league_result_sit_melt"
         }
     }
 
@@ -487,32 +488,72 @@ private struct LeagueWeekResultView: View {
 
 /// 리그 안내 (i 버튼)
 private struct LeagueInfoView: View {
-    // TODO: 안내 문구 확정되면 교체 (현재는 정해진 리그 규칙으로 만든 초안)
+    let onJoin: () -> Void
+
     private let rules = [
-        "퀴즈를 풀면 스낵을 모을 수 있어요. 매주 최대 77개까지 모을 수 있어요.",
-        "이번 주에 모은 스낵 개수로 순위가 정해져요.",
-        "스낵 개수가 같으면 스트릭이 긴 순, 먼저 가입한 순으로 순위가 정해져요.",
-        "리그는 매주 일요일 자정에 초기화돼요."
+        "퀴즈를 풀면 스낵이 쌓여 리그 순위가 올라가요.",
+        "매주 새로운 리그가 시작돼요.",
+        "틈틈잇 전체 사용자와 스낵으로 경쟁해요."
     ]
 
     var body: some View {
         VStack(spacing: 0) {
-            Text("주간 리그 안내")
-                .font(.system(size: 20, weight: .bold))
+            Text("리그에 도전해보세요!")
+                .font(.system(size: 22, weight: .bold))
                 .foregroundColor(.black)
+            Image("league_trophy")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 100, height: 100)
+                .padding(.top, 24)
 
-            VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                // 헤더 i 버튼과 같은 모양, 기존 티켓 아이콘 색(gray500)
+                Image("icon_info_gray")
+                    .resizable()
+                    .frame(width: 24, height: 24)
+                VStack(alignment: .leading, spacing: 2) {
+                    // 시안은 "점"이지만 리그 화면 표현(스낵)에 맞춤 (디자이너 확인 중)
+                    Text("퀴즈 1회 = 1스낵")
+                    Text("퀴즈를 풀고 순위를 높여보세요.")
+                }
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.gray900)
+                // 작은 화면에서도 시안처럼 한 줄 유지
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
+            .background(RoundedRectangle(cornerRadius: 14).fill(Color.gray100))
+            .padding(.top, 24)
+
+            VStack(alignment: .leading, spacing: 6) {
                 ForEach(rules, id: \.self) { rule in
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text("•")
                         Text(rule)
-                            .fixedSize(horizontal: false, vertical: true)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
                     }
                 }
             }
-            .font(.system(size: 15, weight: .medium))
-            .foregroundColor(.gray900)
-            .padding(.top, 20)
+            .font(.system(size: 13, weight: .regular))
+            .foregroundColor(.gray600)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 6)
+            .padding(.top, 16)
+
+            Button(action: onJoin) {
+                Text("확인")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.blue500))
+            }
+            .padding(.top, 24)
         }
     }
 }
@@ -541,7 +582,7 @@ private struct LeagueShareSheet: View {
         .padding(.top, 28)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color.white)
-        .presentationDetents([.height(220)])
+        .presentationDetents([.height(190)])
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(32)
     }
@@ -892,7 +933,7 @@ private struct LeagueMyRankBar: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 18)
                     .frame(height: 48)
-                    .background(RoundedRectangle(cornerRadius: 18).fill(Color.blue500))
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.blue500))
             }
         }
         .padding(.horizontal, 24)

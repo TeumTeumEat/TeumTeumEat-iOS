@@ -77,10 +77,18 @@ enum AnalyticsEvent: Equatable, Sendable {
     case notificationToggle(enabled: Bool)
 
     // 리그
-    /// source: home(1등 도전 말풍선) / history(상단 배너)
+    /// source: home(1등 도전 말풍선) / history(상단 배너) / push(리그 알림)
     case leagueView(source: String)
     /// 리그 화면 "순위 올리기" 버튼
     case leagueRankUpClick
+    /// 리그 안내 모달 "참여하기" 버튼
+    case leagueInfoJoinClick
+
+    // 알림
+    /// 푸시 알림을 눌러 앱을 연 경우 (notification_open은 Firebase 예약 이벤트명이라 사용 불가)
+    /// pushType: 서버 값 그대로 (DAILY_QUIZ / LEAGUE_DEADLINE / LEAGUE_RESULT), 없으면 unknown
+    /// destination: 실제 도착 화면 home / league / login / onboarding, 이동하지 않았으면 none
+    case pushOpen(pushType: String, destination: String)
 
     // 공유
     /// channel: kakao / system, source: league(리그 화면 공유 버튼) / league_result(지난주 결과 모달)
@@ -115,7 +123,9 @@ enum AnalyticsEvent: Equatable, Sendable {
         case .notificationToggle: "notification_toggle"
         case .leagueView: "league_view"
         case .leagueRankUpClick: "league_rank_up_click"
+        case .leagueInfoJoinClick: "league_info_join_click"
         case .shareClick: "share_click"
+        case .pushOpen: "push_open"
         }
     }
 
@@ -152,13 +162,15 @@ enum AnalyticsEvent: Equatable, Sendable {
             ["source": source]
         case let .shareClick(channel, source):
             ["channel": channel, "source": source]
+        case let .pushOpen(pushType, destination):
+            ["push_type": pushType, "destination": destination]
         case let .subjectAddCancel(contentType, step):
             ["content_type": contentType, "step": step]
         case let .historyTabSelect(tab):
             ["tab": tab]
         case let .notificationToggle(enabled):
             ["enabled": enabled ? "true" : "false"]
-        case .logout, .accountDelete, .adRewardRequest, .adRewardEarned, .adInterrupted, .leagueRankUpClick:
+        case .logout, .accountDelete, .adRewardRequest, .adRewardEarned, .adInterrupted, .leagueRankUpClick, .leagueInfoJoinClick:
             nil
         }
     }
@@ -218,6 +230,12 @@ enum AnalyticsValue {
         case "상", "HARD": "hard"
         default: "unknown"
         }
+    }
+
+    /// 푸시 data.type (DAILY_QUIZ / LEAGUE_DEADLINE / LEAGUE_RESULT) 그대로, 없으면 unknown
+    static func pushType(_ userInfo: [AnyHashable: Any]) -> String {
+        guard let type = userInfo["type"] as? String, !type.isEmpty else { return "unknown" }
+        return type
     }
 }
 

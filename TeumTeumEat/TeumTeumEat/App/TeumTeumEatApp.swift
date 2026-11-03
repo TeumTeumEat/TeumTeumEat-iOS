@@ -46,7 +46,6 @@ struct TeumTeumEatApp: App {
 }
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
-    
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         
@@ -124,10 +123,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         
         let userInfo = notification.request.content.userInfo
         
-        // FCM 데이터 출력
-        if let messageID = userInfo["gcm.message_id"] {
-            Log.app.debug("FCM Message ID: \(messageID)")
-        }
+        // FCM 데이터 출력 (서버가 data에 무엇을 보내는지 확인용, Debug 빌드에서만 기록)
+        Log.app.debug("푸시 userInfo: \(userInfo)")
         
         // 앱 실행 중에도 알림 표시
         completionHandler([.banner, .sound, .badge])
@@ -141,12 +138,15 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         
         let userInfo = response.notification.request.content.userInfo
         
-        // FCM 데이터 처리
-        if let messageID = userInfo["gcm.message_id"] {
-            Log.app.debug("FCM Message ID: \(messageID)")
+        // FCM 데이터 출력 (Debug 빌드에서만 기록)
+        Log.app.debug("푸시 userInfo: \(userInfo)")
+
+        // 알림 종류별 화면 이동 (학습 알림 → 홈, 리그 알림 → 리그 화면)
+        // FirebaseAppDelegateProxyEnabled = NO라 알림 열림(push_open)은 도착 화면이 정해진 뒤 직접 기록
+        let pushType = AnalyticsValue.pushType(userInfo)
+        Task { @MainActor in
+            TeumTeumEatApp.store.send(.pushNotificationTapped(pushType: pushType))
         }
-        
-        // TODO: 딥링크 처리 등
         
         completionHandler()
     }

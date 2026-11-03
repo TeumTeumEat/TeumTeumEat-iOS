@@ -294,6 +294,24 @@ struct LeagueFeatureTests {
         await store.send(.shareSheetDismissed)
     }
 
+    @Test("안내 모달에서 참여하기를 누르면 클릭을 기록하고, 모달을 닫고 홈으로 이동을 요청한다")
+    func infoJoinTapped_closesInfoAndRequestsHome() async {
+        let events = LockIsolated<[AnalyticsEvent]>([])
+        var state = LeagueFeature.State(league: .mock)
+        state.isInfoPresented = true
+        let store = TestStore(initialState: state) {
+            LeagueFeature()
+        } withDependencies: {
+            $0.analyticsClient.log = { event in events.withValue { $0.append(event) } }
+        }
+
+        await store.send(.infoJoinTapped) {
+            $0.isInfoPresented = false
+        }
+        await store.receive(\.delegate.rankUpRequested)
+        #expect(events.value == [.leagueInfoJoinClick])
+    }
+
     @Test("순위 올리기를 누르면 클릭을 기록하고 상위 화면에 이동을 요청한다")
     func rankUpTapped_logsAndSendsDelegate() async {
         let events = LockIsolated<[AnalyticsEvent]>([])
@@ -367,10 +385,16 @@ struct LeagueWeekResultTests {
 }
 
 struct LeagueShareContentTests {
-    @Test("지난주 순위권 밖이면 순위 대신 초대 문구로 공유한다")
+    @Test("지난주 순위권(10위) 밖이면 순위 대신 초대 문구로 공유한다")
     func leagueResult_outOfRank_sharesInvite() {
-        let result = LeagueWeekResult(weekStartDate: "2026-09-28", rank: 7, weeklySnackCount: 3)
+        let result = LeagueWeekResult(weekStartDate: "2026-09-28", rank: 11, weeklySnackCount: 3)
         #expect(ShareContent.leagueResult(result) == .invite)
+    }
+
+    @Test("지난주 10위 안이면 순위 문구로 공유한다")
+    func leagueResult_inRank_sharesRank() {
+        let result = LeagueWeekResult(weekStartDate: "2026-09-28", rank: 10, weeklySnackCount: 3)
+        #expect(ShareContent.leagueResult(result).text == "틈틈잇 9월 4주 리그에서 10위를 했어요! 같이 도전해 보세요.")
     }
 }
 

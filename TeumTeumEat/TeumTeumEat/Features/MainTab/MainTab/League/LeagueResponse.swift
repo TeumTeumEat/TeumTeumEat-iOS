@@ -127,7 +127,7 @@ extension LeagueWeekResult {
 extension ShareContent {
     /// 지난주 리그 결과 공유 (순위권이면 순위를 함께 보여줌)
     static func leagueResult(_ result: LeagueWeekResult) -> ShareContent {
-        guard let rank = result.rank, rank <= 3, let weekLabel = result.weekLabel else { return .invite }
+        guard let rank = result.rank, rank <= 10, let weekLabel = result.weekLabel else { return .invite }
         return ShareContent(
             text: "틈틈잇 \(weekLabel) 리그에서 \(rank)위를 했어요! 같이 도전해 보세요.",
             url: appStoreURL
