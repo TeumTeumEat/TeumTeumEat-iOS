@@ -81,6 +81,7 @@ struct LeagueFeature {
 
     enum Action {
         case onAppear
+        case refreshRequested
         case retryTapped
         case backTapped
         case shareTapped
@@ -105,7 +106,7 @@ struct LeagueFeature {
         case rankUpRequested
     }
 
-    private enum CancelID { case timer }
+    private enum CancelID { case timer, league, latestResult }
 
     @Dependency(\.leagueClient) var leagueClient
     @Dependency(\.dismiss) var dismiss
@@ -121,7 +122,7 @@ struct LeagueFeature {
                 guard state.league == nil, !state.isLoading else { return .none }
                 return fetchLeague(&state)
 
-            case .retryTapped:
+            case .refreshRequested, .retryTapped:
                 return fetchLeague(&state)
 
             case .backTapped:
@@ -253,10 +254,12 @@ struct LeagueFeature {
         return .merge(
             .run { send in
                 await send(.leagueLoaded(Result { try await leagueClient.fetchLeague() }))
-            },
+            }
+            .cancellable(id: CancelID.league, cancelInFlight: true),
             .run { send in
                 await send(.latestResultLoaded(Result { try await leagueClient.fetchLatestResult() }))
             }
+            .cancellable(id: CancelID.latestResult, cancelInFlight: true)
         )
     }
 }
