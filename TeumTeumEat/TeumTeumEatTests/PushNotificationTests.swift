@@ -4,6 +4,7 @@
 //
 
 import ComposableArchitecture
+import Foundation
 import OnboardingFeature
 import Testing
 @testable import TeumTeumEat
@@ -30,19 +31,90 @@ struct PushNotificationTests {
         ])
     }
 
-    @Test("이미 리그 화면이면 리그 알림을 눌러도 그대로 두고 알림 열림만 기록한다")
-    func leaguePush_onLeague_staysAndLogsOnlyPushOpen() async {
+    @Test("기존 리그에서 알림을 누르면 최신 순위와 결과를 조회하고, 이미 본 결과는 다시 띄우지 않는다", arguments: [
+        PushNotificationType.leagueDeadline, .leagueResult
+    ], [false, true])
+    func leaguePush_onLeague_refreshes(type: PushNotificationType, hasSeenResult: Bool) async {
         let events = LockIsolated<[AnalyticsEvent]>([])
+        let requests = LockIsolated<[String]>([])
+        let result = LeagueWeekResult(weekStartDate: "2026-10-05", rank: 2, weeklySnackCount: 20)
+        let seenWeek = LockIsolated<String?>(hasSeenResult ? result.weekStartDate : nil)
+        let mock = LeagueResponse.mock
+        let updated = LeagueResponse(
+            weekStartDate: mock.weekStartDate, resetAt: mock.resetAt,
+            remainingSeconds: 0, rankers: mock.rankers, me: mock.me
+        )
         var state = MainTabFeature.State()
-        state.destination = .league(LeagueFeature.State())
+        state.selectedTab = .quiz
+        state.destination = .league(LeagueFeature.State(league: .mockNotParticipating))
         let store = TestStore(initialState: state) {
             MainTabFeature()
         } withDependencies: {
             $0.analyticsClient.log = { event in events.withValue { $0.append(event) } }
+            $0.leagueClient.fetchLeague = {
+                requests.withValue { $0.append("league") }
+                return updated
+            }
+            $0.leagueClient.fetchLatestResult = {
+                requests.withValue { $0.append("result") }
+                return result
+            }
+            $0.leagueClient.lastSeenResultWeek = { seenWeek.value }
+            $0.leagueClient.setLastSeenResultWeek = { week in seenWeek.setValue(week) }
+            $0.date.now = Date(timeIntervalSince1970: 1_800_000_000)
         }
+        // 두 API의 응답 순서는 보장되지 않으므로 최종 데이터와 호출 횟수를 검증한다.
+        store.exhaustivity = .off
 
-        await store.send(.pushNotificationOpened(pushType: "LEAGUE_RESULT"))
-        #expect(events.value == [.pushOpen(pushType: "LEAGUE_RESULT", destination: "league")])
+        await store.send(.pushNotificationOpened(pushType: type.rawValue))
+        await store.finish()
+        await store.skipReceivedActions()
+
+        guard case let .league(league) = store.state.destination else {
+            Issue.record("리그 화면이 유지되어야 한다")
+            return
+        }
+        #expect(store.state.selectedTab == .quiz)
+        #expect(league.league == updated)
+        #expect(!league.isLoading)
+        #expect(league.weekResult == (hasSeenResult ? nil : result))
+        #expect(seenWeek.value == result.weekStartDate)
+        #expect(requests.value.sorted() == ["league", "result"])
+        #expect(events.value == [.pushOpen(pushType: type.rawValue, destination: "league")])
+    }
+
+    @Test("홈에서 다음 날 학습 알림을 누르면 이전 완료 상태를 최신 퀴즈 상태로 갱신한다")
+    func dailyQuizPush_onHome_refreshesCompletedQuiz() async {
+        let events = LockIsolated<[AnalyticsEvent]>([])
+        let statusRequests = LockIsolated(0)
+        var state = MainTabFeature.State()
+        state.home.currentGoal = Fixture.goal()
+        state.home.quizStatus = Fixture.quizStatus(hasSolvedToday: true, availableQuizCount: 0)
+        state.home.isTodayQuizCompleted = true
+        let store = TestStore(initialState: state) {
+            MainTabFeature()
+        } withDependencies: {
+            $0.analyticsClient.log = { event in events.withValue { $0.append(event) } }
+            $0.historyClient.fetchCalendarHistory = { _, _ in Fixture.calendar }
+            $0.goalClient.fetchCurrentGoal = { Fixture.goal() }
+            $0.quizClient.fetchUserQuizStatus = {
+                statusRequests.withValue { $0 += 1 }
+                return Fixture.quizStatus()
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.pushNotificationOpened(pushType: "DAILY_QUIZ"))
+        await store.finish()
+        await store.skipReceivedActions()
+
+        #expect(store.state.selectedTab == .home)
+        #expect(store.state.destination == nil)
+        #expect(store.state.home.quizStatus == Fixture.quizStatus())
+        #expect(!store.state.home.isTodayQuizCompleted)
+        #expect(store.state.home.availableQuizCount == 1)
+        #expect(statusRequests.value == 1)
+        #expect(events.value == [.pushOpen(pushType: "DAILY_QUIZ", destination: "home")])
     }
 
     @Test("학습 알림을 누르면 열려 있던 마이페이지를 닫고 홈 탭으로 이동한다")

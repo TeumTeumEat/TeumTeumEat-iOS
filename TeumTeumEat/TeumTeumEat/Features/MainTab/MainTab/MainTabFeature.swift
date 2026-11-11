@@ -150,6 +150,7 @@ struct MainTabFeature {
             case let .pushNotificationOpened(pushType):
                 // push_open의 destination (이동하지 않았으면 none)
                 var arrived = "none"
+                var refresh: Effect<Action> = .none
                 switch (state.destination, PushNotificationType(rawValue: pushType)) {
                 // 퀴즈 / 주제 추가 / 새 목표 흐름 중이면 진행을 끊지 않도록 이동하지 않음
                 case (.quizFlow, _), (.addSubject, _), (.newGoalFlow, _):
@@ -158,19 +159,25 @@ struct MainTabFeature {
                 case (_, nil):
                     break
                 case (_, .dailyQuiz):
+                    // 이미 홈이면 onAppear가 다시 호출되지 않으므로 직접 갱신한다.
+                    // 다른 화면에서 이동할 때는 기존 HomeView.onAppear가 조회를 담당한다.
+                    if state.selectedTab == .home, state.destination == nil {
+                        refresh = .send(.home(.onAppear))
+                    }
                     state.destination = nil
                     state.selectedTab = .home
                     arrived = "home"
-                // 이미 리그 화면이면 그대로 (결과 모달은 리그 화면 진입 시 조회됨)
+                // 기존 리그 화면을 유지하면서 순위와 지난주 결과를 다시 조회한다.
                 case (.league, .leagueDeadline), (.league, .leagueResult):
                     arrived = "league"
+                    refresh = .send(.destination(.presented(.league(.refreshRequested))))
                 case (_, .leagueDeadline), (_, .leagueResult):
                     state.destination = .league(LeagueFeature.State())
                     analyticsClient.log(.leagueView(source: "push"))
                     arrived = "league"
                 }
                 analyticsClient.log(.pushOpen(pushType: pushType, destination: arrived))
-                return .none
+                return refresh
 
             // MARK: - League
             // TODO: 순위 올리기 이동 화면 기획 확정 후 수정 (현재는 홈 탭으로 이동)
